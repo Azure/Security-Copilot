@@ -1,0 +1,43 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+		"CopilotforSecurityCreatorRoleName": {
+		"defaultValue": "Copilot for Security Compute Creator",
+		"type": "string"
+		}
+	},
+    "variables": {
+        "rbacGuid": "[guid(deployment().name)]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Authorization/roleDefinitions",
+            "apiVersion": "2017-05-01",
+            "name": "[variables('rbacGuid')]",
+            "properties": {
+                "roleName": "[parameters('CopilotforSecurityCreatorRoleName')]",
+                "IsCustom": true,
+                "Description": "This role is designed to allow the creation of Copilot for Security Compute Capacities, including the scaling SCU count.",
+                "permissions": [
+                    {
+                        "Actions": [
+                            "Microsoft.SecurityCopilot/capacities/read",
+                            "Microsoft.SecurityCopilot/capacities/write"
+                        ],
+                        "NotActions": []
+                    }
+                ],
+                "AssignableScopes": [
+                    "[subscription().id]"
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "assignableScope": {
+            "type": "string",
+            "value": "[subscription().id]"
+        }
+    }
+}

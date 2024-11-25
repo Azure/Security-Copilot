@@ -1,0 +1,635 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "",
+        "description": "",
+        "prerequisites": "",
+        "postDeployment": [],
+        "prerequisitesDeployTemplateFile": "",
+        "lastUpdateTime": "",
+        "entities": [],
+        "tags": [],
+        "support": {
+            "tier": "community",
+            "armtemplate": "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author": {
+            "name": ""
+        }
+    },
+    "parameters": {
+        "resourceLocation": {
+            "type": "string",
+            "allowedValues": [
+                "australiaeast",
+                "australiasoutheast",
+                "brazilsouth",
+                "brazilsoutheast",
+                "canadacentral",
+                "canadaeast",
+                "centralindia",
+                "centralus",
+                "eastasia",
+                "eastus",
+                "eastus2",
+                "francecentral",
+                "francesouth",
+                "germanynorth",
+                "germanywestcentral",
+                "israelcentral",
+                "italynorth",
+                "japaneast",
+                "japanwest",
+                "jioindiawest",
+                "koreacentral",
+                "koreasouth",
+                "northcentralus",
+                "northeurope",
+                "norwayeast",
+                "norwaywest",
+                "polandcentral",
+                "qatarcentral",
+                "southafricanorth",
+                "southafricawest",
+                "southcentralus",
+                "southeastasia",
+                "southindia",
+                "swedencentral",
+                "switzerlandnorth",
+                "switzerlandwest",
+                "uaecentral",
+                "uaenorth",
+                "uksouth",
+                "ukwest",
+                "westcentralus",
+                "westeurope",
+                "westindia",
+                "westus",
+                "westus2",
+                "westus3"
+            ],
+            "defaultValue": "eastus",
+            "metadata": {
+                "description": "The location of the resources to be deployed."
+            }
+        },
+        "playbookResourceGroup": {
+            "defaultValue": "",
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Resource Group to store Copilot for Security playbooks. This must be different than the Sentinel Resource Group."
+            }
+        },
+        "playbookName": {
+            "defaultValue": "lga-copilotforsecurity-scaler",
+            "type": "string",
+            "metadata": {
+                "description": "The name of the playbook associated with the workbook that applies the schedule hourly to the Copilot for Security Compute Capacities."
+            }
+        },
+        "sentinelResourceGroup": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Sentinel Workbooks are required be installed in the Sentinel Resource Group."
+            }
+        },
+        "sentinelWorkspaceName": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "The name of Sentinel instance to which the workbook will be associated"
+            }
+        },
+        "sentinelWorkbookDisplayName": {
+            "type": "string",
+            "defaultValue": "Copilot for Security SCU Optimizer",
+            "metadata": {
+                "description": "The friendly name for the workbook that is used in the Gallery or Saved List.  This name must be unique within a resource group."
+            }
+        },
+        "sentinelWorkbookId": {
+            "type": "string",
+            "defaultValue": "[newGuid()]",
+            "metadata": {
+                "description": "The unique guid for this workbook instance. If new, leave as default"
+            }
+        }
+    },
+    "variables": {
+        "ArmConnectionName": "[concat('mgid-', parameters('PlaybookName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2021-04-01",
+            "name": "nestedTemplate",
+            "resourceGroup": "[parameters('playbookResourceGroup')]",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Web/connections",
+                            "apiVersion": "2016-06-01",
+                            "name": "[variables('ArmConnectionName')]",
+                            "location": "[parameters('resourceLocation')]",
+                            "kind": "V1",
+                            "properties": {
+                                "displayName": "[variables('ArmConnectionName')]",
+                                "customParameterValues": {},
+                                "parameterValueType": "Alternative",
+                                "api": {
+                                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('resourceLocation'), '/managedApis/arm')]"
+                                }
+                            }
+                        },
+                        {
+                            "name": "[parameters('PlaybookName')]",
+                            "type": "Microsoft.Logic/workflows",
+                            "location": "[parameters('resourceLocation')]",
+                            "tags": {},
+                            "identity": {
+                                "type": "SystemAssigned"
+                            },
+                            "apiVersion": "2017-07-01",
+                            "dependsOn": [
+                                "[resourceId(subscription().subscriptionId,parameters('playbookResourceGroup'),'Microsoft.Web/connections', variables('ArmConnectionName'))]"
+                            ],
+                            "properties": {
+                                "provisioningState": "Succeeded",
+                                "state": "Enabled",
+                                "definition": {
+                                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                                    "contentVersion": "1.0.0.0",
+                                    "parameters": {
+                                        "$connections": {
+                                            "defaultValue": {},
+                                            "type": "Object"
+                                        }
+                                    },
+                                    "triggers": {
+                                        "Recurrence_-_Every_Hour": {
+                                            "recurrence": {
+                                                "interval": 1,
+                                                "frequency": "Hour",
+                                                "timeZone": "Eastern Standard Time",
+                                                "startTime": "2024-05-23T17:05:00Z"
+                                            },
+                                            "evaluatedRecurrence": {
+                                                "interval": 1,
+                                                "frequency": "Hour",
+                                                "timeZone": "Eastern Standard Time",
+                                                "startTime": "2024-05-23T17:05:00Z"
+                                            },
+                                            "type": "Recurrence"
+                                        }
+                                    },
+                                    "actions": {
+                                        "List_subscriptions": {
+                                            "runAfter": {},
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['arm']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/subscriptions",
+                                                "queries": {
+                                                    "x-ms-api-version": "2016-06-01"
+                                                }
+                                            }
+                                        },
+                                        "For_Each_-_Subscription": {
+                                            "foreach": "@body('List_subscriptions')?['value']",
+                                            "actions": {
+                                                "List_resources_by_subscription": {
+                                                    "type": "ApiConnection",
+                                                    "inputs": {
+                                                        "host": {
+                                                            "connection": {
+                                                                "name": "@parameters('$connections')['arm']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method": "get",
+                                                        "path": "/subscriptions/@{encodeURIComponent(items('For_Each_-_Subscription')?['subscriptionId'])}/resources",
+                                                        "queries": {
+                                                            "x-ms-api-version": "2016-06-01",
+                                                            "$filter": "tagName eq 'CopilotforSecurityConfig'"
+                                                        }
+                                                    }
+                                                },
+                                                "For_Each_-_Resource": {
+                                                    "foreach": "@body('List_resources_by_subscription')?['value']",
+                                                    "actions": {
+                                                        "Parse_CopilotforSecurity_Tag_JSON": {
+                                                            "runAfter": {
+                                                                "Read_a_resource": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "ParseJson",
+                                                            "inputs": {
+                                                                "content": "@replace(item()?['tags']['CopilotforSecurityConfig'],'\\', '')",
+                                                                "schema": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "SCULimits": {
+                                                                            "type": "object",
+                                                                            "properties": {
+                                                                                "Min": {
+                                                                                    "type": "integer"
+                                                                                },
+                                                                                "Max": {
+                                                                                    "type": "integer"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        "Schedule": {
+                                                                            "type": "object",
+                                                                            "properties": {
+                                                                                "ActiveDays": {
+                                                                                    "type": "array",
+                                                                                    "items": {
+                                                                                        "type": "integer"
+                                                                                    }
+                                                                                },
+                                                                                "ActiveStartHour": {
+                                                                                    "type": "integer"
+                                                                                },
+                                                                                "ActiveEndHour": {
+                                                                                    "type": "integer"
+                                                                                },
+                                                                                "TimeOffset": {
+                                                                                    "type": "integer"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "Condition_-_Is_Active_SCU_Day": {
+                                                            "actions": {
+                                                                "Condition_-_Is_Active_Time": {
+                                                                    "actions": {
+                                                                        "Condition_-_Is_Current_SCU_not_equal_to_Max_SCU": {
+                                                                            "actions": {
+                                                                                "Create_or_update_a_resource_-_High_Usage_Day_-_High_Usage_Hours": {
+                                                                                    "type": "ApiConnection",
+                                                                                    "inputs": {
+                                                                                        "host": {
+                                                                                            "connection": {
+                                                                                                "name": "@parameters('$connections')['arm']['connectionId']"
+                                                                                            }
+                                                                                        },
+                                                                                        "method": "put",
+                                                                                        "body": {
+                                                                                            "location": "@item()?['location']",
+                                                                                            "tags": "@body('Read_a_resource')?['tags']",
+                                                                                            "properties": {
+                                                                                                "numberOfUnits": "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Max']",
+                                                                                                "crossGeoCompute": "@{body('Read_a_resource')?['properties']['crossGeoCompute']}",
+                                                                                                "geo": "@{body('Read_a_resource')?['properties']['geo']}"
+                                                                                            }
+                                                                                        },
+                                                                                        "path": "/subscriptions/@{encodeURIComponent(split(item()?['id'], '/')[2])}/resourcegroups/@{encodeURIComponent(split(item()?['id'], '/')[4])}/providers/@{encodeURIComponent('Microsoft.SecurityCopilot')}/@{encodeURIComponent('capacities/',split(item()?['id'], '/')[8])}",
+                                                                                        "queries": {
+                                                                                            "x-ms-api-version": "2023-12-01-preview"
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "else": {
+                                                                                "actions": {}
+                                                                            },
+                                                                            "expression": {
+                                                                                "and": [
+                                                                                    {
+                                                                                        "not": {
+                                                                                            "equals": [
+                                                                                                "@body('Read_a_resource')?['properties']['numberOfUnits']",
+                                                                                                "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Max']"
+                                                                                            ]
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "type": "If"
+                                                                        }
+                                                                    },
+                                                                    "else": {
+                                                                        "actions": {
+                                                                            "Condition_-_Is_Current_SCU_not_equal_to_Min_SCU": {
+                                                                                "actions": {
+                                                                                    "Create_or_update_a_resource_-_Active_Day_-_Inactive_Hours": {
+                                                                                        "type": "ApiConnection",
+                                                                                        "inputs": {
+                                                                                            "host": {
+                                                                                                "connection": {
+                                                                                                    "name": "@parameters('$connections')['arm']['connectionId']"
+                                                                                                }
+                                                                                            },
+                                                                                            "method": "put",
+                                                                                            "body": {
+                                                                                                "location": "@item()?['location']",
+                                                                                                "tags": "@body('Read_a_resource')?['tags']",
+                                                                                                "properties": {
+                                                                                                    "numberOfUnits": "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Min']",
+                                                                                                    "crossGeoCompute": "@{body('Read_a_resource')?['properties']['crossGeoCompute']}",
+                                                                                                    "geo": "@{body('Read_a_resource')?['properties']['geo']}"
+                                                                                                }
+                                                                                            },
+                                                                                            "path": "/subscriptions/@{encodeURIComponent(split(item()?['id'], '/')[2])}/resourcegroups/@{encodeURIComponent(split(item()?['id'], '/')[4])}/providers/@{encodeURIComponent('Microsoft.SecurityCopilot')}/@{encodeURIComponent('capacities/',split(item()?['id'], '/')[8])}",
+                                                                                            "queries": {
+                                                                                                "x-ms-api-version": "2023-12-01-preview"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                "else": {
+                                                                                    "actions": {}
+                                                                                },
+                                                                                "expression": {
+                                                                                    "and": [
+                                                                                        {
+                                                                                            "not": {
+                                                                                                "equals": [
+                                                                                                    "@body('Read_a_resource')?['properties']['numberOfUnits']",
+                                                                                                    "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Min']"
+                                                                                                ]
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "type": "If"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "expression": {
+                                                                        "and": [
+                                                                            {
+                                                                                "greaterOrEquals": [
+                                                                                    "@int(addHours(utcNow(), body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['TimeOffset'],'HH'))",
+                                                                                    "@body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['ActiveStartHour']"
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "less": [
+                                                                                    "@int(addHours(utcNow(), body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['TimeOffset'],'HH'))",
+                                                                                    "@body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['ActiveEndHour']"
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type": "If"
+                                                                }
+                                                            },
+                                                            "runAfter": {
+                                                                "Set_variable_-_varActiveDays": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "else": {
+                                                                "actions": {
+                                                                    "Condition_-_Is_Current_SCU_not_equal_to_Min_SCU_2": {
+                                                                        "actions": {
+                                                                            "Create_or_update_a_resource_-_Inactive_Day": {
+                                                                                "type": "ApiConnection",
+                                                                                "inputs": {
+                                                                                    "host": {
+                                                                                        "connection": {
+                                                                                            "name": "@parameters('$connections')['arm']['connectionId']"
+                                                                                        }
+                                                                                    },
+                                                                                    "method": "put",
+                                                                                    "body": {
+                                                                                        "location": "@item()?['location']",
+                                                                                        "tags": "@body('Read_a_resource')?['tags']",
+                                                                                        "properties": {
+                                                                                            "numberOfUnits": "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Min']",
+                                                                                            "crossGeoCompute": "@{body('Read_a_resource')?['properties']['crossGeoCompute']}",
+                                                                                            "geo": "@{body('Read_a_resource')?['properties']['geo']}"
+                                                                                        }
+                                                                                    },
+                                                                                    "path": "/subscriptions/@{encodeURIComponent(split(item()?['id'], '/')[2])}/resourcegroups/@{encodeURIComponent(split(item()?['id'], '/')[4])}/providers/@{encodeURIComponent('Microsoft.SecurityCopilot')}/@{encodeURIComponent('capacities/',split(item()?['id'], '/')[8])}",
+                                                                                    "queries": {
+                                                                                        "x-ms-api-version": "2023-12-01-preview"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        "else": {
+                                                                            "actions": {}
+                                                                        },
+                                                                        "expression": {
+                                                                            "and": [
+                                                                                {
+                                                                                    "not": {
+                                                                                        "equals": [
+                                                                                            "@body('Read_a_resource')?['properties']['numberOfUnits']",
+                                                                                            "@body('Parse_CopilotforSecurity_Tag_JSON')?['SCULimits']?['Min']"
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "type": "If"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "expression": {
+                                                                "and": [
+                                                                    {
+                                                                        "contains": [
+                                                                            "@variables('varActiveDays')",
+                                                                            "@variables('varDayOfWeek')"
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "type": "If"
+                                                        },
+                                                        "Read_a_resource": {
+                                                            "type": "ApiConnection",
+                                                            "inputs": {
+                                                                "host": {
+                                                                    "connection": {
+                                                                        "name": "@parameters('$connections')['arm']['connectionId']"
+                                                                    }
+                                                                },
+                                                                "method": "get",
+                                                                "path": "/subscriptions/@{encodeURIComponent(split(item()?['id'], '/')[2])}/resourcegroups/@{encodeURIComponent(split(item()?['id'], '/')[4])}/providers/@{encodeURIComponent('Microsoft.SecurityCopilot')}/@{encodeURIComponent(concat('capacities/', split(item()?['id'], '/')[8]))}",
+                                                                "queries": {
+                                                                    "x-ms-api-version": "2023-12-01-preview"
+                                                                }
+                                                            }
+                                                        },
+                                                        "Set_variable_-_varActiveDays": {
+                                                            "runAfter": {
+                                                                "Set_variable_-_varDayOfWeek": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "SetVariable",
+                                                            "inputs": {
+                                                                "name": "varActiveDays",
+                                                                "value": "@body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['ActiveDays']"
+                                                            }
+                                                        },
+                                                        "Set_variable_-_varDayOfWeek": {
+                                                            "runAfter": {
+                                                                "Parse_CopilotforSecurity_Tag_JSON": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "SetVariable",
+                                                            "inputs": {
+                                                                "name": "varDayOfWeek",
+                                                                "value": "@int(dayOfWeek(addHours(utcNow(), body('Parse_CopilotforSecurity_Tag_JSON')?['Schedule']?['TimeOffset'])))"
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter": {
+                                                        "List_resources_by_subscription": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Foreach",
+                                                    "runtimeConfiguration": {
+                                                        "concurrency": {
+                                                            "repetitions": 1
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Initialize_varCleanTags": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Foreach",
+                                            "runtimeConfiguration": {
+                                                "concurrency": {
+                                                    "repetitions": 1
+                                                }
+                                            }
+                                        },
+                                        "Initialize_variable_-_varDayOfWeek": {
+                                            "runAfter": {
+                                                "List_subscriptions": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "InitializeVariable",
+                                            "inputs": {
+                                                "variables": [
+                                                    {
+                                                        "name": "varDayOfWeek",
+                                                        "type": "integer"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        "Initialize_varCleanTags": {
+                                            "runAfter": {
+                                                "Initialize_variable_-_varActiveDays": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "InitializeVariable",
+                                            "inputs": {
+                                                "variables": [
+                                                    {
+                                                        "name": "varCleanTags",
+                                                        "type": "object"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        "Initialize_variable_-_varActiveDays": {
+                                            "runAfter": {
+                                                "Initialize_variable_-_varDayOfWeek": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "InitializeVariable",
+                                            "inputs": {
+                                                "variables": [
+                                                    {
+                                                        "name": "varActiveDays",
+                                                        "type": "array"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "outputs": {}
+                                },
+                                "parameters": {
+                                    "$connections": {
+                                        "value": {
+                                            "arm": {
+                                                "connectionId": "[resourceId(subscription().subscriptionId,parameters('playbookResourceGroup'),'Microsoft.Web/connections', variables('ArmConnectionName'))]",
+                                                "connectionName": "[variables('ArmConnectionName')]",
+                                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('resourceLocation'), '/managedApis/arm')]",
+                                                "connectionProperties": {
+                                                    "authentication": {
+                                                        "type": "ManagedServiceIdentity"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "parameters": {}
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2021-04-01",
+            "name": "nestedTemplate",
+            "resourceGroup": "[parameters('sentinelResourceGroup')]",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "name": "[parameters('sentinelWorkbookId')]",
+                            "type": "microsoft.insights/workbooks",
+                            "location": "[parameters('resourceLocation')]",
+                            "apiVersion": "2022-04-01",
+                            "dependsOn": [],
+                            "kind": "shared",
+                            "properties": {
+                                "displayName": "[parameters('sentinelWorkbookDisplayName')]",
+                                "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"f368d9e2-9d09-4574-a430-f502386bbdd0\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Subscription\",\"type\":6,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"resourcecontainers\\r\\n| where type == \\\"microsoft.resources/subscriptions\\\"\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::all\"],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"value\":[\"value::all\"]},{\"id\":\"90fe1617-a8fd-46b3-aa4e-cd86cc1ab277\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"LogAnalyticsWorkspace\",\"label\":\"Log Analytics Workspace\",\"type\":5,\"isRequired\":true,\"query\":\"resources\\r\\n| where type == \\\"microsoft.operationalinsights/workspaces\\\"\",\"typeSettings\":{\"resourceTypeFilter\":{\"microsoft.operationalinsights/workspaces\":true},\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"8d055c65-cd00-4640-af41-693e9d444a73\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"SCUPrice\",\"label\":\"Price per SCU\",\"type\":1,\"isRequired\":true,\"query\":\"print \\\"4\\\"\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"ef17d7a7-8d54-41cd-91d6-b1ec220276a0\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"📖Help\",\"type\":10,\"description\":\"This displays getting started text to help you validate your solution, and work through visualizing and applying schedules to your Copilot for Security Compute Capacities.\",\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n { \\\"value\\\": \\\"Yes\\\", \\\"label\\\": \\\"Yes\\\"},\\r\\n { \\\"value\\\": \\\"No\\\", \\\"label\\\": \\\"No\\\", \\\"selected\\\":true }\\r\\n]\",\"timeContext\":{\"durationMs\":86400000}},{\"id\":\"83e8f941-0eeb-4614-b553-ae94d8dd5e1e\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ResourceId\",\"type\":1,\"query\":\"print ResourceId = \\\"Blank\\\"\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"3c398c1c-654f-4792-8c16-ac9232983454\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ResourceName\",\"type\":1,\"isHiddenWhenLocked\":true},{\"id\":\"1704ba63-2cf5-44b6-8762-30b24e505223\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"CurrentSCU\",\"type\":1,\"isHiddenWhenLocked\":true},{\"id\":\"4238ba76-54a2-4d73-a1fb-6429780df635\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"MinSCU\",\"label\":\"MinSCU Default\",\"type\":1,\"query\":\"print MinSCU = 0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"a3a2daa5-d024-4412-bfee-e37e25342d2d\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"MaxSCU\",\"label\":\"MaxSCU Default\",\"type\":1,\"query\":\"print MaxSCU = 0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"faa23c27-33f9-4587-801c-4e3a53565eec\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ActiveDays\",\"label\":\"High Usage Days Default\",\"type\":2,\"multiSelect\":true,\"quote\":\"\",\"delimiter\":\",\",\"query\":\"let NewActiveDays = datatable(value:int, label:string, selected:boolean) [\\r\\n0, \\\"Sunday\\\", false,\\r\\n1, \\\"Monday\\\", true,\\r\\n2, \\\"Tuesday\\\", true,\\r\\n3, \\\"Wednesday\\\", true,\\r\\n4, \\\"Thursday\\\", true,\\r\\n5, \\\"Friday\\\", true,\\r\\n6, \\\"Saturday\\\",false\\r\\n];\\r\\nNewActiveDays\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"247ee385-d118-4647-9539-3aa0bf4a6a8f\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ActiveStartHour\",\"label\":\"High Usage Start Time Default\",\"type\":1,\"isHiddenWhenLocked\":true,\"value\":\"9\"},{\"id\":\"0d08608a-793c-4e02-a5ef-1de3d490a64d\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ActiveEndHour\",\"label\":\"High Usage End Time Default\",\"type\":1,\"isHiddenWhenLocked\":true,\"value\":\"17\"},{\"id\":\"f6a6332c-62f5-4469-b318-276c6207b0bd\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"TimeOffset\",\"label\":\"Time Offset from UTC Default\",\"type\":1,\"isHiddenWhenLocked\":true,\"value\":\"0\"}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 2\"},{\"type\":1,\"content\":{\"json\":\"# Welcome to the Copilot for Security SCU Optimizer\\r\\n\\r\\nAuthor: Lachlan Watson\\r\\n\\r\\nThis solution will allow you to view and control the Copilot for Security Compute Capacity SCUs based on a schedule.<br>\\r\\nThe solution is created using 2 core components:\\r\\n- Sentinel Workbook - Copilot for Security SCU Optimizer\\r\\n- Playbook (Logic App) - Copilot for Security Scaler\\r\\n\\r\\nIn the event of a SOC operating in a more limited capacity than 24x7 such as 8x5 this can mean significant cost savings by allowing the playbook to scale the compute capacity according to the schedule that has been applied while still taking advantage of the robust capabilities from Copilot for Security.<br>\\r\\n\\r\\nIf you do not already have the Playbook deployed, refer to the solution documentation for complete install instructions:\\r\\n[Solution Documentation](https://aka.ms/cfsscuoptimizer)\\r\\n\\r\\n![Solution Architecture](https://raw.githubusercontent.com/LSLWatson/CopilotforSecurity/main/Copilot_For_Security_Optimizer/images/Copilot_For-Security_Optimizer_solution-architecture.png)\\r\\n\\r\\nThe Copilot for Security SCU Optimizer solution offers 3 core features:<br>\\r\\n\\r\\n1. View - Security teams can view existing scheduling (or lack there of) on a Compute Capacity, and displays predicted costs of the solution\\r\\n\\r\\n2. Modify - Security architects can add/modify existing schedules, view cost calculations based on the new schedule, and compare it with the existing config. This is achieved by applying a Resource Tag called: **CopilotforSecurityConfig**.\\r\\n\\r\\n3. Apply - Finally, the Playbook/LogicApp runs hourly (5 minutes after the hour, to avoid conflict with other automations), to find resources with the CopilotforSecurityConfig tag applied, then for each compute capacity evaluates high usage schedule configuration to determine the correct SCU count, then applies if any changes need to be made.\\r\\n\\r\\nThe CopilotforSecurityConfig tag holds the information required by the Playbook to apply separate configs across multiple compute capacities.\\r\\n\\r\\n## Usage\\r\\n**Requirements:**\\r\\n- View - Reader access is required to see the Copilot for Security Compute Capacity\\r\\n\\r\\n- Apply/Edit - Contributor access of some kind is required to the Copilot for Security Compute Capacity for any users who will be modifying the schedule since it works by applying Resource Tags.\\r\\n\\r\\n**Steps**\\r\\n\\r\\n1. Select a Copilot for Security Compute Capacity. In the View tab you will see if there is or is not a schedule applied to that Compute Capacity, and a visualization of the deployed SCU capacities over time.\\r\\n2. Select the Add/Edit Schedule tab, enter the desired schedule to review the cost changes based on your team's standard work hours.\\r\\n3. When ready, select the **Apply Configuration** button to deploy the Resource Tags.\\r\\n4. When the next hour rolls around, the Playbook/Logic app will trigger, evaluate the Resource Tag, and apply the appropriate SCU limit to the Compute Capacity.\\r\\n    - This can also be manually triggered if you'd like to enforce the change immediately.\",\"style\":\"info\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Yes\"},\"name\":\"help - 1\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"resources\\r\\n| where type =~ 'microsoft.securitycopilot/capacities'\\r\\n| project name, id, location, resourceGroup,subscriptionId,['Current SCU'] = tostring(properties.numberOfUnits),['Cross-Geo Compute'] = tostring(properties.crossGeoCompute), ResourceTags = todynamic(tags)\\r\\n| extend CFSConfig = tostring(ResourceTags.CopilotforSecurityConfig)\\r\\n| extend HasConfig = iff (isempty(CFSConfig), False, True)\\r\\n| extend SCULimits = parse_json(CFSConfig).SCULimits, Schedule = parse_json(CFSConfig).Schedule\\r\\n| extend MinSCU = coalesce(toint(SCULimits.Min),toint(['Current SCU'])),\\r\\n        MaxSCU = coalesce(toint(SCULimits.Max),toint(['Current SCU'])),\\r\\n        ActiveDays = iff(isnotempty(Schedule.ActiveDays), todynamic(Schedule.ActiveDays),dynamic[{ActiveDays}])),\\r\\n        ActiveStartHour = coalesce(toint(Schedule.ActiveStartHour),{ActiveStartHour}),\\r\\n        ActiveEndHour = coalesce(toint(Schedule.ActiveEndHour),{ActiveEndHour}),\\r\\n        TimeOffset = coalesce(toint(Schedule.TimeOffset),{TimeOffset})\\r\\n//| project ActiveEndHour\\r\\n| extend  CostPerSCU = {SCUPrice}\\r\\n| extend HighUsageHours = iff(HasConfig==True, (ActiveEndHour - ActiveStartHour)* array_length(ActiveDays), 0)\\r\\n| extend LowUsageHours = ((24*7) - HighUsageHours), HighSCU = HighUsageHours * MaxSCU\\r\\n| extend LowSCU = LowUsageHours * MinSCU\\r\\n| extend TotalSCU = LowSCU + HighSCU\\r\\n| extend WeeklySCUCost = TotalSCU * CostPerSCU\\r\\n| extend MonthlySCUCost = (WeeklySCUCost/7) * 30\\r\\n| extend ConfigStatus = case(\\r\\n    isempty(CFSConfig), \\\"❌ Config Missing\\\",\\r\\n    \\\"✅ Config Present\\\")\\r\\n\\r\\n\\r\\n\",\"size\":4,\"title\":\"Select a Copilot for Security Compute Capacity:\",\"exportedParameters\":[{\"fieldName\":\"id\",\"parameterName\":\"ResourceId\",\"parameterType\":5},{\"fieldName\":\"name\",\"parameterName\":\"ResourceName\",\"parameterType\":1},{\"fieldName\":\"Current SCU\",\"parameterName\":\"CurrentSCU\",\"parameterType\":1},{\"fieldName\":\"MinSCU\",\"parameterName\":\"MinSCU\",\"parameterType\":1},{\"fieldName\":\"MaxSCU\",\"parameterName\":\"MaxSCU\",\"parameterType\":1},{\"fieldName\":\"ActiveDays\",\"parameterName\":\"ActiveDays\",\"parameterType\":1},{\"fieldName\":\"ActiveStartHour\",\"parameterName\":\"ActiveStartHour\",\"parameterType\":1},{\"fieldName\":\"ActiveEndHour\",\"parameterName\":\"ActiveEndHour\",\"parameterType\":1},{\"fieldName\":\"CostPerSCU\",\"parameterName\":\"CostPerSCU\",\"parameterType\":1},{\"fieldName\":\"HighUsageHours\",\"parameterName\":\"HighUsageHours\",\"parameterType\":1},{\"fieldName\":\"LowUsageHours\",\"parameterName\":\"LowUsageHours\",\"parameterType\":1},{\"fieldName\":\"TotalSCU\",\"parameterName\":\"TotalSCU\",\"parameterType\":1},{\"fieldName\":\"WeeklySCUCost\",\"parameterName\":\"WeeklySCUCost\",\"parameterType\":1},{\"fieldName\":\"ConfigStatus\",\"parameterName\":\"ConfigStatus\",\"parameterType\":1},{\"fieldName\":\"TimeOffset\",\"parameterName\":\"TimeOffset\",\"parameterType\":1},{\"fieldName\":\"ResourceTags\",\"parameterName\":\"ResourceTags\",\"parameterType\":1},{\"fieldName\":\"MonthlySCUCost\",\"parameterName\":\"MonthlySCUCost\",\"parameterType\":1},{\"fieldName\":\"HasConfig\",\"parameterName\":\"HasConfig\",\"parameterType\":1}],\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"crossComponentResources\":[\"{Subscription}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"name\",\"formatter\":5},{\"columnMatch\":\"ResourceTags\",\"formatter\":5},{\"columnMatch\":\"CFSConfig\",\"formatter\":5},{\"columnMatch\":\"HasConfig\",\"formatter\":5},{\"columnMatch\":\"SCULimits\",\"formatter\":5},{\"columnMatch\":\"Schedule\",\"formatter\":5},{\"columnMatch\":\"MinSCU\",\"formatter\":5},{\"columnMatch\":\"MaxSCU\",\"formatter\":5},{\"columnMatch\":\"ActiveDays\",\"formatter\":5},{\"columnMatch\":\"ActiveStartHour\",\"formatter\":5},{\"columnMatch\":\"ActiveEndHour\",\"formatter\":5},{\"columnMatch\":\"TimeOffset\",\"formatter\":5},{\"columnMatch\":\"CostPerSCU\",\"formatter\":5},{\"columnMatch\":\"HighUsageHours\",\"formatter\":5},{\"columnMatch\":\"LowUsageHours\",\"formatter\":5},{\"columnMatch\":\"HighSCU\",\"formatter\":5},{\"columnMatch\":\"LowSCU\",\"formatter\":5},{\"columnMatch\":\"TotalSCU\",\"formatter\":5},{\"columnMatch\":\"WeeklySCUCost\",\"formatter\":5},{\"columnMatch\":\"MonthlySCUCost\",\"formatter\":5}],\"rowLimit\":10},\"sortBy\":[]},\"name\":\"query - 1\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"parameters\":[{\"id\":\"0ac976dd-c7bf-4d11-a68b-5956248370ce\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ActiveDays\",\"type\":2,\"multiSelect\":true,\"quote\":\" \",\"delimiter\":\",\",\"query\":\"let ActiveDays = datatable(value:int, label:string) [\\r\\n0, \\\"Sunday\\\",\\r\\n1, \\\"Monday\\\",\\r\\n2, \\\"Tuesday\\\",\\r\\n3, \\\"Wednesday\\\",\\r\\n4, \\\"Thursday\\\",\\r\\n5, \\\"Friday\\\",\\r\\n6, \\\"Saturday\\\"\\r\\n];\\r\\nActiveDays\\r\\n| project value, label, selected = iff(value in ({ActiveDays}), true, false)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 6\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"tabs\",\"links\":[{\"id\":\"ba7a9242-cae1-49b8-8807-a35b81f10e6f\",\"cellValue\":\"Nav\",\"linkTarget\":\"parameter\",\"linkLabel\":\"View Config\",\"subTarget\":\"View\",\"preText\":\"View Config\",\"style\":\"link\"},{\"id\":\"70318539-7291-4d95-85f9-30cd7ccfa38c\",\"cellValue\":\"Nav\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Add/Edit Schedule\",\"subTarget\":\"Edit\",\"preText\":\"Edit Config\",\"style\":\"link\"},{\"id\":\"faee09e3-ebf2-4b0f-8fd8-138e00631395\",\"cellValue\":\"https://learn.microsoft.com/en-us/copilot/security/whats-new-copilot-security\",\"linkTarget\":\"Url\",\"linkLabel\":\"What's New?\",\"style\":\"link\"}]},\"conditionalVisibility\":{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"Blank\"},\"name\":\"links - 4\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"parameters\":[{\"id\":\"d6cb9b36-2e00-4ab0-ac93-4f0d54ba1073\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewMinSCU\",\"label\":\"Minimum SCU\",\"type\":2,\"query\":\"range SCU from 1 to 10 step 1\\r\\n| project value = SCU, label = strcat(SCU, iff(SCU>1,\\\" SCUs\\\", \\\" SCU\\\")), selected = iff(SCU == toint({MinSCU}), true, false)\\r\\n\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"994f321e-5368-4269-a564-04208f7b5888\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewMaxSCU\",\"label\":\"Maximum SCU\",\"type\":2,\"query\":\"range SCU from 1 to 10 step 1\\r\\n| project value = SCU, label = strcat(SCU, iff(SCU>1,\\\" SCUs\\\", \\\" SCU\\\")), selected = iff(SCU == toint({MaxSCU}), true, false)\\r\\n\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"5d386c57-3b13-43e9-a365-4999c0a6092f\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewActiveDays\",\"label\":\"High Usage Days\",\"type\":2,\"multiSelect\":true,\"quote\":\"\",\"delimiter\":\",\",\"query\":\"let NewActiveDays = datatable(value:int, label:string) [\\r\\n0, \\\"Sunday\\\",\\r\\n1, \\\"Monday\\\",\\r\\n2, \\\"Tuesday\\\",\\r\\n3, \\\"Wednesday\\\",\\r\\n4, \\\"Thursday\\\",\\r\\n5, \\\"Friday\\\",\\r\\n6, \\\"Saturday\\\"\\r\\n];\\r\\nNewActiveDays\\r\\n| project value, label, selected = iff(value in ({ActiveDays}), true, false)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"4dd28d31-e64c-4233-acad-d78049f9c639\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewActiveStartHour\",\"label\":\"High Usage Start Hour\",\"type\":2,\"query\":\"let NewActiveStartHour = datatable(value:int, label:string)[\\r\\n     0,\\\"12 AM (Midnight)\\\",\\r\\n     1,\\\"1 AM\\\",\\r\\n     2,\\\"2 AM\\\" ,\\r\\n     3,\\\"3 AM\\\" ,\\r\\n     4,\\\"4 AM\\\" ,\\r\\n     5,\\\"5 AM\\\" ,\\r\\n     6,\\\"6 AM\\\" ,\\r\\n     7,\\\"7 AM\\\" ,\\r\\n     8,\\\"8 AM\\\" ,\\r\\n     9,\\\"9 AM\\\" ,\\r\\n     10,\\\"10 AM\\\" ,\\r\\n     11,\\\"11 AM\\\" ,\\r\\n     12,\\\"12 PM (Noon)\\\" ,\\r\\n     13,\\\"1 PM\\\" ,\\r\\n     14,\\\"2 PM\\\" ,\\r\\n     15,\\\"3 PM\\\" ,\\r\\n     16,\\\"4 PM\\\" ,\\r\\n     17,\\\"5 PM\\\" ,\\r\\n     18,\\\"6 PM\\\" ,\\r\\n     19,\\\"7 PM\\\" ,\\r\\n     20,\\\"8 PM\\\" ,\\r\\n     21,\\\"9 PM\\\" ,\\r\\n     22,\\\"10 PM\\\" ,\\r\\n     23,\\\"11 PM\\\" \\r\\n];\\r\\nNewActiveStartHour\\r\\n|project value, label, selected = iff(value == {ActiveStartHour}, true, false)\\r\\n\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"320bfeaa-ee23-4fbf-9e9d-067e5ed915f8\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewActiveEndHour\",\"label\":\"High Usage End Hour\",\"type\":2,\"query\":\"let NewActiveEndHour = datatable(value:int, label:string)[\\r\\n     0,\\\"12 AM (Midnight)\\\",\\r\\n     1,\\\"1 AM\\\",\\r\\n     2,\\\"2 AM\\\" ,\\r\\n     3,\\\"3 AM\\\" ,\\r\\n     4,\\\"4 AM\\\" ,\\r\\n     5,\\\"5 AM\\\" ,\\r\\n     6,\\\"6 AM\\\" ,\\r\\n     7,\\\"7 AM\\\" ,\\r\\n     8,\\\"8 AM\\\" ,\\r\\n     9,\\\"9 AM\\\" ,\\r\\n     10,\\\"10 AM\\\" ,\\r\\n     11,\\\"11 AM\\\" ,\\r\\n     12,\\\"12 PM (Noon)\\\" ,\\r\\n     13,\\\"1 PM\\\" ,\\r\\n     14,\\\"2 PM\\\" ,\\r\\n     15,\\\"3 PM\\\" ,\\r\\n     16,\\\"4 PM\\\" ,\\r\\n     17,\\\"5 PM\\\" ,\\r\\n     18,\\\"6 PM\\\" ,\\r\\n     19,\\\"7 PM\\\" ,\\r\\n     20,\\\"8 PM\\\" ,\\r\\n     21,\\\"9 PM\\\" ,\\r\\n     22,\\\"10 PM\\\" ,\\r\\n     23,\\\"11 PM\\\" \\r\\n];\\r\\nNewActiveEndHour\\r\\n|project value, label, selected = iff(value == {ActiveEndHour}, true, false)\\r\\n\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"e72ccd8d-43cd-4d3d-986e-3dd65151809f\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewTimeOffset\",\"label\":\"UTC Time Offset\",\"type\":2,\"query\":\"let NewActiveStartHour = datatable(value:int, label:string)[\\r\\n     -12,\\\"-12 Hours\\\",\\r\\n     -11,\\\"-11 Hours\\\",\\r\\n     -10,\\\"-10 Hours\\\" ,\\r\\n     -9,\\\"-9 Hours\\\" ,\\r\\n     -8,\\\"-8 Hours\\\" ,\\r\\n     -7,\\\"-7 Hours\\\" ,\\r\\n     -6,\\\"-6 Hours\\\" ,\\r\\n     -5,\\\"-5 Hours\\\" ,\\r\\n     -4,\\\"-4 Hours\\\" ,\\r\\n     -3,\\\"-3  Hours\\\" ,\\r\\n     -2,\\\"-2  Hours\\\" ,\\r\\n     -1,\\\"-1  Hour\\\" ,\\r\\n     0,\\\"0 Hours\\\" ,\\r\\n     1,\\\"+1 Hour\\\" ,\\r\\n     2,\\\"+2 Hours\\\" ,\\r\\n     3,\\\"+3 Hours\\\" ,\\r\\n     4,\\\"+4 Hours\\\" ,\\r\\n     5,\\\"+5 Hours\\\" ,\\r\\n     6,\\\"+6 Hours\\\" ,\\r\\n     7,\\\"+7 Hours\\\" ,\\r\\n     8,\\\"+8 Hours\\\" ,\\r\\n     9,\\\"+9 Hours\\\" ,\\r\\n     10,\\\"+10 Hours\\\" ,\\r\\n     11,\\\"+11 Hours\\\" ,\\r\\n     12,\\\"+12 Hours\\\" \\r\\n];\\r\\nNewActiveStartHour\\r\\n|project value, label, selected = iff(value == {TimeOffset}, true, false)\\r\\n\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"61c24dd2-b52e-4002-ac46-045e2f07e355\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"MinOverMax\",\"type\":1,\"query\":\"print MinOverMax = iff({NewMinSCU} > {NewMaxSCU}, true, false)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"}],\"style\":\"above\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 5\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"parameters\":[{\"id\":\"1ffcd520-6411-48c3-a8ed-50c353b3efa5\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewHighUsageHours\",\"label\":\"High Usage Hours\",\"type\":1,\"query\":\"let NewActiveDays = dynamic([{NewActiveDays}]);\\r\\nlet NewHighHours = ({NewActiveEndHour} - {NewActiveStartHour})* array_length(NewActiveDays);\\r\\nprint NewHighHours = tostring(NewHighHours)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"2f383967-6870-447d-8370-205672262861\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewLowUsageHours\",\"label\":\"Low Usage Hours\",\"type\":1,\"query\":\"let NewLowUsageHours = (24*7) - tolong({NewHighUsageHours});\\r\\nprint NewLowUsageHours = NewLowUsageHours\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"319da61d-d14d-4588-982e-99d108ae7d26\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewLowSCU\",\"label\":\"Low Total SCU\",\"type\":1,\"query\":\"let LowTotalSCU = {NewLowUsageHours} * {NewMinSCU};\\r\\nprint LowTotalSCU = LowTotalSCU\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"de38bd75-34ae-442e-b1fd-f5522346b9d1\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewHighSCU\",\"label\":\"High Total SCU\",\"type\":1,\"query\":\"let HighUsageSCU = tolong({NewHighUsageHours}) * tolong({NewMaxSCU});\\r\\nprint HighUsageSCU = tostring(HighUsageSCU)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"81ae5141-7c19-4d72-8d83-0251d5f002f6\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewTotalSCU\",\"label\":\"Total Weekly SCU\",\"type\":1,\"query\":\"let NewTotalSCU = tolong({NewLowSCU}) + tolong({NewHighSCU});\\r\\nprint NewTotalSCU = NewTotalSCU\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"5a91a140-2b88-4e8f-b810-e5533ffbfe8f\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewWeeklySCUCost\",\"label\":\"Total Weekly SCU Cost\",\"type\":1,\"query\":\"let NewWeeklySCUCost = tolong({NewTotalSCU}) * tolong({CostPerSCU});\\r\\nprint NewWeeklySCUCost = tostring(NewWeeklySCUCost)\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"b78a669f-30c0-4720-b94c-ec6d49966feb\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewMonthlySCUCost\",\"label\":\"Total Monthly SCU Cost\",\"type\":1,\"query\":\"let NewMonthlySCUCost = (({NewWeeklySCUCost})/7) * 30;\\r\\nprint NewMonthlySCUCost = NewMonthlySCUCost\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"aac7ddd9-5c17-40ab-9262-954d0ef51a28\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"WeeklyDiff\",\"label\":\"Estimated Weekly Change\",\"type\":1,\"query\":\"let WeeklySCUCost = tolong({TotalSCU}) * tolong({CostPerSCU});\\r\\nlet NewWeeklySCUCost = tolong({NewTotalSCU}) * tolong({CostPerSCU});\\r\\nprint WeeklyDifference = NewWeeklySCUCost - WeeklySCUCost\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"9687f227-0cb5-49b7-a636-05cb76a4df1c\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"MonthlyDiff\",\"label\":\"Estimated Monthly Change\",\"type\":1,\"query\":\"let WeeklySCUCost = {TotalSCU} * {CostPerSCU};\\r\\nlet NewWeeklySCUCost = {NewTotalSCU} * {CostPerSCU};\\r\\nlet MonthlySCUCost = round(({WeeklySCUCost}/7)*30,0);\\r\\nlet NewMonthlySCUCost = round(({NewWeeklySCUCost}/7)*30,0);\\r\\nprint MonthlyDifference = NewMonthlySCUCost - MonthlySCUCost\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"a5eef48e-d661-44e6-b81f-86363a6f773e\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"LocalTime\",\"type\":1,\"query\":\"let LocalDate = datetime_add('hour', {NewTimeOffset}, now());\\r\\nprint LocalTime = format_datetime(LocalDate, 'h:mm tt')\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},{\"id\":\"9739a6a5-6b5c-4290-85db-28cfe659828a\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"NewActiveDaysLabel\",\"type\":1,\"query\":\"let ActiveDays= \\\"{NewActiveDays}\\\";\\r\\nprint ActiveDayLabel = ActiveDays\\r\\n| extend ActiveDayLabel = replace_strings(\\r\\n        ActiveDays,\\r\\n        dynamic(['0', '1', '2', '3', '4', '5', '6']),\\r\\n        dynamic([' Sunday', ' Monday', ' Tuesday', ' Wednesday', ' Thursday', ' Friday', 'Saturday']))\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 6\"},{\"type\":1,\"content\":{\"json\":\"**Note**\\r\\nThe Minimum SCU value must be less than, or equal to Maximum SCU\",\"style\":\"error\"},\"conditionalVisibility\":{\"parameterName\":\"MinOverMax\",\"comparison\":\"isEqualTo\",\"value\":\"true\"},\"name\":\"text - 3\"},{\"type\":1,\"content\":{\"json\":\"### Validate UTC Offset with Local time:\\r\\n\\r\\n#### Local Time as of last refresh: {LocalTime}\"},\"name\":\"text - 6\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"paragraph\",\"links\":[{\"id\":\"1092f1f7-166e-4745-9483-e2adb861f262\",\"linkTarget\":\"ArmAction\",\"linkLabel\":\"Apply Configuration\",\"preText\":\"\",\"style\":\"primary\",\"linkIsContextBlade\":true,\"armActionContext\":{\"path\":\"{ResourceId}/providers/Microsoft.Resources/tags/default?api-version=2022-09-01\",\"headers\":[],\"params\":[],\"body\":\"{\\r\\n        \\\"operation\\\": \\\"Merge\\\",\\r\\n        \\\"properties\\\": {\\r\\n          \\\"tags\\\": {\\r\\n            \\\"CopilotforSecurityConfig\\\": \\\"{ \\\\\\\"SCULimits\\\\\\\": { \\\\\\\"Min\\\\\\\": {NewMinSCU}, \\\\\\\"Max\\\\\\\": {NewMaxSCU} }, \\\\\\\"Schedule\\\\\\\": { \\\\\\\"ActiveDays\\\\\\\": [{NewActiveDays}], \\\\\\\"ActiveStartHour\\\\\\\": {NewActiveStartHour}, \\\\\\\"ActiveEndHour\\\\\\\": {NewActiveEndHour}, \\\\\\\"TimeOffset\\\\\\\": {NewTimeOffset}}}\\\"\\r\\n          }\\r\\n        }\\r\\n      }\",\"httpMethod\":\"PATCH\",\"title\":\"Add/Modify Copilot for Security Resource Tag\",\"description\":\"# This action adds/modifies the Copilot for Security resource tags\\n## This change, when paired with the Copilot for Security Scaler logic app can impact the performance and costs associated with Copilot for Security Compute Capacities\\n\\n## Please note: changes to resource tags will not immediately be reflected in the workbook, and may require 30 seconds before manually refreshing\"}}]},\"conditionalVisibility\":{\"parameterName\":\"MinOverMax\",\"comparison\":\"isNotEqualTo\",\"value\":\"true\"},\"name\":\"links - 2\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let StartDate = startofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet EndDate = endofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet ActiveDays=dynamic([{NewActiveDays}]);\\r\\nlet ResourceName = \\\"{ResourceName}\\\";\\r\\nlet MinSCU = toint({NewMinSCU});\\r\\nlet MaxSCU = toint({NewMaxSCU});\\r\\nlet ActiveStartHour = {NewActiveStartHour};\\r\\nlet ActiveEndHour = {NewActiveEndHour};\\r\\nrange TimeDate from StartDate to EndDate step 1h\\r\\n| extend DayofWeek = toint(dayofweek(TimeDate)/1d), HourofDay = hourofday(datetime_add(\\\"hour\\\", {TimeOffset}, TimeDate))\\r\\n| extend SCU = iff(DayofWeek in (ActiveDays) and (HourofDay >= ActiveStartHour and HourofDay < ActiveEndHour), MaxSCU, MinSCU)\\r\\n| project-away DayofWeek,HourofDay\",\"size\":1,\"title\":\"Projected weekly schedule for {ResourceName}\",\"color\":\"green\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"barchart\",\"chartSettings\":{\"seriesLabelSettings\":[{\"seriesName\":\"SCU\",\"color\":\"green\"},{\"seriesName\":\"$_thresholdLine\",\"color\":\"greenDarkDark\"}],\"customThresholdLine\":\"{NewMinSCU}\",\"customThresholdLineStyle\":0,\"ySettings\":{\"numberFormatSettings\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":true}},\"min\":0}}},\"name\":\"query - 2 - Copy\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"### Scheduled Capacity\"},\"customWidth\":\"50\",\"name\":\"text - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### High Usage Times\"},\"customWidth\":\"50\",\"name\":\"text - 7\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let MinMax = datatable(label:string, label2: string, value:string, )[\\r\\n    \\\"Low Usage Capacity\\\",\\\"SCU(s)\\\", \\\"{NewMinSCU}\\\",\\r\\n    \\\"High Usage Capacity\\\", \\\"SCU(s)\\\", \\\"{NewMaxSCU}\\\"\\r\\n    ];\\r\\nMinMax\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"blue\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\"}}},\"rightContent\":{\"columnMatch\":\"label2\",\"formatter\":1,\"formatOptions\":{\"compositeBarSettings\":{\"labelText\":\"\",\"columnSettings\":[]}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 3\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"\\r\\n> ## {NewActiveDaysLabel}\\r\\n\"},\"customWidth\":\"50\",\"name\":\"text - 4\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Weekly High Usage SCUs\\\", \\\"{NewHighUsageHours}\\\",\\r\\n    \\\"Weekly Low Usage SCUs\\\", \\\"{NewLowUsageHours}\\\",\\r\\n    \\\"Weekly Total SCUs\\\", \\\"{NewTotalSCU}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"purple\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 5\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let ActiveHours = datatable(label:string, label2: string, value:string, )[\\r\\n    \\\"Start Time\\\",\\\"hours\\\", \\\"{NewActiveStartHour}\\\",\\r\\n    \\\"End Time\\\",\\\"hours\\\", \\\"{NewActiveEndHour}\\\",\\r\\n    \\\"Time Offset from UTC\\\", \\\"hours\\\", \\\"{NewTimeOffset}\\\",\\r\\n    ];\\r\\nActiveHours\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"green\"},\"numberFormat\":{\"unit\":26,\"options\":{\"style\":\"decimal\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 4\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### Cost Estimates\"},\"customWidth\":\"50\",\"name\":\"text - 8\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### Change from Current Schedule\"},\"customWidth\":\"50\",\"name\":\"text - 9\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Cost Per SCU\\\", \\\"{SCUPrice}\\\",\\r\\n    \\\"Weekly Estimated Cost\\\", \\\"{NewWeeklySCUCost}\\\",\\r\\n    \\\"Monthly Estimated Cost\\\", \\\"{NewMonthlySCUCost}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"palette\":\"turquoise\"},\"numberFormat\":{\"unit\":0,\"options\":{\"currency\":\"USD\",\"style\":\"currency\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Weekly Change\\\", \\\"{WeeklyDiff}\\\",\\r\\n    \\\"Monthly Change\\\", \\\"{MonthlyDiff}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":-1000,\"max\":1000,\"palette\":\"purpleBlueGreen\"},\"numberFormat\":{\"unit\":0,\"options\":{\"currency\":\"USD\",\"style\":\"currency\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 5\",\"styleSettings\":{\"maxWidth\":\"50%\"}}]},\"customWidth\":\"100\",\"name\":\"StatGroup - Copy\"}]},\"conditionalVisibilities\":[{\"parameterName\":\"Nav\",\"comparison\":\"isEqualTo\",\"value\":\"Edit\"},{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"Blank\"}],\"name\":\"EditConfig\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"items\":[{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"\\r\\nlet StartDate = startofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet EndDate = endofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet ActiveDays=dynamic([{ActiveDays}]);\\r\\nlet ResourceName = \\\"{ResourceName}\\\";\\r\\nlet MinSCU = {MinSCU};\\r\\nlet MaxSCU = {MaxSCU};\\r\\nlet CurrentSCU = {CurrentSCU};\\r\\nlet ActiveStartHour = {ActiveStartHour};\\r\\nlet ActiveEndHour = {ActiveEndHour};\\r\\nrange TimeDate from StartDate to EndDate step 1h\\r\\n| extend DayofWeek = toint(dayofweek(TimeDate)/1d), HourofDay = hourofday(datetime_add(\\\"hour\\\", {TimeOffset}, TimeDate))\\r\\n| extend SCU = iff(isnotempty(ActiveDays),iff(DayofWeek in (ActiveDays) and (HourofDay >= ActiveStartHour and HourofDay < ActiveEndHour), MaxSCU, MinSCU),CurrentSCU)\\r\\n| project-away DayofWeek,HourofDay\",\"size\":1,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"barchart\",\"chartSettings\":{\"seriesLabelSettings\":[{\"seriesName\":\"SCU\",\"color\":\"blue\"},{\"seriesName\":\"$_thresholdLine\",\"label\":\"Minimum SCU\",\"color\":\"blueDark\"}],\"customThresholdLine\":\"{MinSCU}\",\"customThresholdLineStyle\":0,\"xSettings\":{\"numberFormatSettings\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":true}}},\"ySettings\":{\"numberFormatSettings\":{\"unit\":0,\"options\":{\"style\":\"decimal\",\"useGrouping\":true}}}}},\"name\":\"query - 6\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"parameters\":[{\"id\":\"180d4c94-2bd1-4f45-ad4a-066074a286fc\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"ActiveDaysLabel\",\"type\":1,\"query\":\"let ActiveDays= \\\"{ActiveDays}\\\";\\r\\nprint ActiveDayLabel = ActiveDays\\r\\n| extend ActiveDayLabel = replace_strings(\\r\\n        ActiveDays,\\r\\n        dynamic(['0', '1', '2', '3', '4', '5', '6']),\\r\\n        dynamic([' Sunday', ' Monday', ' Tuesday', ' Wednesday', ' Thursday', ' Friday', 'Saturday']))\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"isHiddenWhenLocked\":true,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 2\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"### Scheduled Capacity\"},\"customWidth\":\"50\",\"name\":\"text - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### High Usage Times\"},\"customWidth\":\"50\",\"name\":\"text - 7\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let MinMax = datatable(label:string, label2: string, value:string, )[\\r\\n    \\\"Low Usage Capacity\\\",\\\"SCU(s)\\\", \\\"{MinSCU}\\\",\\r\\n    \\\"High Usage Capacity\\\", \\\"SCU(s)\\\", \\\"{MaxSCU}\\\"\\r\\n    ];\\r\\nMinMax\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"blue\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\"}}},\"rightContent\":{\"columnMatch\":\"label2\",\"formatter\":1,\"formatOptions\":{\"compositeBarSettings\":{\"labelText\":\"\",\"columnSettings\":[]}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 3\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"\\r\\n> ## {ActiveDaysLabel}\\r\\n\"},\"customWidth\":\"50\",\"name\":\"text - 4\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Weekly High Usage SCUs\\\", \\\"{HighUsageHours}\\\",\\r\\n    \\\"Weekly Low Usage SCUs\\\", \\\"{LowUsageHours}\\\",\\r\\n    \\\"Weekly Total SCUs\\\", \\\"{TotalSCU}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"purple\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 5\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let ActiveHours = datatable(label:string, label2: string, value:string, )[\\r\\n    \\\"Start Time\\\",\\\"hours\\\", \\\"{ActiveStartHour}\\\",\\r\\n    \\\"End Time\\\",\\\"hours\\\", \\\"{ActiveEndHour}\\\",\\r\\n    \\\"Time Offset from UTC\\\", \\\"hours\\\", \\\"{TimeOffset}\\\",\\r\\n    ];\\r\\nActiveHours\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"green\"},\"numberFormat\":{\"unit\":26,\"options\":{\"style\":\"decimal\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 4\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### Cost Estimates\"},\"customWidth\":\"100\",\"name\":\"text - 8\",\"styleSettings\":{\"maxWidth\":\"100%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Cost Per SCU\\\", \\\"{SCUPrice}\\\",\\r\\n    \\\"Weekly Estimated Cost\\\", \\\"{WeeklySCUCost}\\\",\\r\\n    \\\"Monthly Estimated Cost\\\", \\\"{MonthlySCUCost}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{LogAnalyticsWorkspace}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"palette\":\"turquoise\"},\"numberFormat\":{\"unit\":0,\"options\":{\"currency\":\"USD\",\"style\":\"currency\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}}]},\"customWidth\":\"100\",\"name\":\"StatGroup - ViewGroup\"}],\"exportParameters\":true},\"conditionalVisibilities\":[{\"parameterName\":\"Nav\",\"comparison\":\"isEqualTo\",\"value\":\"View\"},{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"Blank\"},{\"parameterName\":\"HasConfig\",\"comparison\":\"isEqualTo\",\"value\":\"1\"}],\"name\":\"ViewScheduleGroup\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"items\":[{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"\\r\\nlet StartDate = startofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet EndDate = endofweek(datetime_add(\\\"hour\\\", {TimeOffset}, now()));\\r\\nlet ActiveDays=dynamic([{ActiveDays}]);\\r\\nlet ResourceName = \\\"{ResourceName}\\\";\\r\\nlet MinSCU = {MinSCU};\\r\\nlet MaxSCU = {MaxSCU};\\r\\nlet CurrentSCU = {CurrentSCU};\\r\\nlet ActiveStartHour = {ActiveStartHour};\\r\\nlet ActiveEndHour = {ActiveEndHour};\\r\\nrange TimeDate from StartDate to EndDate step 1h\\r\\n| extend DayofWeek = toint(dayofweek(TimeDate)/1d), HourofDay = hourofday(datetime_add(\\\"hour\\\", {TimeOffset}, TimeDate))\\r\\n| extend SCU = iff(isnotempty(ActiveDays),iff(DayofWeek in (ActiveDays) and (HourofDay >= ActiveStartHour and HourofDay < ActiveEndHour), MaxSCU, MinSCU),CurrentSCU)\\r\\n| project-away DayofWeek,HourofDay\",\"size\":1,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"barchart\",\"chartSettings\":{\"seriesLabelSettings\":[{\"seriesName\":\"SCU\",\"color\":\"blue\"},{\"seriesName\":\"$_thresholdLine\",\"label\":\"Minimum SCU\",\"color\":\"blueDark\"}],\"customThresholdLine\":\"{MinSCU}\",\"customThresholdLineStyle\":0,\"xSettings\":{\"numberFormatSettings\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":true}}},\"ySettings\":{\"numberFormatSettings\":{\"unit\":0,\"options\":{\"style\":\"decimal\",\"useGrouping\":true}}}}},\"name\":\"query - 6\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"### Configured Capacity\"},\"customWidth\":\"50\",\"name\":\"text - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":1,\"content\":{\"json\":\"### Cost Estimates\"},\"customWidth\":\"50\",\"name\":\"text - 8\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let SCUCapacity = datatable(label:string, label2: string, value:string, )[\\r\\n    \\\"Hourly Capacity\\\",\\\"SCU(s)\\\", \\\"{CurrentSCU}\\\",\\r\\n    \\\"Weekly Total SCUs\\\",\\\"SCU(s)\\\", \\\"{TotalSCU}\\\"\\r\\n    ];\\r\\nSCUCapacity\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"min\":0,\"palette\":\"blue\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\"}}},\"rightContent\":{\"columnMatch\":\"label2\",\"formatter\":1,\"formatOptions\":{\"compositeBarSettings\":{\"labelText\":\"\",\"columnSettings\":[]}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 3\",\"styleSettings\":{\"maxWidth\":\"50%\"}},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let Summaries = datatable(label:string,value:string, )[\\r\\n    \\\"Cost Per SCU\\\", \\\"{SCUPrice}\\\",\\r\\n    \\\"Weekly Estimated Cost\\\", \\\"{WeeklySCUCost}\\\",\\r\\n    \\\"Monthly Estimated Cost\\\", \\\"{MonthlySCUCost}\\\"\\r\\n    ];\\r\\nSummaries\",\"size\":4,\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"label\"},\"leftContent\":{\"columnMatch\":\"value\",\"formatter\":12,\"formatOptions\":{\"palette\":\"turquoise\"},\"numberFormat\":{\"unit\":0,\"options\":{\"currency\":\"USD\",\"style\":\"currency\"}}},\"showBorder\":false}},\"customWidth\":\"50\",\"name\":\"query - 6\",\"styleSettings\":{\"maxWidth\":\"50%\"}}]},\"customWidth\":\"100\",\"name\":\"StatGroup - ViewGroup\"}],\"exportParameters\":true},\"conditionalVisibilities\":[{\"parameterName\":\"Nav\",\"comparison\":\"isEqualTo\",\"value\":\"View\"},{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"Blank\"},{\"parameterName\":\"HasConfig\",\"comparison\":\"isNotEqualTo\",\"value\":\"1\"}],\"name\":\"ViewNoScheduleGroup\"}],\"isLocked\":false,\"fallbackResourceIds\":[],\"fromTemplateId\":\"sentinel-UserWorkbook\"}",
+                                "version": "1.0",
+                                "sourceId": "[concat('/subscriptions/',subscription().subscriptionId,'/resourcegroups/',parameters('sentinelResourceGroup'),'/providers/Microsoft.OperationalInsights/workspaces/',parameters('sentinelWorkspaceName'))]",
+                                "category": "sentinel"
+                            }
+                        }
+                    ]
+                },
+                "parameters": {}
+            }
+        }
+    ]
+}
