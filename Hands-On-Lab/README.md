@@ -2,6 +2,7 @@
 
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
+Authors - Jamil Mirza & Sean Wesonga
 ## Introduction
 
 These labs will help you to get ramped up with Microsoft Security Copilot and provide hands-on practical experience for product features, capabilities, and scenarios.
