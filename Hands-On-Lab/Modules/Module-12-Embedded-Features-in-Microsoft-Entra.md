@@ -49,19 +49,19 @@ For this example, let’s start off by asking Security Copilot in Entra about a 
 <img width="228" alt="Entra7" src="../Images/entraIssue2.png">
 8. This may be enough to understand the issue. You may also have other questions that need answering such as the associated risk with this specific failed session. You could ask Security Copilot "was there any unusual or risky behaviors for kher40@woodgrove sign in attempt?" to get an opinion on potential risk. My example doesn't show any major risk factors to consider. 
 </p></p>
-<img width="269" alt="Entra8" src="https://github.com/user-attachments/assets/4cbd2f49-b932-47f4-8e72-59811c781f48">
+<img width="269" alt="Entra8" src="../Images/entraIssue3.png">
 </p></p>
 9. If you don't understand something about the findings, you could always ask Security Copilot to explain it. For example, I'll ask which authentication methods are considered MFA. 
 </p></p>
-<img width="292" alt="Entra9" src="https://github.com/user-attachments/assets/1fd1f223-50ae-4852-bc07-7f36a603ae9e">
+<img width="292" alt="Entra9" src="../Images/entraIssue4.png">
 </p></p>
 10. You may want to check certain configuration or settings via asking Security Copilot. For my example, I'll ask if my user is registered for FIDO2 authentication. Security Copilot will show me such details. 
 </p></p>
-<img width="266" alt="Entra10" src="https://github.com/user-attachments/assets/00daeb86-e4ed-4703-8ad1-e3efdd2676a3">
+<img width="266" alt="Entra10" src="../Images/entraIssue5.png">
 </p></p>
 11. One final thing to consider is asking Security Copilot how to improve things. For my example, I'll ask how to setup password less for this account. Security Copilot will provide a walk through on how to make this configuration. 
 </p></p>
-<img width="270" alt="Entra11" src="https://github.com/user-attachments/assets/6356ad06-63eb-4322-8e17-c07d7d4a8df5">
+<img width="270" alt="Entra11" src="../Images/entraIssue6.png">
 </p></p>
 Try out any of these prompts to see how Security Copilot can improve your Entra troubleshooting experience.
 </p></p>
