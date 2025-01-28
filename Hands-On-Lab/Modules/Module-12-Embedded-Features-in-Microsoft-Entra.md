@@ -18,7 +18,7 @@ This module showcases some powerful features that become available in Microsoft 
 </p></p>
 1. For this module, lets work through some Security Copilot capabilities found within Microsoft Entra. Start by going to Entra.Microsoft.com. The first thing you should see if Security Copilot is enabled in your tenant is the Security Copilot button. Click that to open the chat window. 
 </p></p>
-<img width="643" alt="Entra1" src="https://github.com/user-attachments/assets/6f196646-8f7d-4789-bbee-9a47cf31a36b">
+<img width="643" alt="Entra1" src="../Images/entraChat.png">
 </p></p>
 2. Try searching for one of your users using the prompt "tell me about" such as the example shown. 
 </p></p>
