@@ -24,54 +24,54 @@ At this point, we assume you have completed step one and have at least read only
 </p></p>
 1: Open Microsoft Defender by going to Defender.Microsoft.com
 </p></p>
-<img width="712" alt="defender1" src="https://github.com/user-attachments/assets/ae4122a3-804c-4764-b77b-bb3dfd17f2d3">
+<img width="712" alt="defender1" src="../Images/defender1.png">
 </p></p>
 2: Let’s look at features you can use during an investigation of a potential incident. Click Incidents & alerts then click Incidents
 </p></p>
-<img width="359" alt="defender2" src="https://github.com/user-attachments/assets/8e76918a-5ee5-48a9-aeef-d80ebc7585d6">
+<img width="359" alt="defender2" src="../Images/defender2.png">
 </p></p>
 3: Choose an incident that is interesting. For the next example, I’m selecting one about data exfiltration. Yours can be something else. 
 </p></p>
-<img width="650" alt="Defender3" src="https://github.com/user-attachments/assets/1ef5d366-73b5-473a-b6a5-f10b2028cf5f">
+<img width="650" alt="Defender3" src="../Images/defender3.png">
 </p></p>
 The first Microsoft Security Copilot feature you will notice is how an Incident Summary will pop up on the right side. This will give you a quick summary of what is going on with this incident. You may also see a wizard popup if this is your first time using Security Copilot as I’m showing in my example. 
 </p></p>
-<img width="599" alt="Defender4" src="https://github.com/user-attachments/assets/55941645-c9b5-4499-9437-14ec4a449428">
+<img width="599" alt="Defender4" src="../Images/defender4.png">
 </p></p>
 <h2>Exercise 2: Guided Response</h2>
 4: Under the summary you will find any Guided Response recommendations. I chose another incident that had multiple recommendations for the next image. What you will see will depend on the incident you are investigating. This example is a multi-stage incident so Security Copilot is recommending to classify the incident, containment options (this example is recommending disabling a specific user's account), and a remediation step involving resetting the associated users account. 
 </p></p>
-<img width="340" alt="Defender5" src="https://github.com/user-attachments/assets/01e00196-0aef-428c-93c7-4b5ef645ba3b">
+<img width="340" alt="Defender5" src="../Images/defender5.png">
 </p></p>
 <h2>Exercise 3: Incident Report </h2>
 </p></p>
 5:Next let’s explore how Microsoft Security Copilot can provide a much deeper summary of what is going on. Go to the right corner and click the notebook icon. 
 </p></p>
-<img width="274" alt="Defender6" src="https://github.com/user-attachments/assets/85c2bc75-21c5-46ae-ba44-23d92cac58ee">
+<img width="274" alt="Defender6" src="../Images/defender6.png">
 </p></p>
 6: It will take a minute or more to create your report. Once completed, you will see a detail report containing a ton of details about the current incident you are investigating. In my example, the summary explains critical details including who accesses what, what actions have been taken, and recommended remediation actions. 
 </p></p>
-<img width="298" alt="Defender7" src="https://github.com/user-attachments/assets/bef3b412-cfba-4155-b7f1-21ba2be57e1d">
+<img width="298" alt="Defender7" src="../Images/defender7.png">
 </p></p>
 <h2>Exercise 4: Pivoting to stand alone Microsoft Security Copilot </h2>
 </p></p>
 7: This information is super useful, and the value doesn't stop here. You use this information in a few different ways including exporting it to the stand-alone version of Microsoft Security Copilot. To use this data, click the three dots and choose to Open in Copilot for Security. 
 </p></p>
-<img width="286" alt="Defender8" src="https://github.com/user-attachments/assets/fdb92c46-353f-4013-b0c4-66750a9aea12">
+<img width="286" alt="Defender8" src="../Images/defender8.png">
 </p></p>
 8: You should see a window pop up that automatically logs you into the standalone Microsoft Security Copilot. You will also see all of the details found in your report summary imported allowing you to continue your investigation within the stand-alone Security Copilot. From this point, you could ask what threat intelligence is seeing regarding aspects of the findings. You could see what other tools are seeing such as more information on the associated users via Microsoft Intune. 
 </p></p>
-<img width="856" alt="Defender9" src="https://github.com/user-attachments/assets/60be04ae-6b81-4ae9-8bd3-2db694e683ed">
+<img width="856" alt="Defender9" src="../Images/defender9.png">
 </p></p>
 <h2>Exercise 5: Analyzing Code </h2>
 </p></p>
 9: One final thing to try out is the power of AI reverse engineering and explaining code. Go back to the Incidents section and defender. Click into a incident that has potential scripts and code. You will notice a Analyze button. Try it out by clicking it. 
 </p></p>
-<img width="586" alt="Defender10" src="https://github.com/user-attachments/assets/acd88b36-19de-41ba-817a-b5facfa78bf1">
+<img width="586" alt="Defender10" src="../Images/defender10.png">
 </p></p>
 10: You will find Microsoft Security Copilot will open a new window that explains what the code is. You may also see other options such as showing the code or associated MITRE techniques associated with the code. My example is very basic, but you should get the point and see the potential. Also know you could launch directly into the stand-alone version of Security Copilot with the associated content to dig deeper into the code you are analyzing. 
 </p></p>
-<img width="305" alt="Defender11" src="https://github.com/user-attachments/assets/5c134bf0-641f-4735-b7a2-b5f8585ecca2">
+<img width="305" alt="Defender11" src="../Images/defender11.png">
 </p></p>
 <h4>These are just some of the powerful features that become available in Microsoft Defender when Microsoft Security Copilot is enabled.</h4>
 
