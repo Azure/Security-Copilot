@@ -30,11 +30,11 @@ This module showcases some powerful features that become available in Microsoft 
 </p></p>
 4. Security remembers context, so you can continue the conversation if you find you need to know more about a user. For my example, I’m asking to see the Entra audit logs over the last week. Notice how Security Copilot gives me a nice summary. Try it with your user. 
 </p></p>
-<img width="318" alt="Entra4" src="../Images/entraChatOutput2.png">
+<img width="318" alt="Entra4" src="../Images/EntraChatOutput2.png">
 </p></p>
 5. Another common interest is seeing how and where a user of interest is signing into resources. In my next example, I'm asking about the sign-ins. Try that with your user example. 
 </p></p>
-<img width="327" alt="Entra5" src="../Images/entraChatOutput3.png">
+<img width="327" alt="Entra5" src="../Images/EntraChatOutput3.png">
 </p></p>
 <h2>Exercise 2: Troubleshooting Access Failures</h2>
 </p></p>
