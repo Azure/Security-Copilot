@@ -22,19 +22,19 @@ This module showcases some powerful features that become available in Microsoft 
 </p></p>
 2. Try searching for one of your users using the prompt "tell me about" such as the example shown. 
 </p></p>
-<img width="298" alt="Entra2" src="https://github.com/user-attachments/assets/afb85e32-ffda-4292-8f0a-72fe31b7d111">
+<img width="298" alt="Entra2" src="../Images/entraChatWindow.png">
 </p></p>
 3. You should see a good summary of the recent user behavior. My example shows some concerns about Lynn. 
 </p></p>
-<img width="272" alt="Entra3" src="https://github.com/user-attachments/assets/f2396fc9-dc1c-4bd2-9ec6-f16f57ed9147">
+<img width="272" alt="Entra3" src="../Images/entraChatOutput.png">
 </p></p>
 4. Security remembers context, so you can continue the conversation if you find you need to know more about a user. For my example, I’m asking to see the Entra audit logs over the last week. Notice how Security Copilot gives me a nice summary. Try it with your user. 
 </p></p>
-<img width="318" alt="Entra4" src="https://github.com/user-attachments/assets/76dc92fd-0333-43a7-9694-f8b321c2ad8b">
+<img width="318" alt="Entra4" src="../Images/entraChatOutput2.png">
 </p></p>
 5. Another common interest is seeing how and where a user of interest is signing into resources. In my next example, I'm asking about the sign-ins. Try that with your user example. 
 </p></p>
-<img width="327" alt="Entra5" src="https://github.com/user-attachments/assets/c38fdabf-a399-4310-a493-aec2b88b5bbe">
+<img width="327" alt="Entra5" src="../Images/entraChatOutput3.png">
 </p></p>
 <h2>Exercise 2: Troubleshooting Access Failures</h2>
 </p></p>
@@ -42,11 +42,11 @@ This module showcases some powerful features that become available in Microsoft 
 </p></p>
 For this example, let’s start off by asking Security Copilot in Entra about a account that is having access problems to a resource. In my example, I’m asking to tell me about the account. You can see in my example, I get details such as who the user is and various details (I’ve blocked out some of these even though it’s a lab environment). 
 </p></p>
-<img width="295" alt="Entra6" src="https://github.com/user-attachments/assets/c9f56180-d788-4a4f-88ab-60c493008a13">
+<img width="295" alt="Entra6" src="../Images/entraIssue.png">
 </p></p>
 7. Since we are troubleshooting a sign-in issue, next I'll ask to see the most recent failed sign-in using the prompt "Show me kher40@woodgrove most recent failed sign ins". The results give me various details including the resource being accessed, device details used during the access process, risk, token info, etc. There is a lot of info that is provided. Try it with one of your accounts. 
 </p></p>
-<img width="228" alt="Entra7" src="https://github.com/user-attachments/assets/c177866c-de0a-4ee0-a672-8e2099bc24e0">
+<img width="228" alt="Entra7" src="../Images/entraIssue2.png">
 8. This may be enough to understand the issue. You may also have other questions that need answering such as the associated risk with this specific failed session. You could ask Security Copilot "was there any unusual or risky behaviors for kher40@woodgrove sign in attempt?" to get an opinion on potential risk. My example doesn't show any major risk factors to consider. 
 </p></p>
 <img width="269" alt="Entra8" src="https://github.com/user-attachments/assets/4cbd2f49-b932-47f4-8e72-59811c781f48">
