@@ -1,10 +1,10 @@
-# Copilot for Security Custom Plugin - API - Get User Account Breach Information from Have I Been Pwned
+# Security Copilot Custom Plugin - API - Get User Account Breach Information from Have I Been Pwned
 
-#### Copilot for Security Plugin to gather list of breaches for a user account using Have I Been Pwned
+#### Security Copilot Plugin to gather list of breaches for a user account using Have I Been Pwned
 
 ### Pre-requisites
 
-* [Copilot for Security Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+* [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 * [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 * [API Key](https://haveibeenpwned.com/API/Key) from Have I Been Pwned
 

@@ -1,7 +1,7 @@
-# Welcome to Microsoft Copilot for Security Labs!
+# Welcome to Microsoft Security Copilot Labs!
 # Introduction
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
-## Upload a File to Copilot for Security 
+## Upload a File to Security Copilot 
 #### ⌛ Estimated time to complete this lab: 100 minutes
 #### 🎓 Level: 100 (Beginner)
 
@@ -9,17 +9,17 @@
 
 Upon completing this technical guide, you will gain the following abilities:<br>
 
-* Add Sample files to Copilot For Security <br>
+* Add Sample files to Security Copilot <br>
 
 
 #### Scenario
 "In this technical workshop, participants will learn how to upload a file to Copilot for Secuirty .To successfully complete this task, you must meet the following prerequisites:<br>
 
-* You need your own tenant and Microsoft Copilot for Security instance.<br>
+* You need your own tenant and Microsoft Security Copilot instance.<br>
 * Linked to the Sample files folder<br>
 
 
-# Workshop Agenda: Upload a File to Copilot for Security 
+# Workshop Agenda: Upload a File to Security Copilot 
 
 # Workshop Agenda: File Upload KB Workskshop
 

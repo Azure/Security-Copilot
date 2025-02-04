@@ -1,0 +1,470 @@
+Descriptor:
+  Name: User Enrichment Skills
+  DisplayName: User Enrichment Skills
+  DescriptionForModel: A comprehensive set of skills designed to enhance security investigations by providing detailed insights into user activities. This plugin family focuses on analyzing sign-in behavior, detecting anomalies, tracking password changes, monitoring multi-factor authentication modifications, and verifying user location information. By leveraging these skills, security teams can identify potential threats, ensure compliance with security policies, and protect organizational assets from unauthorized access.
+  Description: A set of tools for analyzing user activity and enhancing security investigations, including login behavior, password changes, MFA modifications, and location verification.
+  SupportedAuthTypes:
+    - None
+    
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: UnusualSigninActivity
+        DisplayName: Unusual Sign-in Activity
+        DescriptionForModel: |- 
+          Performs a KQL query on the `SigninLogs` table to analyze the last 30 days of sign-in activity for a specified user. Key features include:
+          - **Anomaly Detection**: Identifies unusual login patterns such as:
+            - High failure rates compared to successful sign-ins.
+            - Sign-ins from unfamiliar or high-risk locations.
+            - Sudden changes in devices, applications, or user agents.
+          - **Detailed Insights**: Provides data on:
+            - `IPAddress`: Location of the sign-in.
+            - `DeviceDetail.deviceId`: Device used for the sign-in.
+            - `UserAgent`: Client used for the session.
+            - `ClientAppUsed` and `AppDisplayName`: Applications accessed.
+          - **Summarization**: Includes the first observed sign-in, last observed sign-in, and counts of successful vs. failed attempts.
+          - **Actionable Recommendations**: Suggests next steps such as password reset, MFA review, or security investigation for anomalies, while confirming consistent activity for normal patterns.
+          This skill enables security analysts to detect and respond to potential sign-in threats effectively.
+        Description: Identify unusual sign-in patterns for a specific user based on anomalies such as high-risk locations, login failures, and sudden changes in device, application, or IP address usage. Highlights deviations from normal behavior and provides recommendations for security actions.
+        Inputs:
+          - Name: upn
+            Description: User principal name, e.g., mscott@woodgrove.ms
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query checks the last 30 days of sign-in activity for a specified user.
+            // It analyzes login patterns, focusing on anomalies such as high failure rates, sign-ins from unfamiliar IPs or devices, or abnormal client applications.
+            // Deviations from the usual patterns may indicate suspicious activity, prompting security actions like MFA review or password reset.
+            // The output includes IP addresses, device IDs, and user agents to assist in identifying unusual behavior.
+            let UPN = "{{upn}}";  // Replace with the specific users upn
+            let TimeFrame = ago(30d); 
+            // Retrieve and summarize the user's login activity, focusing on successful vs failed attempts and identifying unusual patterns.
+            SigninLogs 
+            | where TimeGenerated > TimeFrame
+            | where UserPrincipalName =~ UPN
+            | summarize FirstSeen = min(TimeGenerated), LastObserved = max(TimeGenerated), SuccessfullCount = count(ResultType = 0), FailureCount = count(ResultType != 0) 
+            by UserPrincipalName, IPAddress, Location, tostring(DeviceDetail.deviceId), UserAgent, ClientAppUsed, AppDisplayName
+
+      - Name: PasswordChangeCount
+        DisplayName: Password Change Count
+        DescriptionForModel: |- 
+          Performs a KQL query on the `AuditLogs` table to track password changes for a specified user within the last 7 days. Key features include:
+            - **Password Change Detection**: Identifies the number of password changes and their timing.
+            - **Anomaly Detection**: Highlights unusual patterns such as:
+              - Multiple password changes within a short timeframe.
+              - Password changes following failed sign-in attempts.
+            - **Detailed Insights**: Provides a daily summary of password changes, including:
+              - `TimeGenerated`: Timestamp of the change.
+              - `PasswordChangeCount`: Number of changes per day.
+              - `userPrincipalName`: User associated with the changes.
+            - **Actionable Recommendations**: Suggests security actions, such as MFA enforcement or account review, if anomalies are detected. Confirms consistent behavior if no anomalies are found.
+          This skill assists security analysts in detecting and responding to potential account threats effectively.
+        Description: Analyze the number of password changes for a specific user over the past 7 days. Identify potential security threats, such as account compromise or phishing attacks, by detecting anomalies in password change patterns and providing actionable recommendations.
+        Inputs:
+          - Name: upn
+            Description: User principal name, e.g., mscott@woodgrove.ms
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query tracks password changes for a specific user over the last seven days.
+            // It highlights suspicious behavior, such as multiple password changes in a short timeframe or changes following failed login attempts.
+            let TimeFrame = ago(7d);
+            let upn = "{{upn}}";  // Replace with the specific users upn
+            AuditLogs
+            | where TimeGenerated > TimeFrame
+            | where OperationName == "Change user password"
+            | extend TargetResourcesJson = parse_json(tostring(TargetResources))
+            | mv-expand TargetResource = TargetResourcesJson
+            | extend userPrincipalName = tostring(TargetResource.userPrincipalName)
+            | where userPrincipalName == upn
+            | summarize PasswordChangeCount = count() by bin(TimeGenerated, 1d), userPrincipalName
+            | project TimeGenerated, PasswordChangeCount, userPrincipalName
+            | order by TimeGenerated desc
+
+      - Name: RecentMFAChanges
+        DisplayName: Recent MFA Changes
+        DescriptionForModel: |- 
+          Performs a KQL query on the `CloudAppEvents` table to investigate recent changes to MFA settings for a specified user. Key features include:
+          - **MFA Method Tracking**:
+            - Detects methods added, removed, or modified.
+            - Identifies changes to default authentication methods.
+          - **Detailed Insights**:
+            - `Timestamp`: Time of the change.
+            - `Actor`: User or system initiating the change.
+            - `Target`: User principal name (UPN) affected.
+            - `Action`: Description of the change (e.g., "Method Added," "Method Removed," or "Default Method Changed").
+            - `OldValue` and `NewValue`: Details of the previous and updated MFA methods.
+          - **Anomaly Detection**:
+            - Highlights suspicious changes that may indicate unauthorized access or account compromise.
+            - Prompts recommendations such as re-authentication, MFA enforcement, or further security review.
+          This skill enables security analysts to monitor and investigate MFA changes, ensuring account security and identifying potential threats.
+        Description: Track recent MFA changes for a specific user over the past 7 days, identifying added, removed, or modified authentication methods. Provides detailed insights into changes, highlights anomalies, and recommends security actions if unusual activity is detected.
+        Inputs:
+          - Name: upn
+            Description: User principal name, e.g., mscott@woodgrove.ms
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query investigates MFA changes for a user over the past seven days, tracking additions, removals, or modifications.
+            // Unusual changes can indicate unauthorized access or account compromise, prompting further actions like MFA reviews or security checks.
+            // The query extracts detailed logs of MFA changes, including timestamps, the actor responsible for the change, and modified methods.
+            // The query helps detect suspicious changes and prompts recommended actions.
+            let AuthenticationMethods = dynamic(["TwoWayVoiceMobile","TwoWaySms","TwoWayVoiceOffice","TwoWayVoiceOtherMobile","TwoWaySmsOtherMobile","OneWaySms","PhoneAppNotification","PhoneAppOTP"]);
+            let TimeFrame = ago(7d);
+            let UPN = "{{upn}}"; // Replace with the specific users upn
+            // This segment retrieves MFA-related changes from CloudAppEvents, focusing on modifications to strong authentication methods.
+            let AuthenticationMethodChanges = CloudAppEvents
+            | where ActionType == "Update user." and RawEventData contains "StrongAuthenticationMethod"
+            | where Timestamp > TimeFrame
+            | extend Target = tostring(RawEventData.ObjectId)
+            | where Target == UPN
+            | extend Actor = tostring(RawEventData.UserId)
+            | mv-expand ModifiedProperties = parse_json(RawEventData.ModifiedProperties)
+            | where ModifiedProperties.Name == "StrongAuthenticationMethod"
+            | project Timestamp, Actor, Target, ModifiedProperties, RawEventData, ReportId;
+            // Extract old values (before the MFA method was changed) to compare with new values.
+            let OldValues = AuthenticationMethodChanges
+            | extend OldValue = parse_json(tostring(ModifiedProperties.OldValue))
+            | mv-apply OldValue on (extend Old_MethodType=tostring(OldValue.MethodType), Old_Default=tostring(OldValue.Default) | sort by Old_MethodType);
+            // Extract new values (after the MFA method was changed) for comparison with the old values.
+            let NewValues = AuthenticationMethodChanges
+            | extend NewValue = parse_json(tostring(ModifiedProperties.NewValue))
+            | mv-apply NewValue on (extend New_MethodType=tostring(NewValue.MethodType), New_Default=tostring(NewValue.Default) | sort by New_MethodType);
+            // Identify removed MFA methods by comparing old methods with new ones.
+            let RemovedMethods = AuthenticationMethodChanges
+            | join kind=inner OldValues on ReportId
+            | join kind=leftouter NewValues on ReportId, $left.Old_MethodType == $right.New_MethodType
+            | project Timestamp, ReportId, ModifiedProperties, Actor, Target, Old_MethodType, New_MethodType
+            | where Old_MethodType != New_MethodType
+            | extend Action = strcat("Removed (", AuthenticationMethods[toint(Old_MethodType)], ") from Authentication Methods.")
+            | extend ChangedValue = "Method Removed";
+            // Identify added MFA methods by comparing new methods with old ones.
+            let AddedMethods = AuthenticationMethodChanges
+            | join kind=inner NewValues on ReportId
+            | join kind=leftouter OldValues on ReportId, $left.New_MethodType == $right.Old_MethodType
+            | project Timestamp, ReportId, ModifiedProperties, Actor, Target, Old_MethodType, New_MethodType
+            | where Old_MethodType != New_MethodType
+            | extend Action = strcat("Added (", AuthenticationMethods[toint(New_MethodType)], ") as Authentication Method.")
+            | extend ChangedValue = "Method Added";
+            // Track changes to the default authentication method.
+            let DefaultMethodChanges = AuthenticationMethodChanges
+            | join kind=inner OldValues on ReportId
+            | join kind=inner NewValues on ReportId
+            | where Old_Default != New_Default and Old_MethodType == New_MethodType and New_Default == "true"
+            | join kind=inner OldValues on ReportId | where Old_Default1 == "true" and Old_MethodType1 != New_MethodType | extend Old_MethodType = Old_MethodType1
+            | extend Action = strcat("Default Authentication Method was changed to (", AuthenticationMethods[toint(New_MethodType)], ").")
+            | extend ChangedValue = "Default Method";
+            // Combine the results of added, removed, and default method changes into a single output.
+            union RemovedMethods, AddedMethods, DefaultMethodChanges
+            | project Timestamp, Action, Actor, Target, ChangedValue, OldValue=case(isempty(Old_MethodType), "", strcat(Old_MethodType, ": ", AuthenticationMethods[toint(Old_MethodType)])), NewValue=case(isempty(New_MethodType), "", strcat(New_MethodType, ": ", AuthenticationMethods[toint(New_MethodType)]))
+            | distinct *
+
+      - Name: UserHomeOfficeLocation
+        DisplayName: User Home Office Location
+        DescriptionForModel: |- 
+          Performs a KQL query on the `IdentityInfo` table to analyze the home office location of a specified user. Key features include:
+
+          - **Location Details**:
+            - Retrieves the user's registered home office location, including `City`, `Country`, and `State`.
+          - **Comparison**:
+            - Compares the typical home office location to recent sign-in locations.
+          - **Anomaly Detection**:
+            - Highlights deviations that may indicate unauthorized access or potential account compromise.
+            - Detects unexpected locations or unusual patterns in sign-in activity.
+          - **Recommendations**:
+            - Suggests actions such as enforcing additional authentication, reviewing sign-in logs, or conducting a security investigation for anomalies.
+            - Confirms consistency in location patterns if no deviations are found.
+
+          This skill helps security analysts ensure user location consistency and identify potential threats related to unauthorized access.
+        Description: Retrieve and compare a user's home office location (city, country, state) with recent sign-in locations to detect unusual activity. Highlights deviations that may indicate unauthorized access and provides actionable recommendations.
+        Inputs:
+          - Name: upn
+            Description: User principle name. i.e., mscott@woodgrove.ms
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query retrieves the home office location details (city, country, state) for a specific user.
+            // It helps verify user location consistency by comparing this information to recent sign-in activity.
+            // Deviations between the user's home office location and actual sign-in locations could indicate suspicious behavior or account compromise.
+            // Provide insights on potential discrepancies and recommend further actions such as enforcing additional authentication if necessary.
+            IdentityInfo
+            | where AccountUpn == "{{upn}}"  // Replace with the specified user's email (UPN)
+            | project City, Country, State  // Extract city, country, and state from the identity information
+            | distinct *  // Remove duplicate entries and provide unique location information
+            
+      - Name: UserSigninBaseline
+        DisplayName: User Baseline Information
+        DescriptionForModel: |- 
+          Performs a KQL query on the `SigninLogs` table to create a baseline of typical user sign-in activity for the past 30 days. Key features include:
+
+          - **Baseline Data**:
+            - Most frequently used `IPAddress`: Identifies the typical network used for sign-ins.
+            - Most common `Location`: Establishes a user's regular sign-in geography.
+            - Most frequently used `DeviceId`: Highlights the usual device used for access.
+            - Most common `AppDisplayName`: Tracks the application most often accessed.
+            - Most frequently used `ClientAppUsed`: Identifies the client application regularly used.
+
+          - **Anomaly Detection**:
+            - Flags deviations from the baseline, such as new or unusual IPs, locations, devices, or apps.
+            - Highlights behaviors that could indicate account compromise or unauthorized access.
+
+          - **Recommendations**:
+            - Suggests security actions like MFA enforcement, credential resets, or further investigation for anomalies.
+            - Confirms consistent user activity if no deviations are found.
+
+          This skill helps security analysts establish a detailed baseline of user behavior and quickly detect potential threats through deviations from the norm.
+        Description: Establish a baseline of a user's typical sign-in activity over the past 30 days, including their most frequently used IP address, location, device, application, and client application. Detect deviations from normal behavior to identify potential security risks and recommend appropriate actions.
+        Inputs:
+          - Name: upn
+            Description: User principle name. i.e., mscott@woodgrove.ms
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query establishes a baseline for a user's sign-in activity over the past 30 days by identifying the most frequently used IP address, location, device, application, and client application.
+            // It helps detect deviations that may indicate suspicious behavior, such as sign-ins from unfamiliar locations, new devices, or different apps.
+            // Anomalies can point to account compromise or unauthorized access, triggering actions like MFA enforcement or security reviews.
+            // The query outputs the user's typical behavior patterns and highlights any deviations.
+            // Provide a summary of the users baseline and analyze any deviations, recommending actions like enforcing MFA, resetting credentials, or initiating further security reviews if abnormal patterns are detected.            
+            let UPN = "{{upn}}"; // Replace with the specific users email
+            let TimeFrame = ago(30d);
+            // Identify the most frequently used IP address for the user.
+            let MostCommonIP = toscalar(
+                SigninLogs
+                | where TimeGenerated > TimeFrame
+                | where UserPrincipalName =~ UPN
+                | summarize IPCount = count() by IPAddress
+                | top 1 by IPCount desc
+                | project IPAddress
+            );
+            // Identify the most frequently used location (e.g., city, country) for the user.
+            let MostCommonLocation = toscalar(
+                SigninLogs
+                | where TimeGenerated > TimeFrame
+                | where UserPrincipalName =~ UPN
+                | summarize LocationCount = count() by Location
+                | top 1 by LocationCount desc
+                | project Location
+            );
+            // Identify the most frequently used device ID for the user.
+            let MostCommonDeviceId = toscalar(
+                SigninLogs
+                | where TimeGenerated > TimeFrame
+                | where UserPrincipalName =~ UPN
+                | summarize DeviceCount = count() by tostring(DeviceDetail.deviceId)
+                | top 1 by DeviceCount desc
+                | project tostring(DeviceDetail_deviceId)
+            );
+            // Identify the most frequently used application for the user.
+            let MostCommonApp = toscalar(
+                SigninLogs
+                | where TimeGenerated > TimeFrame
+                | where UserPrincipalName =~ UPN
+                | summarize AppCount = count() by AppDisplayName
+                | top 1 by AppCount desc
+                | project AppDisplayName
+            );
+            // Identify the most frequently used client application for the user.
+            let MostCommonClientApp = toscalar(
+                SigninLogs
+                | where TimeGenerated > TimeFrame
+                | where UserPrincipalName =~ UPN
+                | summarize ClientAppCount = count() by ClientAppUsed
+                | top 1 by ClientAppCount desc
+                | project ClientAppUsed
+            );
+            // Print the baseline details for the user, including the most common IP, location, device, app, and client app.
+            print 
+                UserPrincipalName = UPN,
+                MostCommonIPAddress = MostCommonIP,
+                MostCommonLocation = MostCommonLocation,
+                MostCommonDeviceId = MostCommonDeviceId,
+                MostCommonApp = MostCommonApp,
+                MostCommonClientApp = MostCommonClientApp
+
+      - Name: FailedUserSignInSpecificDay
+        DisplayName: Failed user sign-ins for a specific UPN
+        DescriptionForModel: |-
+          Performs a KQL query on the `SigninLogs` table to identify failed sign-in attempts for a specified user. Key features include:
+
+          - **Sign-In Failure Detection**:
+            - Filters sign-in logs to retrieve only failed attempts (`ResultType != 0`).
+            - Default lookback period is 1 day, with an option to customize (e.g., 1d, 7d, 30d).
+
+          - **Detailed Insights**:
+            - `FailedAttempts`: Total number of failed sign-in attempts.
+            - `UniqueIPs`: Number of unique IP addresses associated with the failed attempts.
+            - `Locations`: Number of unique locations from which the failed attempts originated.
+            - `ResultDescriptions`: Descriptions of failure reasons (e.g., incorrect password, locked account).
+
+          - **Actionable Insights**:
+            - Helps security analysts detect unusual patterns, repeated failures, or potential unauthorized access attempts.
+            - Provides key details for further investigation and remediation.
+
+          This skill supports threat detection by identifying abnormal sign-in behavior and helping ensure account security.
+        Description: Identify failed sign-in attempts for a specific user over a defined lookback period. Provides detailed insights into failed attempts, including timestamps, IP addresses, locations, and result descriptions, to detect potential unauthorized access or sign-in issues.
+        Inputs:
+          - Name: upn
+            Description: User principal name. i.e., mscott@woodgrove.ms
+            Required: true
+          - Name: lookback_period
+            Description: The time range to look back. i.e., 1d, 7d, 30d (default is 1d)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            SigninLogs
+            | where TimeGenerated >= ago(1d) // Specify the lookback_period, default 1d
+            | where ResultType != 0  // Filtering for failed sign-ins; 0 indicates success
+            | where UserPrincipalName == "{{upn}}"
+            | summarize FailedAttempts = count(), UniqueIPs = dcount(IPAddress), Locations = dcount(Location), ResultDescriptions = makeset(ResultDescription) by bin(TimeGenerated, 1d)
+            | project TimeGenerated, FailedAttempts, UniqueIPs, Locations, ResultDescriptions
+            | order by TimeGenerated desc
+
+      - Name: UserRiskDetections
+        DisplayName: Entra User Risk Detections
+        Description: Analyze and prioritize medium and high-risk detections for a specific user over the past 7 days. Provides insights into risk events, including types, details, timing, and locations, to support quick, prioritized investigations and actions.
+        DescriptionForModel: |-
+          Performs a KQL query on the `AADUserRiskEvents` table to analyze medium and high-risk detections for a specified user within the last 7 days. Key features include:
+
+          - **Risk Analysis**:
+            - Focuses on `RiskLevel` values: medium and high.
+            - Provides details such as `RiskEventType`, `RiskDetail`, and `DetectedDateTime` to understand potential attack vectors and event specifics.
+
+          - **Anomaly Detection**:
+            - Uses `IpAddress` and `Location` fields to analyze physical locations and detect anomalies like atypical travel or VPN usage.
+            - Highlights `DetectionTimingType` to differentiate real-time threats from delayed detections, ensuring timely response to active risks.
+
+          - **Insights and Prioritization**:
+            - Surfaces patterns in risk detections to evaluate whether incidents indicate sustained or escalating threats.
+            - Supports security analysts in taking swift action, such as enforcing MFA, resetting passwords, or further investigation.
+
+          This skill helps monitor and respond to unresolved or ongoing user risks, prioritizing high-severity incidents for effective threat mitigation.
+        Inputs:
+          - Name: upn
+            Description: The UPN to search for. For example, mscott@dunder.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            AADUserRiskEvents
+            | where TimeGenerated > ago(7d)
+            | where RiskLevel == "medium" or RiskLevel == "high"
+            | where UserPrincipalName == "{{upn}}"
+
+      - Name: HighRiskUserDetection
+        DisplayName: High-Risk User Detection
+        Description: Identify high-risk users with recent activity by correlating risk events and user status. Highlights unresolved risks, focusing on key details such as risk type, IP address, and recent activity for prioritizing remediation steps.
+        DescriptionForModel: |-
+          Performs a KQL query to analyze high-risk users by joining the `AADRiskyUsers` and `AADUserRiskEvents` tables. Key features include:
+
+          - **Risk Correlation**:
+            - Retrieves recent high-risk events (`DetectedDateTime` within the last 7 days) for a specified user.
+            - Joins data with high-risk user statuses from `AADRiskyUsers` to focus on unresolved risks.
+
+          - **Detailed Insights**:
+            - Columns include:
+              - `RiskEventType`: Type of risk detected.
+              - `RiskDetail`: Specific details about the risk.
+              - `IpAddress`: Location associated with risky activity.
+              - `DetectedDateTime`: Timestamp of the detection.
+              - `RiskLastUpdatedDateTime`: Last update time for the user's risk status.
+
+          - **Prioritization**:
+            - Orders results by `RiskLastUpdatedDateTime` to highlight users with the most recent unresolved high-risk activity.
+            - Ensures focus on persistent risks and users requiring immediate action.
+
+          - **Goal**:
+            - Enables security analysts to identify patterns of risky behavior, such as multiple high-risk sign-ins or repeated attempts from unusual locations.
+            - Supports prioritized investigations and swift remediation actions, such as enforcing MFA, reviewing user activity, or disabling accounts.
+
+          This skill helps analysts detect and respond to unresolved risks in high-risk users effectively.
+        Inputs:
+          - Name: upn
+            Description: The UPN to search for. For example, mscott@dunder.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let recentEvents = AADUserRiskEvents
+            | where DetectedDateTime > ago(7d)
+            | where RiskLevel == "high"
+            | where UserPrincipalName == "{{upn}}"
+            | project UserPrincipalName, Activity, DetectedDateTime, RiskEventType, RiskDetail, IpAddress;
+            AADRiskyUsers
+            | where RiskLevel == "high" 
+            | join kind=inner (recentEvents) on UserPrincipalName
+            | order by RiskLastUpdatedDateTime desc
+
+      - Name: ImpossibleTravel
+        DisplayName: Impossible Travel
+        Description: Identify instances of impossible travel by analyzing login patterns for a specific user. Detects logins from geographically distant locations occurring within an unrealistically short time frame, highlighting potential credential misuse or unauthorized access.
+        DescriptionForModel: |-
+          Performs a KQL query on the `SigninLogs` table to detect impossible travel events for a specified user over the last 7 days. Key features include:
+
+          - **Travel Detection**:
+            - Evaluates login locations (latitude, longitude, and country) and timestamps.
+            - Calculates travel distances using the Haversine formula to estimate the shortest path between locations.
+            - Computes required travel velocity (mph) based on the time difference between consecutive logins.
+
+          - **Anomaly Identification**:
+            - Flags login events where the calculated velocity exceeds a maximum allowable threshold (e.g., 500 mph).
+            - Highlights "Superman Travel" incidents, which indicate potential unauthorized access or compromised credentials.
+
+          - **Detailed Insights**:
+            - Provides:
+              - `DistanceMiles`: Travel distance between logins.
+              - `TimeDifferenceHours`: Time elapsed between logins.
+              - `VelocityMph`: Calculated travel velocity.
+              - `Country` and `PreviousCountry`: Geographical locations of login attempts.
+              - `IPAddress` and `PreviousIPAddress`: IP addresses used during logins.
+
+          - **Actionable Insights**:
+            - Helps security analysts quickly investigate suspicious login behavior and take actions such as enforcing MFA, resetting passwords, or reviewing account activity.
+
+          This skill supports proactive detection of unusual login behavior, helping secure user accounts against potential threats.
+        Inputs:
+          - Name: upn
+            Description: The UPN (User Principal Name) to search for.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let MaxVelocityMph = 500; // Define maximum allowable velocity in mph
+            let EarthRadiusMiles = 3959; // Earth's radius in miles
+            let Radians = 57.2958; // Degrees to radians conversion
+            let GetDistance = (lat1: real, lon1: real, lat2: real, lon2: real) {
+                let dLat = (lat2 - lat1) / Radians;
+                let dLon = (lon2 - lon1) / Radians;
+                let a = sin(dLat / 2) * sin(dLat / 2) +
+                        cos(lat1 / Radians) * cos(lat2 / Radians) *
+                        sin(dLon / 2) * sin(dLon / 2);
+                let c = 2 * atan2(sqrt(a), sqrt(1 - a));
+                EarthRadiusMiles * c
+            };
+            SigninLogs
+            | where ResultType == 0 // Filter for successful logins
+            | where TimeGenerated > ago(7d)
+            | extend LocationDetails = parse_json(LocationDetails) // Parse location details
+            | extend Latitude = tostring(LocationDetails.geoCoordinates.latitude),
+                    Longitude = tostring(LocationDetails.geoCoordinates.longitude),
+                    Country = tostring(LocationDetails.countryOrRegion)
+            | project UserPrincipalName, TimeGenerated, IPAddress, LocationDetails, Latitude, Longitude, Country
+            | order by UserPrincipalName, TimeGenerated asc
+            | extend PreviousLatitude = prev(Latitude), 
+                    PreviousLongitude = prev(Longitude), 
+                    PreviousTime = prev(TimeGenerated), 
+                    PreviousIPAddress = prev(IPAddress),
+                    PreviousCountry = prev(Country)
+            | where isnotempty(PreviousLatitude) and isnotempty(PreviousLongitude)
+            | extend DistanceMiles = GetDistance(toreal(Latitude), toreal(Longitude), toreal(PreviousLatitude), toreal(PreviousLongitude))
+            | extend TimeDifferenceHours = datetime_diff('second', TimeGenerated, PreviousTime) / 3600.0
+            | extend VelocityMph = DistanceMiles / TimeDifferenceHours
+            | where VelocityMph > MaxVelocityMph
+            | where UserPrincipalName == "{{upn}}"
+            | project UserPrincipalName, TimeGenerated, PreviousTime, IPAddress, PreviousIPAddress, DistanceMiles, TimeDifferenceHours, VelocityMph, Country, PreviousCountry
+

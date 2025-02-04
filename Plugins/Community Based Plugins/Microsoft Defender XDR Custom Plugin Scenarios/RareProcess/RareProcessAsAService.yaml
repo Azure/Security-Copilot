@@ -1,0 +1,156 @@
+Descriptor:
+  Name: RareProcessesInvestigation
+  DisplayName: Rare Processes Launched as a Service
+  Description: Identify rare processes launched as a service on a device.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetRareProcessDetails
+        DisplayName: Get Rare Process Details
+        Description: This query looks for rarely seen processes that are launched as a service.
+        Inputs:
+          - Name: Device_Name
+            Description: Name of the device to investigate.
+            Required: True
+        ExamplePrompt:
+          - "Show me rare processes as a service running on the device."
+          - "Show me a list of devices with rare processes as a service."
+          - "Which rare processes are running as a service on the device?"
+          - "Why are these processes considered rare?"
+          - "What folder path was used by the initiating processes on this device?"
+          - "What is the SHA1 hash for the initiating process?"
+          - "What is the SHA256 hash for the initiating process?"
+          - "What is the most common rare process executed?"
+        Settings:
+          Target: Defender
+          Template: |-
+            let LookupTime = 7d;
+            let WhiteList = datatable(WhiteListedProcesses: string)
+                [
+                "svchost.exe",
+                "mssense.exe",
+                "msmpeng.exe",
+                "searchindexer.exe",
+                "microsoftedgeupdate.exe"
+            ];
+            let GetServices = 
+                DeviceProcessEvents
+                | where TimeGenerated > ago(LookupTime)
+                | where InitiatingProcessParentFileName contains "services.exe"
+                | where InitiatingProcessFileName !in (WhiteList)
+                | project 
+                    TimeGenerated, 
+                    DeviceName, 
+                    StartedChildProcess = FileName, 
+                    StartedChildProcessSHA1 = SHA1, 
+                    StartedChildProcessCmdline = ProcessCommandLine, 
+                    ServiceProcessSHA1 = InitiatingProcessSHA1, 
+                    ServiceProcess = InitiatingProcessFileName, 
+                    ServiceProcessCmdline = InitiatingProcessCommandLine, 
+                    ServiceProcessID = InitiatingProcessId, 
+                    ServiceProcessCreationTime = InitiatingProcessCreationTime, 
+                    ServiceProcessUser = InitiatingProcessAccountName;
+            GetServices
+            | summarize count() by ServiceProcess, DeviceName
+            | where count_ < 6 
+            | join kind=inner (GetServices) on ServiceProcess, DeviceName 
+            | join kind=leftouter (
+                DeviceNetworkEvents
+                | where TimeGenerated > ago(LookupTime)
+                | where InitiatingProcessParentFileName contains "services.exe"
+                | where InitiatingProcessFileName !in (WhiteList)
+                | project 
+                    TimeGenerated, 
+                    DeviceName, 
+                    ServiceProcessSHA1 = InitiatingProcessSHA1, 
+                    ServiceProcess = InitiatingProcessFileName, 
+                    ServiceProcessCmdline = InitiatingProcessCommandLine, 
+                    ServiceProcessID = InitiatingProcessId, 
+                    ServiceProcessCreationTime = InitiatingProcessCreationTime, 
+                    ServiceProcessUser = InitiatingProcessAccountName, 
+                    NetworkAction = ActionType, 
+                    RemoteIP, 
+                    RemoteUrl
+                )
+                on 
+                DeviceName, 
+                ServiceProcess, 
+                ServiceProcessCmdline, 
+                ServiceProcessCreationTime, 
+                ServiceProcessID, 
+                ServiceProcessUser, 
+                ServiceProcessSHA1
+            | join kind=leftouter (
+                DeviceFileEvents
+                | where TimeGenerated > ago(LookupTime)
+                | where InitiatingProcessParentFileName contains "services.exe"
+                | where InitiatingProcessFileName !in (WhiteList)
+                | project 
+                    TimeGenerated, 
+                    DeviceName, 
+                    ServiceProcessSHA1 = InitiatingProcessSHA1, 
+                    ServiceProcess = InitiatingProcessFileName, 
+                    ServiceProcessCmdline = InitiatingProcessCommandLine, 
+                    ServiceProcessID = InitiatingProcessId, 
+                    ServiceProcessCreationTime = InitiatingProcessCreationTime, 
+                    ServiceProcessUser = InitiatingProcessAccountName, 
+                    FileAction = ActionType, 
+                    ModifiedFile = FileName, 
+                    ModifiedFileSHA1 = SHA1, 
+                    ModifiedFilePath = FolderPath
+                )
+                on 
+                DeviceName, 
+                ServiceProcess, 
+                ServiceProcessCmdline, 
+                ServiceProcessCreationTime, 
+                ServiceProcessID, 
+                ServiceProcessUser, 
+                ServiceProcessSHA1
+            | join kind=leftouter (
+                DeviceImageLoadEvents
+                | where TimeGenerated > ago(LookupTime)
+                | where InitiatingProcessParentFileName contains "services.exe"
+                | where InitiatingProcessFileName !in (WhiteList)
+                | project 
+                    TimeGenerated, 
+                    DeviceName, 
+                    ServiceProcessSHA1 = InitiatingProcessSHA1, 
+                    ServiceProcess = InitiatingProcessFileName, 
+                    ServiceProcessCmdline = InitiatingProcessCommandLine, 
+                    ServiceProcessID = InitiatingProcessId, 
+                    ServiceProcessCreationTime = InitiatingProcessCreationTime, 
+                    ServiceProcessUser = InitiatingProcessAccountName, 
+                    LoadedDLL = FileName, 
+                    LoadedDLLSHA1 = SHA1, 
+                    LoadedDLLPath = FolderPath
+                )
+                on 
+                DeviceName, 
+                ServiceProcess, 
+                ServiceProcessCmdline, 
+                ServiceProcessCreationTime, 
+                ServiceProcessID, 
+                ServiceProcessUser, 
+                ServiceProcessSHA1
+            | summarize 
+                ConnectedAddresses = make_set(RemoteIP, 100000), 
+                ConnectedUrls = make_set(RemoteUrl, 100000), 
+                FilesModified = make_set(ModifiedFile, 100000), 
+                FileModFolderPath = make_set(ModifiedFilePath, 100000), 
+                FileModHA1s = make_set(ModifiedFileSHA1, 100000), 
+                ChildProcesses = make_set(StartedChildProcess, 100000), 
+                ChildCommandlines = make_set(StartedChildProcessCmdline, 100000), 
+                DLLsLoaded = make_set(LoadedDLL, 100000), 
+                DLLSHA1 = make_set(LoadedDLLSHA1, 100000) 
+                by 
+                DeviceName, 
+                ServiceProcess, 
+                ServiceProcessCmdline, 
+                ServiceProcessCreationTime, 
+                ServiceProcessID, 
+                ServiceProcessUser, 
+                ServiceProcessSHA1
+                | where DeviceName == "{{Device_Name}}"
+            

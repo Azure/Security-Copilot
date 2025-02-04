@@ -1,7 +1,7 @@
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
-# Microsoft Copilot for Security Sample Promptbooks Library
+# Microsoft Security Copilot Sample Promptbooks Library
 
-Promptbooks in Microsoft Copilot for Security contain one or more prompts that have been put together to accomplish specific security-related tasks. They run one prompt after another, building on previous responses.
+Promptbooks in Microsoft Security Copilot contain one or more prompts that have been put together to accomplish specific security-related tasks. They run one prompt after another, building on previous responses.
 
 You can create your own promptbook with the promptbook builder to automate investigation flows and optimize repetitive steps in Copilot that’s customized to your needs and requirements. 
 

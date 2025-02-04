@@ -1,10 +1,10 @@
-# Copilot for Security Custom Plugin - ADX KQL - Get Entra Sign-in Logs from Azure Data Explorer
+# Security Copilot Custom Plugin - ADX KQL - Get Entra Sign-in Logs from Azure Data Explorer
 
-#### Copilot for Security Plugin to retrieve Entra ID Sign-in logs from an Azure Data Explorer cluster.
+#### Security Copilot Plugin to retrieve Entra ID Sign-in logs from an Azure Data Explorer cluster.
 
 ### Pre-requisites
 
-* [Copilot for Security Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+* [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 * [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 * [An Azure Data Explorer cluster](https://techcommunity.microsoft.com/t5/microsoft-sentinel-blog/using-azure-data-explorer-for-long-term-retention-of-microsoft/ba-p/1883947) with Entra ID Sign in logs exported from the Signinlogs table in Sentinel to ADX
 
@@ -13,8 +13,8 @@
 
 1. Obtain the file [KQL-ADX-SignInLogs.yaml](https://github.com/Azure/Copilot-For-Security/blob/main/Plugins/Community%20Based%20Plugins/Microsoft%20Sentinel%20Custom%20Plugin%20Scenarios/HuntSignInLogs-ADX/KQL-ADX-SignInLogs.yaml) from this directory.
 2. Modify the .yaml file and specify your *ADX Cluster URL*, your *ADX Database* and your *Entra TenantId* parameters.
-   ![ADXPlugin](https://github.com/SCStelz/CopilotForSecurity/blob/main/Images/adx-connection.png)
-4. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) and verify it's activated.
+  
+3. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) and verify it's activated.
 
 ![CopilotForSecurity](https://learn.microsoft.com/en-us/security-copilot/media/add-plugin-button.png)
 

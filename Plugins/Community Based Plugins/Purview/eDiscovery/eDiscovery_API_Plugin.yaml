@@ -1,0 +1,361 @@
+openapi: 3.0.0
+
+info:
+    title: eDiscovery Case Plugin
+    description: Skills for creating a plugin that will help create eDiscovery case & additional workflows in Purview via Graph API Call
+    version: "v1"
+servers:
+   - url: https://graph.microsoft.com/v1.0/security/cases
+   
+paths:
+    /ediscoveryCases:
+        post:
+            operationId: Create eDiscovery case in Purview
+            description: Create eDiscovery case based on user supplied name
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                displayName:
+                                    type: string
+                                    description: The name of the eDiscovery case
+                                description:
+                                    type: string
+                                    description: The eDiscovery case description
+                                externalId:
+                                    type: string
+                                    description: The external case number for customer reference
+                    required:
+                        - displayName
+                    responses:
+                        "200":
+                            description: OK
+                            content:
+                                application/json:
+                                
+    /ediscoveryCases/{ediscoveryCaseId}/custodians:
+        post:
+            operationId: Add custodian to eDiscovery case in Purview
+            description: Add custodian to eDiscovery case in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: ediscoveryCaseId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                email:
+                                    type: string
+                                    description: Custodian's primary SMTP address supplied by the user
+                        required:
+                            - email
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                        
+    /ediscoveryCases/{ediscoveryCaseId}/custodians/{custodianId}/userSources:
+        post:
+            operationId: Add new userSource object associated with an eDiscovery custodian
+            description: Add a new userSource object associated with an eDiscovery custodian in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: custodianId
+                  schema:
+                      type: string
+                  required: true
+                  description: custodianId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                email:
+                                    type: string
+                                    description: Custodian's primary SMTP address supplied by the user
+                                includedSources:
+                                    type: string
+                                    description: Specifies which sources are included in this group. Possible values are (mailbox, site) supplied by the user, seperated by a comma
+                        required:
+                            - email
+                            - includedSources
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+    
+    /ediscoveryCases/{ediscoveryCaseId}/custodians/{custodianId}/siteSources:
+        post:
+            operationId: Add a new siteSource object associated with an eDiscovery custodian
+            description: Add a new siteSource (sharepoint) object associated with an eDiscovery custodian in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: custodianId
+                  schema:
+                      type: string
+                  required: true
+                  description: custodianId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                webUrl:
+                                    type: string
+                                    description: URL of the sharepoint site supplied by the user
+                        required:
+                            - webUrl
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+
+    /ediscoveryCases/{ediscoveryCaseId}/custodians/applyHold:
+        post:
+            operationId: Applying hold on eDiscovery custodians
+            description: Applying hold on eDiscovery custodians in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: custodianId
+                  schema:
+                      type: string
+                  required: true
+                  description: custodianId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                ids:
+                                    type: string
+                                    description: ids of custodian/s seperated by comma supplied by the user
+                        required:
+                            - ids
+            responses:
+            "200":
+                description: OK
+                headers:
+                    location:
+                        description: The URL to the operation status, location provides a URL that will return an eDiscoveryHoldOperation object.
+                        schema:
+                            type: string
+                        example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoveryReviewSetId}')"
+                content:
+                    application/json:
+
+    /ediscoveryCases/{ediscoveryCaseId}/searches:
+        post:
+            operationId: Add a new ediscoverySearch object
+            description: Add a new ediscoverySearch object in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                displayName:
+                                    type: string
+                                    description: The display name of the search, supplied by the user
+                                description:
+                                    type: string
+                                    description: The description of the search, supplied by the user. Optional
+                                contentQuery:
+                                    type: string
+                                    description: The query string used for the search. The query string in KQL (Keyword Query Language) format, supplied by the user. Optional
+                                dataSourceScopes:
+                                    type: string
+                                    description: The option to search across all mailboxes or sites in the tenant. The possible values are none, allTenantMailboxes, allTenantSites, allCaseCustodians, allCaseNoncustodialDataSources, supplied by the user. Optional
+                        required:
+                            - displayName
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+
+    /ediscoveryCases/{ediscoveryCaseId}/searches/{ediscoverySearchId}/estimateStatistics: 
+        post:
+            operationId: Run an estimate in the eDiscovery search
+            description: Run an estimate of the number of emails and documents in the eDiscovery search
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: ediscoverySearchId
+                  schema:
+                      type: string
+                  required: true
+                  description: ediscoverySearchId in eDiscovery
+            requestBody:
+                required: true
+                description: Run an estimate of the number of emails and documents in the eDiscovery search                      
+            responses:
+                "200":
+                    description: OK
+                headers:
+                    location:
+                        description: The response contains also a Location header, which contains the location of the Export operation that was created to handle the export.
+                        schema:
+                            type: string
+                        example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoverySearchId}')"
+                content:
+                    application/json:
+
+    /ediscoveryCases/{ediscoveryCaseId}/reviewSets:
+        post:
+            operationId: Create a new ediscovery ReviewSet object
+            description: Create new ediscoveryReviewSet object in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                displayName:
+                                    type: string
+                                    description: The name of the review set, supplied by the user. Required
+                        required:
+                            - displayName
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                        
+    /ediscoveryCases/{ediscoveryCaseId}/reviewSets/{eDiscoveryReviewSetId}/export:
+        post:
+            operationId: Initiate an export from a ediscoveryReviewSet
+            description: Initiate an export from a ediscoveryReviewSet in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: eDiscoveryReviewSetId
+                  schema:
+                      type: string
+                  required: true
+                  description: eDiscoveryReviewSetId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                outputName:
+                                    type: string
+                                    description: Name of the export, supplied by the user. Required
+                                description:
+                                    type: string
+                                    description: Description of the export, supplied by the user.
+                                exportOptions:
+                                    type: string
+                                    description: Specifies options that control the format of the export. Possible values are; originalFiles, text, pdfReplacement, tags, unknownFutureValue supplied by the user.
+                                exportStructure:
+                                    type: string
+                                    description: Options that control file structure and packaging of the export. Possible values are; none, directory, pst, unknownFutureValue.supplied by the user.
+                        required:
+                            - outputName
+            responses:
+                "200":
+                    description: OK
+                headers:
+                    location:
+                        description: The response contains also a Location header, which contains the location of the Export operation that was created to handle the export.
+                        schema:
+                            type: string
+                        example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoveryReviewSetId}')"
+                content:
+                    application/json:
+
+    /ediscoveryCases/{ediscoveryCaseId}/operations:
+        get:
+            operationId: Get a list of the caseOperation objects
+            description: Get a list of the caseOperation objects and their properties in Purview
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+            requestBody:
+                required: true
+                description: Run an estimate of the number of emails and documents in the eDiscovery search                      
+
+            responses:
+                "200":
+                    description: OK
+                headers:
+                    location:
+                        description: If successful, this method returns a 200 OK response code and a collection of microsoft.graph.security.caseOperation objects in the response body
+                        schema:
+                            type: string
+                        example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoverySearchId}')"
+                content:
+                    application/json:
+                
+
+
+

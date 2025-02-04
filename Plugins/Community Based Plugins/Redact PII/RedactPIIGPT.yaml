@@ -1,0 +1,30 @@
+Descriptor:
+  Name: RedactPIIGPT
+  DisplayName: Redact PII Skillset
+  Description: A GPT-based skillset for redacting PII from text/prompt output
+
+SkillGroups:
+  - Format: GPT
+    Skills:
+      - Name: RedactPII
+        DisplayName: Redact PII
+        Description: Redacts Personally Identifiable Information (PII) from the provided text
+        Inputs:
+          - Name: text
+            Description: The text that may contain PII to be redacted
+        Settings:
+          ModelName: gpt-4o
+          Template: |-
+            The goal of this task is to identify and redact any Personally Identifiable Information (PII) in the given text. PII may include email addresses, phone numbers, Social Security numbers, addresses, and other sensitive details.
+
+            Examples of PII redaction:
+            1. "Street address: 123, Chancellor Way, Springfield, VA 22154" --> "[REDACTED]"
+            2. "Email: john.doe@woodgrove.ms" --> "Email: [REDACTED]@woodgrove.ms"
+            3. "Phone: 555-123-4567" --> "Phone: [REDACTED]"
+            4. "SSN: 123-77-4567" --> "SSN: [REDACTED]"
+            5. "ZIP or postal code" --> "ZIP or postal code"
+            6. "fc780465-2017-40d4-a0c5-307022471b92" --> "xxxx-yyyy-zzzz-aaaa-bbbb"
+            7. "173.66.245.129" --> 173.***.***.***
+
+            Redact all PII from the following text and return the redacted version:
+            {{text}}

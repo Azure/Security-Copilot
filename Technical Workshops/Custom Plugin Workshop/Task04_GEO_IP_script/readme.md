@@ -13,7 +13,7 @@ Upon completing this technical guide, you will gain the following abilities:<br>
 * Generete report that will levrage the custom plugin source.<br>
 
 ### Scenario
-In this technical workshop, participants will learn how to upload a Microsoft Copilot for Security custom plugin of the API type.<br> 
+In this technical workshop, participants will learn how to upload a Microsoft Security Copilot custom plugin of the API type.<br> 
 
 > ⭐ Notice: <br>
 **When utilizing a custom plugin from an API type, be aware that data is transferred out of your tenant and sent to a remote endpoint. In this lab, we are working with sample data. Please keep this in consideration when handling internal data.**
@@ -21,7 +21,7 @@ In this technical workshop, participants will learn how to upload a Microsoft Co
 
 To successfully complete this task, you must meet the following prerequisites:<br>
 
-* You need your own tenant and Microsoft Copilot for Security instance.<br>
+* You need your own tenant and Microsoft Security Copilot instance.<br>
 * You should have permission to upload a custom plugin.<br>
 
 

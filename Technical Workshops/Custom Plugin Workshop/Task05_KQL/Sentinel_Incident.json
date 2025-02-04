@@ -40,14 +40,14 @@
                     "techniques": []
                 },
                 "relatedAnalyticRuleIds": [
-                    "/subscriptions/ab48f397-fc82-xxxx-xxxx-xxxxxxx/resourceGroups/woodgrove-rg/providers/Microsoft.OperationalInsights/workspaces/workspace/providers/Microsoft.SecurityInsights/alertRules/daf3f4df-bb2f-4da9-82a3-20da534c0ae8"
+                    "/subscriptions/ab48f397-fc82-xxxx-xxxx-xxxxxxx/resourceGroups/My-RG/providers/Microsoft.OperationalInsights/workspaces/workspace/providers/Microsoft.SecurityInsights/alertRules/daf3f4df-bb2f-4da9-82a3-20da534c0ae8"
                 ],
                 "incidentUrl": "https://portal.azure.com/#asset/Microsoft_Azure_Security_Insights/Incident/subscriptions/ab48f397-xxxx-xxxx-xxxx-62dd91xxxx/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/workspace/providers/Microsoft.SecurityInsights/Incidents/2483d213-ea73-45c2-951c-437c3a61e43b",
                 "providerName": "Azure Sentinel",
                 "providerIncidentId": "37664",
                 "alerts": [
                     {
-                        "id": "/subscriptions/ab48f397-fc82-4634-aa52-62dd91b3ebaa/resourceGroups/woodgrove-rg/providers/Microsoft.OperationalInsights/workspaces/woodgrove-loganalyiticsworkspace/providers/Microsoft.SecurityInsights/Entities/71e460c1-119b-cbab-99e1-d3fa5867729e",
+                        "id": "/subscriptions/ab48f397-fc82-xxxx-xxxx-xxxxxxxx/resourceGroups/My-RG/providers/Microsoft.OperationalInsights/workspaces/My-workspace/providers/Microsoft.SecurityInsights/Entities/71e460c1-119b-cbab-99e1-d3fa5867729e",
                         "name": "71e460c1-119b-cbab-99e1-d3fa5867729e",
                         "type": "Microsoft.SecurityInsights/Entities",
                         "kind": "SecurityAlert",
@@ -98,7 +98,7 @@
                 "bookmarks": [],
                 "relatedEntities": [
                     {
-                        "id": "/subscriptions/ab48f397-fc82-4634-aa52-62dd91b3ebaa/resourceGroups/woodgrove-rg/providers/Microsoft.OperationalInsights/workspaces/woodgrove-loganalyiticsworkspace/providers/Microsoft.SecurityInsights/Entities/5f097292-3a78-8e63-e9ee-1e4310681b3c",
+                        "id": "/subscriptions/ab48f397-xxxx-xxxx-xxxx-62dd91b3ebaa/resourceGroups/My-RG/providers/Microsoft.OperationalInsights/workspaces/My-workspace/providers/Microsoft.SecurityInsights/Entities/5f097292-3a78-8e63-e9ee-1e4310681b3c",
                         "name": "5f097292-3a78-8e63-e9ee-1e4310681b3c",
                         "type": "Microsoft.SecurityInsights/Entities",
                         "kind": "Account",
@@ -116,7 +116,7 @@
                         }
                     },
                     {
-                        "id": "/subscriptions/ab48f397-fc82-4634-aa52-62dd91b3ebaa/resourceGroups/woodgrove-rg/providers/Microsoft.OperationalInsights/workspaces/woodgrove-loganalyiticsworkspace/providers/Microsoft.SecurityInsights/Entities/adfc0103-c2d1-acc7-6bc2-7d3fa46a3c32",
+                        "id": "/subscriptions/ab48f397-xxxx-xxxx-xxxx-xxxxxxx/resourceGroups/My-RG/providers/Microsoft.OperationalInsights/workspaces/My-workspace/providers/Microsoft.SecurityInsights/Entities/adfc0103-c2d1-acc7-6bc2-7d3fa46a3c32",
                         "name": "adfc0103-c2d1-acc7-6bc2-7d3fa46a3c32",
                         "type": "Microsoft.SecurityInsights/Entities",
                         "kind": "Ip",
@@ -126,7 +126,7 @@
                         }
                     },
                     {
-                        "id": "/subscriptions/ab48f397-fc82-4634-aa52-62dd91b3ebaa/resourceGroups/woodgrove-rg/providers/Microsoft.OperationalInsights/workspaces/woodgrove-loganalyiticsworkspace/providers/Microsoft.SecurityInsights/Entities/beeec36e-9d77-78c6-6b59-96127a531134",
+                        "id": "/subscriptions/xxxxx-fc82-4634-xxxx-62dd91b3xxxxebaa/resourceGroups/My-RG/providers/Microsoft.OperationalInsights/workspaces/My-workspace/providers/Microsoft.SecurityInsights/Entities/beeec36e-9d77-78c6-6b59-96127a531134",
                         "name": "beeec36e-9d77-78c6-6b59-96127a531134",
                         "type": "Microsoft.SecurityInsights/Entities",
                         "kind": "Host",

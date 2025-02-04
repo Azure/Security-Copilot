@@ -14,7 +14,7 @@ Perform a search within a list of results from a process search. For example, se
 
 **How to Use the Custom Plugin**
 
-1. Add the custom plugin in Microsoft Copilot for Security 
+1. Add the custom plugin in Microsoft Security Copilot 
 
 ![Echo1](https://github.com/Azure/Copilot-For-Security/blob/main/Images/Logicapp%20images/Echo1.jpg)
 

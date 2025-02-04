@@ -5,12 +5,13 @@
         "PlaybookName":  {
             "defaultValue":  "SecurityCopilot-SOCshift-reporting-transfer",
             "type":  "string"
-        }
-        ,
-         "EmailTo": {
-            "defaultValue": "",
-            "type": "String"
-        }
+        },
+        "email":  {
+            "type":  "string",
+            "metadata":  {
+                "description":  "Enter value for email"
+            }
+        }   
     },
     "variables":  {
         "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
@@ -29,17 +30,21 @@
                             "defaultValue":  {
                             },
                             "type":  "Object"
+                        },
+                        "email":  {
+                            "defaultValue":  "[parameters('email')]",
+                            "type":  "string"
                         }
                     },
                     "triggers":  {
                         "Recurrence":  {
                             "recurrence":  {
-                                "frequency": "day",
-                            "interval": 1
+                                "frequency":  "day",
+                                "interval":  1
                             },
                             "evaluatedRecurrence":  {
-                                 "frequency": "day",
-                            "interval": 1
+                                "frequency":  "day",
+                                "interval":  1
                             },
                             "type":  "Recurrence"
                         }
@@ -47,14 +52,14 @@
                     "actions":  {
                         "Counter_Int":  {
                             "runAfter":  {
-                                "Parse_JSON_2":  [
+                                "Get_number_of_incidents_for_the_counter":  [
                                     "Succeeded"
                                 ]
                             },
                             "type":  "SetVariable",
                             "inputs":  {
                                 "name":  "counter",
-                                "value":  "@int(body('Parse_JSON_2')?['Evaluation Result Content'])"
+                                "value":  "@int(body('Get_number_of_incidents_for_the_counter')?['EvaluationResultContent'])"
                             }
                         },
                         "Get_number_of_incidents_for_the_counter":  {
@@ -66,12 +71,12 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "count the number of incidents you menationed above, , this will be used in an automation workflow that only accepts a single string. Provide the incident count in a response with no text before or after",
+                                    "PromptContent":  "/AskGPT count the number of incidents you menationed above, , this will be used in an automation workflow that only accepts a single string. Provide the incident count in a response with no text before or after",
                                     "SessionId":  "@body('Run_Copilot_for_Security_prompt')?['sessionId']"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -80,14 +85,14 @@
                         },
                         "Incidents_split":  {
                             "runAfter":  {
-                                "Parse_JSON":  [
+                                "Run_Copilot_for_Security_prompt":  [
                                     "Succeeded"
                                 ]
                             },
                             "type":  "SetVariable",
                             "inputs":  {
                                 "name":  "incidents",
-                                "value":  "@split(body('Parse_JSON')?['Evaluation Result Content'], ',')"
+                                "value":  "@split(body('Run_Copilot_for_Security_prompt')?['EvaluationResultContent'], ',')"
                             }
                         },
                         "Initialize_variable":  {
@@ -99,75 +104,9 @@
                                     {
                                         "name":  "Soc Email address",
                                         "type":  "string",
-                                        "value": "[parameters('EmailTo')]"
+                                        "value":  "@parameters('email')"
                                     }
                                 ]
-                            }
-                        },
-                        "Parse_JSON":  {
-                            "runAfter":  {
-                                "Run_Copilot_for_Security_prompt":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Run_Copilot_for_Security_prompt')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        },
-                                        "Skill Sources":  {
-                                            "type":  "array"
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Parse_JSON_2":  {
-                            "runAfter":  {
-                                "Get_number_of_incidents_for_the_counter":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Get_number_of_incidents_for_the_counter')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        },
-                                        "Skill Sources":  {
-                                            "type":  "array"
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
                             }
                         },
                         "Report_variable":  {
@@ -195,11 +134,12 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "im a soc analyst leader and our SOC is in the phase for changing a shift, can you summarize all the defender incident that opened in the last 24 hr and they are in status in progress, from the above response only take the incident number, this will be used in an automation workflow that only accepts a single string. Provide the incident number in a response with no text before or after"
+                                    "PromptContent":  "im a soc analyst leader and our SOC is in the phase for changing a shift, can you summarize all the defender incident that opened in the last 24 hr and they are in status in progress, from the above response only take the incident number, this will be used in an automation workflow that only accepts a single string. Provide the incident number in a response with no text before or after",
+                                    "SkillName":  "GetDefenderIncidents"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -222,7 +162,7 @@
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['office365']['connectionId']"
+                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -236,14 +176,14 @@
                                     "actions":  {
                                         "Append_to_string_variable":  {
                                             "runAfter":  {
-                                                "Parse_JSON_3":  [
+                                                "generate_the_report":  [
                                                     "Succeeded"
                                                 ]
                                             },
                                             "type":  "AppendToStringVariable",
                                             "inputs":  {
                                                 "name":  "Report",
-                                                "value":  "@{body('Parse_JSON_3')?['Evaluation Result Content']} "
+                                                "value":  " @{body('generate_the_report')?['EvaluationResultContent']}"
                                             }
                                         },
                                         "Increment_variable":  {
@@ -258,50 +198,18 @@
                                                 "value":  1
                                             }
                                         },
-                                        "Parse_JSON_3":  {
-                                            "runAfter":  {
-                                                "generate_the_report":  [
-                                                    "Succeeded"
-                                                ]
-                                            },
-                                            "type":  "ParseJson",
-                                            "inputs":  {
-                                                "content":  "@body('generate_the_report')",
-                                                "schema":  {
-                                                    "properties":  {
-                                                        "Evaluation Result Content":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "Evaluation Result Type":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "Prompt Content":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "SessionId":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "Skill Name":  {
-                                                        },
-                                                        "Skill Sources":  {
-                                                            "type":  "array"
-                                                        }
-                                                    },
-                                                    "type":  "object"
-                                                }
-                                            }
-                                        },
                                         "generate_the_report":  {
                                             "runAfter":  {
                                             },
                                             "type":  "ApiConnection",
                                             "inputs":  {
                                                 "body":  {
-                                                    "PromptContent":  "/GetDefenderIncidentReport @{items('For_each')} The results from this response will be used in an automation workflow that only accepts only html structure and tags, \nProvide the report as html tags only, add the incident id as h2 tag, format the incident details as table, include in this table a direct link to defender portal in the above format: https://security.microsoft.com/incidents/\u003cincidentid\u003e.\nFinally use html CSS that will include our organization look and feel that is on color green, add this colors as all the titles and use the color black as the reset of the content."
+                                                    "PromptContent":  "@{items('For_each')} The results from this response will be used in an automation workflow that only accepts only html structure and tags, \nProvide the report as html tags only, add the incident id as h2 tag, format the incident details as table, include in this table a direct link to defender portal in the above format: https://security.microsoft.com/incidents/\u003cincidentid\u003e.\nFinally use html CSS that will include our organization look and feel that is on color green, add this colors as all the titles and use the color black as the reset of the content.",
+                                                    "SkillName":  "GetDefenderIncidentReport"
                                                 },
                                                 "host":  {
                                                     "connection":  {
-                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                                     }
                                                 },
                                                 "method":  "post",
@@ -385,12 +293,12 @@
                 "parameters":  {
                     "$connections":  {
                         "value":  {
-                            "office365":  {
+                            "office365_1":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
                                 "connectionName":  "[variables('Office365ConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
                             },
-                            "securitycopilot":  {
+                            "securitycopilot_1":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
                                 "connectionName":  "[variables('SecuritycopilotConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
@@ -403,9 +311,9 @@
             "type":  "Microsoft.Logic/workflows",
             "location":  "[resourceGroup().location]",
             "tags":  {
-                "Created By":  "Yaniv Shasha",
+                "Created By":  "Yaniv",
                 "CreatedDate":  "1/29/2024 10:04:47 PM",
-                "CreatorUPN":  "yanivsh@woodgrove.ms"
+                "CreatorUPN":  ""
             },
             "apiVersion":  "2017-07-01",
             "dependsOn":  [

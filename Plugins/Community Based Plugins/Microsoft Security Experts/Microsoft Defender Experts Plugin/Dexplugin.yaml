@@ -1,0 +1,568 @@
+Descriptor:
+  Name: MicrosoftDefenderExpertsPlugin
+  DisplayName: Microsoft Defender Experts Security Copilot Plugin
+  Description: Leverage detections built by the Microsoft Defender Experts team in identifying threat actor activity. For more information on Microsoft Defender Experts, go here https://www.microsoft.com/en-us/security/business/services/microsoft-defender-experts-hunting?msockid=3eb9717c7a346743120665a77b05660a
+  Icon: https://raw.githubusercontent.com/KwachSean/SecurityCopilot/main/DEXlogo_resized_icon.png
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: DEX-SuspiciousUseOfAzureHound
+        DisplayName: Suspicious Use of AzureHound
+        Description: Detects potential suspicious usage of AzureHound on devices.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where FileName has "azurehound.exe"
+            | where ProcessCommandLine has "azurehound" and ProcessCommandLine has_any ("az-rm", "az-ad", "list", "Invoke-azurehound")
+
+      - Name: DEX-ReconnaissanceActivityUsingNetworkLogs
+        DisplayName: Reconnaissance Activity Using Network Logs
+        Description: Detects reconnaissance activity leveraging network logs and specific URLs.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceNetworkEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where RemoteUrl in ("login.microsoftonline.com", "graph.microsoft.com")
+            | where InitiatingProcessCommandLine has_any ("list", "-u", "-p", "--u", "--p", "--app", "--secret", "-app", "-secret", "--cert", "-cert", "-j", "--j")
+            | where InitiatingProcessFolderPath !contains "Microsoft"
+            | summarize dcount(RemoteUrl) by bin(Timestamp, 1m), InitiatingProcessFileName, DeviceId
+            | where dcount_RemoteUrl == 2
+
+      - Name: DEX-RoadreconAndRoadtxActivity
+        DisplayName: ROADrecon and ROADtx Activity
+        Description: Detects known filenames and command line activity associated with ROADrecon and ROADtx tools.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName has_any ("powershell", "cmd.exe", "pwsh.exe")
+            | where FileName has_any ("roadrecon.exe", "roadtx.exe")
+            | where ProcessCommandLine has_any ("auth", "gather", "plugin", "dump", "gettokens", "interactiveauth", "listaliases", "findscope", "device", "prt", "prtauth", "keepassauth", "browserprtauth", "browserprtinject")
+            | project-reorder Timestamp, ReportId, DeviceId, InitiatingProcessCommandLine, FileName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessParentFileName, ProcessVersionInfoOriginalFileName, ProcessVersionInfoInternalFileName, InitiatingProcessVersionInfoOriginalFileName, InitiatingProcessFileName
+
+      - Name: DEX-FederatedIdPAdditionActivity
+        DisplayName: Federated IdP Addition Activity
+        Description: Detects possible roadoidc activity related to federated identity provider addition.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceNetworkEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName == "python.exe"
+            | where InitiatingProcessParentFileName == "roadtx.exe"
+            | where InitiatingProcessCommandLine has_any ("federatedappauth", "azurewebsites", "--key-pem", "--cert-pem")
+            | extend RemoteUrl = replace_regex(RemoteUrl, @'http(s)?://', '')
+            | where ActionType == "ConnectionSuccess"
+            | project DeviceId, Timestamp, ReportId, InitiatingProcessFileName, InitiatingProcessId, InitiatingProcessAccountSid, RemoteIP, RemoteUrl, ActionType
+
+      - Name: DEX-RecentEntraIDJoinedDevices
+        DisplayName: Recent Entra ID-Joined Devices
+        Description: Identifies devices recently joined to Entra ID, potentially by threat actors to maintain access.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            AuditLogs
+            | where TimeGenerated > ago({{days}}d)
+            | extend userPrincipalName_ = tostring(parse_json(tostring(InitiatedBy.user)).userPrincipalName)
+            | extend DeviceRegInfo = tostring(AdditionalDetails[0].value)
+            | extend TrustType = tostring(AdditionalDetails[2].value)
+            | extend DeviceID = tostring(AdditionalDetails[4].value)
+            | where userPrincipalName_ contains " "         //add user entity here
+            | project TimeGenerated, OperationName, Category, DeviceRegInfo, DeviceID, TrustType, userPrincipalName_
+
+      - Name: DEX-FakeGlobalProtectTool
+        DisplayName: Fake Global Protect Tool
+        Description: Detects possible use of a fake Global Protect tool by looking for known file and folder patterns.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceNetworkEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName has_any ("GlobalProtect.exe", "GlobalProtectPortal.exe")
+            | where InitiatingProcessParentFileName endswith ".tmp"
+            | where InitiatingProcessFolderPath has_all ("appdata", "paloalto")
+
+      - Name: DEX-FakeAuthenticatorExecutable
+        DisplayName: Fake Authenticator Executable
+        Description: Detects use of a fake authenticator executable for information stealing, requiring Microsoft Defender XDR.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName has "msedge.exe"
+            | where InitiatingProcessCommandLine has_all ("msedge.exe", "--no-startup-window")
+            | where FileName has "Authenticator.exe"
+            | join kind=inner
+              (DeviceNetworkEvents
+              | where InitiatingProcessFileName has "Authenticator.exe"
+              | where RemoteUrl has "paradiso4.fun"
+              | where ActionType == "ConnectionSuccess")
+              on DeviceId
+
+      - Name: DEX-EmailBombingActivity
+        DisplayName: Email Bombing Activity Detection
+        Description: Detects possible email bombing activity using anomaly detection on inbound emails.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where EmailDirection == "Inbound"
+            | where Timestamp > ago({{days}}d)
+            | make-series Emailcount = count() on Timestamp step 1h by RecipientObjectId
+            | extend (Anomalies, AnomalyScore, ExpectedEmails) = series_decompose_anomalies(Emailcount)
+            | mv-expand Emailcount, Anomalies, AnomalyScore, ExpectedEmails to typeof(double), Timestamp
+            | where Anomalies != 0
+            | where AnomalyScore >= 10
+
+      - Name: DEX-TeamsPhishingActivity
+        DisplayName: Teams Phishing Activity Detection
+        Description: Detects possible Teams phishing activity by identifying suspicious chat creations.
+        Inputs:
+          - Name: alertedMachine
+            Description: DeviceId of the alerted machine.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let suspiciousUpns = DeviceProcessEvents
+            | where DeviceId == "{{alertedMachine}}"
+            | where isnotempty(InitiatingProcessAccountUpn)
+            | project InitiatingProcessAccountUpn;
+            CloudAppEvents
+            | where Application == "Microsoft Teams"
+            | where ActionType == "ChatCreated"
+            | where isempty(AccountObjectId)
+            | where RawEventData.ParticipantInfo.HasForeignTenantUsers == true
+            | where RawEventData.CommunicationType == "OneonOne"
+            | where RawEventData.ParticipantInfo.HasGuestUsers == false
+            | where RawEventData.ParticipantInfo.HasOtherGuestUsers == false
+            | where RawEventData.Members[0].DisplayName in ("Microsoft  Security", "Help Desk", "Help Desk Team", "Help Desk IT", "Microsoft Security", "office")
+            | where AccountId has "@"
+            | extend TargetUPN = tolower(tostring(RawEventData.Members[1].UPN))
+            | where TargetUPN in (suspiciousUpns)
+
+      - Name: DEX-CobaltStrikeDNSBeaconing
+        DisplayName: Cobalt Strike DNS Beaconing Detection
+        Description: Detects suspicious DNS queries associated with Cobalt Strike beacons.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let badNames = dynamic(["aaa.stage.", "post.1"]);
+            (union isfuzzy=true
+            (DnsEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where Name has_any (badNames)
+            | extend Domain = Name, SourceIp = ClientIP, RemoteIP = todynamic(IPAddresses)
+            | mv-expand RemoteIP
+            | extend RemoteIP = tostring(RemoteIP)),
+            (VMConnection
+            | where TimeGenerated > ago({{days}}d)
+            | where isnotempty(RemoteDnsCanonicalNames)
+            | parse RemoteDnsCanonicalNames with * '["' DNSName '"]' *
+            | where DNSName has_any (badNames)
+            | extend Domain = DNSName, RemoteIP = RemoteIp
+            ))
+            | summarize StartTimeUtc = min(TimeGenerated), EndTimeUtc = max(TimeGenerated) by Domain, SourceIp, RemoteIP, Computer
+            | extend timestamp = StartTimeUtc, HostName = split(Computer, '.', 0)[0], DnsDomain = strcat_array(array_slice(split(Computer, '.'), 1, -1), '.')
+            | extend Host_0_HostName = HostName
+            | extend Host_0_DnsDomain = DnsDomain
+            | extend IP_0_Address = RemoteIP
+
+      - Name: DEX-ExcelLaunchingAnomalousProcesses
+        DisplayName: Excel Launching Anomalous Processes
+        Description: Detects Excel launching anomalous processes congruent with Qakbot payloads, indicating potential malicious activity.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessParentFileName has "excel.exe" or InitiatingProcessFileName =~ "excel.exe"
+            | where InitiatingProcessFileName in~ ("excel.exe", "regsvr32.exe")
+            | where FileName in~ ("regsvr32.exe", "rundll32.exe")
+            | where ProcessCommandLine has @"..\"
+
+      - Name: DEX-GeneralAttemptsToAccessLocalEmailStore
+        DisplayName: General Attempts to Access Local Email Store
+        Description: Detects attempts to access files in the local path containing Outlook emails.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceFileEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where FolderPath hasprefix "EmailStorage"
+            | where FolderPath has "Outlook"
+            | project FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessCommandLine, DeviceId, Timestamp
+
+      - Name: DEX-QakbotCraigslistDomains
+        DisplayName: Qakbot Craigslist Domains Detection
+        Description: Detects malicious domains impersonating Craigslist used by Qakbot operators.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceNetworkEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where RemoteUrl matches regex @"abuse\.[a-zA-Z]\d{2}-craigslist\.org"
+
+      - Name: DEX-QakbotEmailTheft
+        DisplayName: Qakbot Email Theft Detection
+        Description: Detects email stealing activities by Qakbot using specific patterns.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceFileEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName =~ 'ping.exe' and InitiatingProcessCommandLine == 'ping.exe -t 127.0.0.1'
+            and InitiatingProcessParentFileName in~('msra.exe', 'mobsync.exe') and FolderPath endswith ".eml"
+
+      - Name: DEX-QakbotReconnaissanceActivities
+        DisplayName: Qakbot Reconnaissance Activities Detection
+        Description: Detects reconnaissance and beaconing activities after code injection by Qakbot.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 7, 14, 21.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName == InitiatingProcessCommandLine
+            | where ProcessCommandLine has_any (
+            "whoami /all","cmd /c set","arp -a","ipconfig /all","net view /all","nslookup -querytype=ALL -timeout=10",
+            "net share","route print","netstat -nao","net localgroup")
+            | summarize dcount(FileName), make_set(ProcessCommandLine) by DeviceId, bin(Timestamp, 1d), InitiatingProcessFileName, InitiatingProcessCommandLine
+            | where dcount_FileName >= 8
+
+      - Name: DEX-SuspiciousNamedPipes
+        DisplayName: Suspicious Named Pipes Detection
+        Description: Detects named pipe events that may be linked to Cobalt Strike usage.
+        Inputs:
+          - Name: hours
+            Description: Look back x amount of hours, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let timeframe = {{hours}}h;
+            let CobaltStrikeDefaults = dynamic([@"msagent_", @"MSSE-", @"postex_", @"status_", @"mypipe-f", @"mypipe-h", @"ntsvcs_", @"scerpc_", @"mojo.5688.8052."]);
+            let CobaltStrikeMallable = dynamic([@"win_svc", @"ntsvcs", @"scerpc", @"status_", @"SearchTextHarvester", @"DserNamePipe", @"wkssvc_", @"scerpc_", @"spoolss_", @"CatalogChangeListener", @"fullduplex_", @"demoagent_", @"PGMessagePipe", @"MsFteWds", @"postex_ssh_", @"windows.update.manager", @"\f4c3", @"\f53f", @"halfduplex_"]);
+            DeviceEvents
+            | where Timestamp >= ago(timeframe)
+            | where ActionType == "NamedPipeEvent"
+            | extend AdditionalFields = parse_json(AdditionalFields)
+            | extend ThreadId = tostring(AdditionalFields.ThreadId)
+            | extend PipeName = tostring(AdditionalFields.PipeName)
+            | extend InitiatingPID = tostring(InitiatingProcessId)
+            | extend InitiatingParentPID = tostring(InitiatingProcessParentId)
+            | where PipeName has_any (CobaltStrikeDefaults) or
+              (PipeName matches regex @"\\mojo\.\d+\.\d+\." and not(PipeName matches regex @"\\mojo\.\d+\.\d+\.\d+$" or PipeName has InitiatingPID or PipeName has InitiatingParentPID or PipeName has ThreadId)) or
+              (PipeName matches regex @"\\(edge|chrome)\.sync\.\d+\.\d+\." and not(PipeName matches regex @"\\(edge|chrome|edge\.sync|chrome\.sync)\.\d+\.\d+\.\d+$" or PipeName has InitiatingPID or PipeName has InitiatingParentPID or PipeName has ThreadId)) or
+              (PipeName matches regex @"\\PSHost\.\d+\." and not(PipeName matches regex @"\\PSHost\.\d+\.\d+\." or PipeName has InitiatingPID or PipeName has InitiatingParentPID)) or
+              (PipeName matches regex @"\\crashpad_" and not(PipeName matches regex @"\\crashpad_\d+_[A-Z]+" or PipeName has InitiatingPID or PipeName has InitiatingParentPID)) or
+              (PipeName matches regex @"\\cubeb-pipe-" and not(PipeName matches regex @"\\cubeb-pipe-\d+_[0-9]{1,3}+" or PipeName has InitiatingPID)) or
+              (PipeName has_any (CobaltStrikeMallable) and PipeName matches regex @"[a-fA-F0-9]{2,10}$") or
+              (PipeName matches regex @"\\pipe\\[0-9a-f]{7,10}" or PipeName matches regex @"\\pipe\\[0-9a-f]{8}")
+
+      - Name: DEX-CobaltStrikeInvokedWithWMI
+        DisplayName: Cobalt Strike Invoked with WMI Detection
+        Description: Detects possible invocation of Cobalt Strike using Windows Management Instrumentation (WMI).
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 7, 14, 21.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName =~ 'wmiprvse.exe'
+            | where FileName =~ 'powershell.exe'
+            and (ProcessCommandLine hasprefix '-e' or ProcessCommandLine contains 'frombase64')
+            | where ProcessCommandLine matches regex '[A-Za-z0-9+/]{50,}[=]{0,2}'
+            | where ProcessCommandLine !has 'Windows\\CCM\\'
+            | project DeviceId, Timestamp, InitiatingProcessId, InitiatingProcessFileName, ProcessId, FileName, ProcessCommandLine
+
+      - Name: DEX-AutomatedEmailNotificationsAndSuspiciousSignInActivity
+        DisplayName: Automated Email Notifications and Suspicious Sign-In Activity Detection
+        Description: Correlates automated email notifications with suspicious sign-in activity to identify potential compromises.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let usersWithSuspiciousEmails = EmailEvents
+                | where TimeGenerated > ago({{days}}d)
+                | where SenderFromAddress in ("no-reply@notify.microsoft.com", "no-reply@dropbox.com") or InternetMessageId startswith "<OneTimePasscode"
+                | where isnotempty(RecipientObjectId)
+                | distinct RecipientObjectId;
+            AADSignInEventsBeta
+            | where TimeGenerated > ago({{days}}d)
+            | where AccountObjectId in (usersWithSuspiciousEmails)
+            | where RiskLevelDuringSignIn == 100
+
+      - Name: DEX-FileShareContentsAndSuspiciousSignInActivity
+        DisplayName: File Share Contents and Suspicious Sign-In Activity Detection
+        Description: Correlates file share emails with suspicious sign-ins to detect potential compromises.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let usersWithSuspiciousEmails = EmailEvents
+                | where TimeGenerated > ago({{days}}d)
+                | where Subject has_all ("shared", "with you")
+                | where Subject has_any ("payment", "invoice", "urgent", "mandatory", "Payoff", "Wire", "Confirmation", "password")
+                | where isnotempty(RecipientObjectId)
+                | summarize RecipientCount = dcount(RecipientObjectId), RecipientList = make_set(RecipientObjectId) by Subject
+                | where RecipientCount >= 10
+                | mv-expand RecipientList to typeof(string)
+                | distinct RecipientList;
+            AADSignInEventsBeta
+            | where TimeGenerated > ago({{days}}d)
+            | where AccountObjectId in (usersWithSuspiciousEmails)
+            | where RiskLevelDuringSignIn == 100
+
+      - Name: DEX-OneDriveOrSharePointMassFileSharingDetection
+        DisplayName: OneDrive or SharePoint Mass File Sharing Detection
+        Description: Detects files shared with multiple participants in OneDrive or SharePoint, indicating potential lateral movements or BEC attacks.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let securelinkCreated = CloudAppEvents
+                | where TimeGenerated > ago({{days}}d)
+                | where ActionType == "SecureLinkCreated"
+                | project FileCreatedTime = Timestamp, AccountObjectId, ObjectName;
+            let filesCreated = securelinkCreated
+                | where isnotempty(ObjectName)
+                | distinct tostring(ObjectName);
+            CloudAppEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where ActionType == "AddedToSecureLink"
+            | where Application in ("Microsoft SharePoint Online", "Microsoft OneDrive for Business")
+            | extend FileShared = tostring(RawEventData.ObjectId)
+            | where FileShared in (filesCreated)
+            | extend UserSharedWith = tostring(RawEventData.TargetUserOrGroupName)
+            | extend TypeofUserSharedWith = RawEventData.TargetUserOrGroupType
+            | where TypeofUserSharedWith == "Guest"
+            | where isnotempty(FileShared) and isnotempty(UserSharedWith)
+            | join kind=inner securelinkCreated on $left.FileShared == $right.ObjectName
+            | summarize NumofUsersSharedWith = dcount(UserSharedWith) by FileShared
+            | where NumofUsersSharedWith >= 20
+
+      - Name: DEX-DropboxMassFileSharingDetection
+        DisplayName: Dropbox Mass File Sharing Detection
+        Description: Detects files hosted on Dropbox that have been shared with multiple participants.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            CloudAppEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where ActionType in ("Added users and/or groups to shared file/folder", "Invited user to Dropbox and added them to shared file/folder")
+            | where Application == "Dropbox"
+            | where ObjectType == "File"
+            | extend FileShared = tostring(ObjectName)
+            | where isnotempty(FileShared)
+            | mv-expand ActivityObjects
+            | where ActivityObjects.Type == "Account" and ActivityObjects.Role == "To"
+            | extend SharedBy = AccountId
+            | extend UserSharedWith = tostring(ActivityObjects.Name)
+            | summarize dcount(UserSharedWith) by FileShared, AccountObjectId
+            | where dcount_UserSharedWith >= 20
+
+      - Name: DEX-PossibleAiTMPhishingAttemptAgainstEntraID
+        DisplayName: Possible AiTM Phishing Attempt Against Entra ID
+        Description: |
+          Threat actors may attempt to phish users to hijack sign-in sessions, even if MFA is enabled, by stealing and replaying credentials and session cookies. This detection looks for successful Entra ID sign-ins with a high-risk profile and then checks for network connections to the same IP address immediately before the sign-in, indicating possible phishing activity.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 1, 2, 3.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let time_threshold = 10m;
+            let RiskySignins = materialize (SigninLogs
+            | where TimeGenerated > ago({{days}}d)
+            | where ResultType == 0
+            | where RiskLevelDuringSignIn =~ "high" or RiskLevelAggregated =~ "high"
+            | extend SignInTime = TimeGenerated, Name = split(UserPrincipalName, "@")[0], UPNSuffix = split(UserPrincipalName, "@")[1]);
+            let ips = todynamic(toscalar(RiskySignins | summarize make_list(IPAddress)));
+            RiskySignins
+            | join kind=inner (_Im_WebSession(starttime=ago({{days}}d), ipaddr_has_any_prefix=ips, eventresult="Success", pack=True))
+            on $left.IPAddress == $right.DstIpAddr
+            | where EventStartTime < TimeGenerated
+            | extend TimeDelta = TimeGenerated - EventStartTime
+            | where TimeDelta <= time_threshold
+            | extend NetworkEventStartTime = EventStartTime, NetworkEventEndTime = EventEndTime
+            | extend SrcUsername = column_ifexists("SrcUsername", "Unknown")
+            | project-reorder SignInTime, UserPrincipalName, IPAddress, AppDisplayName, ClientAppUsed, DeviceDetail, LocationDetails, NetworkLocationDetails, RiskEventTypes, UserAgent, NetworkEventStartTime, NetworkEventEndTime, SrcIpAddr, DstIpAddr, DstPortNumber, Dvc, DvcHostname, SrcBytes, NetworkProtocol, SrcUsername
+
+      - Name: DEX-SigninsFromVPSProviders
+        DisplayName: Sign-ins From VPS Providers
+        Description: Detects successful logons from known VPS providers with suspicious token patterns.
+        Inputs:
+          - Name: riskScoreCutoff
+            Description: Adjust this based on the volume of results; default is 20.
+            Required: false
+            DefaultValue: 20
+        Settings:
+          Target: Defender
+          Template: |-
+            let riskScoreCutoff = {{riskScoreCutoff}};
+            let IP_Data = (externaldata(network:string)
+            [@"https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Sample%20Data/Feeds/VPS_Networks.csv"] with (format="csv"));
+            SigninLogs
+            | where ResultType == 0
+            | extend additionalDetails = tostring(Status.additionalDetails)
+            | evaluate ipv4_lookup(IP_Data, IPAddress, network, return_unmatched = false)
+            | summarize make_set(additionalDetails), StartTime = min(TimeGenerated), EndTime = max(TimeGenerated) by IPAddress, UserPrincipalName
+            | extend timestamp = StartTime, UserPrincipalName = tolower(UserPrincipalName), AccountCustomEntity = UserPrincipalName, IPCustomEntity = IPAddress
+            | join kind=leftouter (
+                IdentityInfo
+                | summarize LatestReportTime = arg_max(TimeGenerated, *) by AccountUPN
+                | extend UserPrincipalName = tolower(AccountUPN)
+            ) on UserPrincipalName
+            | join kind=leftouter (
+                BehaviorAnalytics
+                | where ActivityType in ("FailedLogOn", "LogOn")
+                | where isnotempty(SourceIPAddress)
+                | where ActivityInsights["ISPUncommonlyUsedInTenant"] == True
+                | summarize IPInvestigationPriority = sum(InvestigationPriority) by IPAddress = SourceIPAddress
+            ) on IPAddress
+            | extend UEBARiskScore = IPInvestigationPriority
+            | where UEBARiskScore > riskScoreCutoff
+            | sort by UEBARiskScore desc
+
+      - Name: DEX-SigninsFromNordVPNProviders
+        DisplayName: Sign-ins from Nord VPN Providers
+        Description: Tracks sign-ins via Nord VPN using a daily-updated API to detect unusual activity.
+        Inputs:
+          - Name: hours
+            Description: Look back x amount of hours, for example 4, 8, 12.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let nord_vpn_feed = (externaldata(id:int, ip_address:string, search_keywords:dynamic, categories:dynamic, name:string, domain:string, price:int, flag:string, country:string, location:dynamic, load:int, features:dynamic)
+              [@"https://raw.githubusercontent.com/microsoft/mstic/master/nordvpn-servers.csv"] with (format="csv", ignoreFirstRecord=True));
+            SigninLogs
+            | where TimeGenerated > ago({{hours}}h)
+            | where ResultType == 0
+            | summarize TotalEvents = count(), AppList = make_set(AppDisplayName), StartTime = min(TimeGenerated), EndTime = max(TimeGenerated) by IPAddress, UserPrincipalName, ClientAppUsed, ConditionalAccessStatus, AuthenticationRequirement, RiskDetail
+            | join kind=inner nord_vpn_feed on $left.IPAddress == $right.ip_address
+            | extend timestamp = StartTime, UserPrincipalName = tolower(UserPrincipalName), AccountCustomEntity = UserPrincipalName, IPCustomEntity = IPAddress
+            | join kind=leftouter (
+                IdentityInfo
+                | summarize LatestReportTime = arg_max(TimeGenerated, *) by AccountUPN
+                | extend UserPrincipalName = tolower(AccountUPN)
+            ) on UserPrincipalName
+            | join kind=leftouter (
+                BehaviorAnalytics
+                | where ActivityType in ("FailedLogOn", "LogOn")
+                | where isnotempty(SourceIPAddress)
+                | where ActivityInsights["ISPUncommonlyUsedInTenant"] == True
+                | summarize IPInvestigationPriority = sum(InvestigationPriority) by IPAddress = SourceIPAddress
+            ) on IPAddress
+            | extend UEBARiskScore = IPInvestigationPriority
+            | sort by UEBARiskScore desc
+
+      - Name: DEX-SuccessfulSigninFromNonCompliantDevice
+        DisplayName: Successful Sign-in From Non-Compliant Device
+        Description: Detects successful sign-ins from devices marked non-compliant.
+        Inputs:
+          - Name: riskScoreCutoff
+            Description: Adjust this based on the volume of results; default is 0.
+            Required: false
+            DefaultValue: 0
+        Settings:
+          Target: Defender
+          Template: |-
+            SigninLogs
+            | where ResultType == 0
+            | where tostring(DeviceDetail.isCompliant) == "false"
+            | extend Account_0_Name = tolower(UserPrincipalName)
+            | extend IP_0_Address = IPAddress
+            | join kind=leftouter (
+                IdentityInfo
+                | summarize LatestReportTime = arg_max(TimeGenerated, *) by AccountUPN
+                | extend Account_0_Name = tolower(AccountUPN)
+            ) on Account_0_Name
+            | join kind=leftouter (
+                BehaviorAnalytics
+                | where ActivityType in ("FailedLogOn", "LogOn")
+                | where isnotempty(SourceIPAddress)
+                | summarize IPInvestigationPriority = sum(InvestigationPriority) by IP_0_Address = SourceIPAddress
+            ) on IP_0_Address
+            | extend UEBARiskScore = IPInvestigationPriority
+            | where UEBARiskScore > {{riskScoreCutoff}}
+            | sort by UEBARiskScore desc

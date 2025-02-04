@@ -1,0 +1,1058 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "LogicAppName": {
+            "type": "string"
+        },
+        "FunctionAppRG": {
+            "type": "string"
+        },
+        "FunctionAppName": {
+            "type": "string"
+        },
+        "PhishingReportEmailAddress": {
+            "type": "string"
+        }
+    },
+
+    "variables": {
+        "Office365-1ConnectionName": "[concat('Office365-1-', parameters('LogicAppName'))]",
+        "Securitycopilot-1ConnectionName": "[concat('Securitycopilot-1-', parameters('LogicAppName'))]",
+        "FunctionName01": "parse_email",
+        "FunctionName02": "parse_pdf",
+        "FunctionName03": "normalize_json",
+        "FunctionName04": "json_to_html"
+    },
+    "resources": [
+        {
+            "properties": {
+                "provisioningState": "Succeeded",
+                "state": "Disabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_new_email_arrives_(V3)": {
+                            "splitOn": "@triggerBody()?['value']",
+                            "type": "ApiConnectionNotification",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365-1']['connectionId']"
+                                    }
+                                },
+                                "fetch": {
+                                    "pathTemplate": {
+                                        "template": "/v3/Mail/OnNewEmail"
+                                    },
+                                    "method": "get",
+                                    "queries": {
+                                        "importance": "Any",
+                                        "fetchOnlyWithAttachment": false,
+                                        "includeAttachments": true,
+                                        "folderPath": "Inbox"
+                                    }
+                                },
+                                "subscribe": {
+                                    "body": {
+                                        "NotificationUrl": "@listCallbackUrl()"
+                                    },
+                                    "pathTemplate": {
+                                        "template": "/GraphMailSubscriptionPoke/$subscriptions"
+                                    },
+                                    "method": "post",
+                                    "queries": {
+                                        "importance": "Any",
+                                        "fetchOnlyWithAttachment": false,
+                                        "folderPath": "Inbox"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Check_attachments_on_MDTI": {
+                            "actions": {
+                                "Copilot_check_file_hashes": {
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": {
+                                            "PromptContent": "hash:@{body('Process_JSON')?['email_content']?['attachments'][0]?['attachment_sha256']}",
+                                            "SessionId": "@body('Summarize_Email_Intent')?['sessionId']",
+                                            "SkillName": "GetFileAnalysis"
+                                        },
+                                        "path": "/process-prompt",
+                                        "retryPolicy": {
+                                            "type": "fixed",
+                                            "count": 12,
+                                            "interval": "PT5M"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Compose": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {}
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "greater": [
+                                            "@length(variables('attachments'))",
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Check_if_domains_exist": {
+                            "actions": {
+                                "Copilot_check_MDTI_for_domain_reputation": {
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": {
+                                            "PromptContent": "Check the reputation for these domains @{body('Process_JSON')?['domains']}",
+                                            "SessionId": "@body('Summarize_Email_Intent')?['sessionId']",
+                                            "SkillName": "GetReputationsForIndicators"
+                                        },
+                                        "path": "/process-prompt",
+                                        "retryPolicy": {
+                                            "type": "fixed",
+                                            "count": 12,
+                                            "interval": "PT5M"
+                                        }
+                                    }
+                                },
+                                "Copilot_check_MDTI_for_url_reputation": {
+                                    "runAfter": {
+                                        "Copilot_check_MDTI_for_domain_reputation": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": {
+                                            "PromptContent": "Check the reputation for these urls @{string(variables('urls'))}",
+                                            "SessionId": "@body('Summarize_Email_Intent')?['sessionId']",
+                                            "SkillName": "GetReputationsForIndicators"
+                                        },
+                                        "path": "/process-prompt",
+                                        "retryPolicy": {
+                                            "type": "fixed",
+                                            "count": 12,
+                                            "interval": "PT5M"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_variable_domains": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {}
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "greater": [
+                                            "@length(body('Process_JSON')?['domains'])",
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Export_email_(V2)": {
+                            "runAfter": {
+                                "Initialize_variable_message_id": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365-1']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/codeless/beta/me/messages/@{encodeURIComponent(triggerBody()?['id'])}/$value"
+                            }
+                        },
+                        "Analyze_email_body_and_attachment_data": {
+                            "runAfter": {
+                                "Initialize_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "/AskGpt\n### Task: Analyze the email for potential phishing indicators, focusing on the attachment's role and any actions it encourages. Output in JSON format.\n\n#### Pertinent Analysis Output from Previous Prompts:\n\"\"\"\nEmail intent: \n\n@{body('Summarize_Email_Intent')?['EvaluationResultContent']}\n\nAttachment data:\n\n@{body('Process_JSON')?['email_content']?['attachments']?[0]?['attachment_name']}\n@{body('Copilot_check_file_hashes')?['EvaluationResultContent']}\n\n\"\"\"\n\n### Task: Conduct a detailed analysis of the email attachment and its relationship to previously detected phishing indicators in the email body. Focus on the attachment’s alignment with the email's purpose and intent, especially looking for unusual characteristics that could indicate malicious intent.\n\nEmail Body Analysis Summary (from previous analysis):\n- Summary: The email body contains specific indicators of phishing intent, such as psychological manipulation, suspicious requests, or tactics encouraging action. Positive or neutral traits should not be included in the phishing indicators list.\n\n- Detected Indicators:\n  - **Phishing Indicators**: Only include clear indicators of deception, focusing on psychological manipulation, suspicious requests, domain mismatches, urgency tactics, or unusual links/attachments.\n  - **Positive Indicators (Optional)**: List any indicators of legitimacy if relevant, such as verified sender domains or expected file formats, but do not include these in phishing indicators.\n\n### Analysis Steps:\n\n1. **Email Body Context Recap**: Briefly summarize the key phishing indicators found in the email body to maintain context, emphasizing any manipulative tactics or suspicious requests encouraging user action.\n\n2. **Attachment Review**:\n   - **Attachment Summary**: Describe the attachment’s content or file type (e.g., PDF invoice, Word document).\n   - **Legitimacy and Intent Check**: Evaluate if the attachment logically supports the email’s purpose and intent. Consider if the attachment type, format, and file name are expected for legitimate communications from the sender.\n   - **Potential Malicious Indicators**: Identify suspicious characteristics (e.g., executable file types, unexpected encryption, or file sizes) that suggest possible malicious intent.\n\n3. **Overall Phishing Likelihood Assessment**: Based on phishing indicators in the email body and attachment analysis, rate the phishing likelihood as 'High,' 'Medium,' 'Low,' or 'Inconclusive' if there’s insufficient information.\n\n### Output Format:\nProvide the output in JSON format as follows:\n\n{\n  \"AttachmentReview\": {\n    \"Findings\": \"Brief summary of attachment analysis or null if no findings.\",\n    \"LegitimacyCheck\": \"true if the attachment logically aligns with the email’s intent, false if it does not, or null if no attachment.\"\n  },\n  \"EmailBodyAnalysis\": {\n    \"EmailPurposeSummary\": \"One-sentence summary of the email's stated purpose.\",\n    \"IntentSummary\": \"One-sentence summary of the email’s main intent, especially if it seeks user action.\",\n    \"PhishingIndicators\": [\n      \"List specific phishing indicators, focusing on manipulative tactics, suspicious requests, links, or attachment-related risks.\"\n    ],\n    \"PositiveIndicators\": [\n      \"Optional: List any indicators of legitimacy here if relevant, such as verified sender domains or legitimate urgency.\"\n    ],\n    \"OverallPhishingLikelihood\": \"High, Medium, Low, or Inconclusive.\"\n  }\n}\n\n### Example JSON Output:\n{\n  \"AttachmentReview\": {\n    \"Findings\": \"Attachment is labeled as an invoice but has a .exe file format, which is unusual.\",\n    \"LegitimacyCheck\": false\n  },\n  \"EmailBodyAnalysis\": {\n    \"EmailPurposeSummary\": \"Invoice notification with a call to action to view payment details.\",\n    \"IntentSummary\": \"Encourages recipient to open a suspicious attachment and view payment instructions.\",\n    \"PhishingIndicators\": [\n      \"Urgency with payment warning.\",\n      \"Suspicious file type in attachment.\",\n      \"Request for sensitive payment details.\"\n    ],\n    \"PositiveIndicators\": [\n      \"Recognized sender domain.\",\n      \"Consistent company branding.\"\n    ],\n    \"OverallPhishingLikelihood\": \"High\"\n  }\n}\n\n### Notes:\n- **Phishing Indicators** should reflect only suspicious elements directly linked to potential phishing.\n- **Positive Indicators** can be used to list legitimate traits if relevant.\n- The **Overall Phishing Likelihood** should primarily reflect the presence and severity of phishing indicators, with positive indicators reducing the risk assessment.",
+                                    "SessionId": "@body('Summarize_Email_Intent')?['sessionId']"
+                                },
+                                "path": "/process-prompt",
+                                "retryPolicy": {
+                                    "type": "fixed",
+                                    "count": 12,
+                                    "interval": "PT5M"
+                                }
+                            }
+                        },
+                        "For_each_attachment": {
+                            "foreach": "@triggerBody()?['attachments']",
+                            "actions": {
+                                "Check_if_binary_msg_eml_attachment": {
+                                    "actions": {
+                                        "Decode_Base64_ContentBytes": {
+                                            "type": "Compose",
+                                            "inputs": "@base64ToBinary(item()?['contentBytes'])"
+                                        },
+                                        "Set_variable_raw_email_msg_binary_decoded": {
+                                            "runAfter": {
+                                                "Show_bytes": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "SetVariable",
+                                            "inputs": {
+                                                "name": "raw_email",
+                                                "value": "@string(outputs('Show_bytes'))"
+                                            }
+                                        },
+                                        "Show_bytes": {
+                                            "runAfter": {
+                                                "Decode_Base64_ContentBytes": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Compose",
+                                            "inputs": "@outputs('Decode_Base64_ContentBytes')"
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Show_attachment": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else": {
+                                        "actions": {}
+                                    },
+                                    "expression": {
+                                        "or": [
+                                            {
+                                                "equals": [
+                                                    "@outputs('Show_attachment')?['contentType']",
+                                                    "message/rfc822"
+                                                ]
+                                            },
+                                            {
+                                                "equals": [
+                                                    "@outputs('Show_attachment')?['contentType']",
+                                                    "application/octet-stream"
+                                                ]
+                                            },
+                                            {
+                                                "equals": [
+                                                    "@outputs('Show_attachment')?['contentType']",
+                                                    "application/vnd.ms-outlook"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "Show_attachment": {
+                                    "type": "Compose",
+                                    "inputs": "@item()"
+                                }
+                            },
+                            "runAfter": {
+                                "Set_variable_raw_email": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "Initialize_variable_domains": {
+                            "runAfter": {
+                                "Check_attachments_on_MDTI": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "domains",
+                                        "type": "array",
+                                        "value": [
+                                            "@body('Process_JSON')?['domains']"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_email_body": {
+                            "runAfter": {
+                                "Show_email_body_and_attachment_extracted_text_here": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "email_body",
+                                        "type": "string",
+                                        "value": "@outputs('Show_email_body_and_attachment_extracted_text_here')"
+                                    }
+                                ]
+                            }
+                        },
+                        "Process_JSON": {
+                            "runAfter": {
+                                "Parse_Email": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('Parse_Email')",
+                                "schema": {
+                                    "properties": {
+                                        "domains": {
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "email_content": {
+                                            "properties": {
+                                                "attachments": {
+                                                    "type": "array"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "dkim_result": {
+                                                    "type": "string"
+                                                },
+                                                "dmarc_result": {
+                                                    "type": "string"
+                                                },
+                                                "receiver": {
+                                                    "type": "string"
+                                                },
+                                                "reply_to": {
+                                                    "type": "string"
+                                                },
+                                                "return_path": {
+                                                    "type": "string"
+                                                },
+                                                "sender": {
+                                                    "type": "string"
+                                                },
+                                                "smtp": {
+                                                    "properties": {
+                                                        "delivered_to": {
+                                                            "type": "string"
+                                                        },
+                                                        "received": {
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "type": "array"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "spf_result": {
+                                                    "type": "string"
+                                                },
+                                                "subject": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "ip_addresses": {
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "urls": {
+                                            "type": "array"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Set_variable_raw_email": {
+                            "runAfter": {
+                                "Export_email_(V2)": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "raw_email",
+                                        "type": "string",
+                                        "value": "@{body('Export_email_(V2)')}"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_raw_urls": {
+                            "runAfter": {
+                                "If_pdf_attachment_the_extract_text": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "raw_urls",
+                                        "type": "array",
+                                        "value": "@body('Process_JSON')?['urls']"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_urls": {
+                            "runAfter": {
+                                "Initialize_variable_raw_urls": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "urls",
+                                        "type": "array",
+                                        "value": []
+                                    }
+                                ]
+                            }
+                        },
+                        "For_each_raw_url_truncate_if_too_long": {
+                            "foreach": "@variables('raw_urls')",
+                            "actions": {
+                                "If_URL_length_greater_than_100": {
+                                    "actions": {
+                                        "Append_to_array_variable": {
+                                            "type": "AppendToArrayVariable",
+                                            "inputs": {
+                                                "name": "urls",
+                                                "value": "@concat(substring(string(item()), 0, 100), '...')"
+                                            }
+                                        }
+                                    },
+                                    "else": {
+                                        "actions": {
+                                            "Append_to_array_variable_1": {
+                                                "type": "AppendToArrayVariable",
+                                                "inputs": {
+                                                    "name": "urls",
+                                                    "value": "@string(item())"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "greater": [
+                                                    "@length(item())",
+                                                    100
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_variable_urls": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "Initialize_variable_message_id": {
+                            "runAfter": {},
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "message_id",
+                                        "type": "string",
+                                        "value": "@triggerBody()?['internetMessageId']"
+                                    }
+                                ]
+                            }
+                        },
+                        "Parse_Email": {
+                            "runAfter": {
+                                "For_each_attachment": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Function",
+                            "inputs": {
+                                "body": "@variables('raw_email')",
+                                "function": {
+                                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('FunctionAppRG'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName01'))]"
+                                }
+                            }
+                        },
+                        "If_pdf_attachment_the_extract_text": {
+                            "actions": {
+                                "For_each_pdf_attachment": {
+                                    "foreach": "@variables('attachments')",
+                                    "actions": {
+                                        "Show_attachment_here": {
+                                            "type": "Compose",
+                                            "inputs": "@item()"
+                                        },
+                                        "Check_if_valid_PDF": {
+                                            "runAfter": {
+                                                "Show_attachment_here": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Compose",
+                                            "inputs": "@if(or(equals(toLower(item()?['content_type']), 'application/pdf'),equals(toLower(item()?['content_type']), 'application/x-pdf'),equals(toLower(item()?['content_type']), 'application/octet-stream')),'true','false')"
+                                        },
+                                        "Condition": {
+                                            "actions": {
+                                                "Process_Attachment_JSON": {
+                                                    "type": "ParseJson",
+                                                    "inputs": {
+                                                        "content": "@outputs('Show_attachment_here')",
+                                                        "schema": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "attachment_name": {
+                                                                    "type": "string"
+                                                                },
+                                                                "attachment_sha256": {
+                                                                    "type": "string"
+                                                                },
+                                                                "attachment_base64": {
+                                                                    "type": "string"
+                                                                },
+                                                                "content_type": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "Parse_PDF": {
+                                                    "runAfter": {
+                                                        "Process_Attachment_JSON": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Function",
+                                                    "inputs": {
+                                                        "body": "@body('Process_Attachment_JSON')?['attachment_base64']",
+                                                        "function": {
+                                                            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('FunctionAppRG'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName02'))]"
+                                                        }
+                                                    }
+                                                },
+                                                "Append_PDF_extracted_text_to_attachment_extracted_text_variable": {
+                                                    "runAfter": {
+                                                        "Parse_PDF": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "AppendToStringVariable",
+                                                    "inputs": {
+                                                        "name": "attachment_extracted_text",
+                                                        "value": "@body('Parse_PDF')"
+                                                    }
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Check_if_valid_PDF": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else": {
+                                                "actions": {}
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "equals": [
+                                                            "@outputs('Check_if_valid_PDF')",
+                                                            "true"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type": "If"
+                                        }
+                                    },
+                                    "type": "Foreach"
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_variable_attachments": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {}
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "greater": [
+                                            "@length(variables('attachments'))",
+                                            0
+                                        ]
+                                    },
+                                    {
+                                        "or": [
+                                            {
+                                                "equals": [
+                                                    "@toLower(variables('attachments')[0]?['content_type'])",
+                                                    "application/pdf"
+                                                ]
+                                            },
+                                            {
+                                                "equals": [
+                                                    "@toLower(variables('attachments')[0]?['content_type'])",
+                                                    "application/x-pdf"
+                                                ]
+                                            },
+                                            {
+                                                "equals": [
+                                                    "@toLower(variables('attachments')[0]?['content_type'])",
+                                                    "application/octet-stream"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Initialize_variable_attachment_extracted_text": {
+                            "runAfter": {
+                                "Process_JSON": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "attachment_extracted_text",
+                                        "type": "string",
+                                        "value": "\"\""
+                                    }
+                                ]
+                            }
+                        },
+                        "Show_email_body_and_attachment_extracted_text_here": {
+                            "runAfter": {
+                                "Show_URL_Array_here": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Compose",
+                            "inputs": "@{concat(body('Process_JSON')?['email_content']?['body'], '\\n', variables('attachment_extracted_text'))}\""
+                        },
+                        "Analyze_domains_and_URLs": {
+                            "runAfter": {
+                                "Append_response1_to_array": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "/AskGpt\n\n### Task: Conduct a thorough evaluation of domains and URLs in the email to assess for potential phishing intent. Break down your analysis step-by-step, focusing on alignment with email content and intent, and provide the output in JSON format.\n\n#### Pertinent Analysis Output from Previous Prompts:\n\"\"\"\n- **Email Intent Assessment**: @{body('Summarize_Email_Intent')?['EvaluationResultContent']}\n- **Email Subject**: @{body('Process_JSON')?['email_content']?['subject']}\n- **Domain Assessment**: @{body('Copilot_check_MDTI_for_domain_reputation')?['EvaluationResultContent']}\n- **URL Assessment**: @{body('Copilot_check_MDTI_for_url_reputation')?['EvaluationResultContent']}\n\"\"\"\n\n### Evaluation Steps:\n1. **Heuristic Analysis**: \n   - Compare each domain to the brand or company referenced in the email. Flag any domain with significant deviations (e.g., unusual keywords, numbers, or unexpected TLDs) as suspicious.\n\n2. **Textual Consistency**:\n   - Determine if the domain matches the email content. For well-known brands, the domain should include recognizable variations, if any (e.g., `fedex-secure.com` may be acceptable, but `fedex-delivery123.com` is suspicious).\n   - Use Yes/No for `AlignedWithEmailIntent`, depending on the match between the domain and email subject.\n\n3. **URL Complexity**:\n   - Examine the structure of each URL for legitimacy (e.g., `www.company.com` is straightforward and less suspicious).\n   - Flag URLs with unusual elements like IP addresses, excessive subdomains, or complex query strings as suspicious.\n\n4. **Psychological and Social Engineering Cues**:\n   - Identify emotional manipulation tactics, such as urgency or threats, which can indicate phishing intent.\n   - Flag such domains as **not aligned** if they don’t match the brand yet include manipulative tactics (e.g., \"urgent action required\").\n\n### Expected JSON Output Format:\n\n{\n    \"DomainEvaluation\": {\n      \"DomainsFound\": [\n        {\n          \"Domain\": \"questionprov623407561664643060.com\",\n          \"Reputation\": \"Suspicious\",\n          \"AlignedWithEmailIntent\": \"No\"\n        },\n        {\n          \"Domain\": \"exampledomain.com\",\n          \"Reputation\": \"Safe\",\n          \"AlignedWithEmailIntent\": \"Yes\"\n        }\n      ],\n      \"OverallDomainAssessment\": \"A summary insight here based on session data, such as 'High Phishing Concern,' 'Moderate Risk,' or 'Benign. Provide evidence for your reasoning.'\"\n    },\n    \"URLEvaluation\": {\n      \"URLsFound\": [\n        {\n          \"URL\": \"defanged URL\",\n          \"Reputation\": \"Safe, Suspicious\",\n          \"AlignedWithEmailIntent\": \"Yes\",\n          \"Redirections\": \"None or final destination with number of hops\"\n        }\n      ],\n      \"OverallUrlAssessment\": \"Summary insight based on the session data, like 'High Phishing Concern,' 'Moderate Risk,' or 'Benign. Provide evidence for your reasoning.'\"\n    }\n}\n\n### Example for Alignment Evaluation:\n- **Email Intent**: \"The email claims to be from a shipping company about a pending delivery.\"\n  - **Domain**: \"fedex.com\"\n    - **AlignedWithEmailIntent**: `Yes`\n  - **Domain**: \"questionprov623407561664643060.com\"\n    - **AlignedWithEmailIntent**: `No`\n\n### Note for GPT Model:\n- If prior evaluations of domains and URLs revealed suspicious or malicious indicators, classify the `OverallDomainAssessment` and `OverallUrlAssessment` accordingly (e.g., \"High Phishing Concern\" if indicators were consistent with phishing).\n- If findings are ambiguous or non-threatening, choose a more moderate label like \"Moderate Risk\" or \"Benign.\"\n- Adhere strictly to the JSON format and provide concise Yes/No responses for `AlignedWithEmailIntent` based on the detailed analysis.\n",
+                                    "SessionId": "@body('Summarize_Email_Intent')?['sessionId']"
+                                },
+                                "path": "/process-prompt",
+                                "retryPolicy": {
+                                    "type": "fixed",
+                                    "count": 12,
+                                    "interval": "PT5M"
+                                }
+                            }
+                        },
+                        "Final_Summary": {
+                            "runAfter": {
+                                "Append_response2_to_array": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "/AskGpt\n\n### Task: Provide a final assessment of the email based on prior analyses of domains, URLs, and email content. Summarize key findings to determine if the email is benign, suspicious, or phishing, and output in JSON format.\n\n### Final Classification Criteria:\n- **Classification**: Assign one of **PHISHING**, **SUSPICIOUS**, or **BENIGN** based on all prior findings.\n- **Confidence Level**: Rate as \"High,\" \"Medium,\" or \"Low\" according to the strength of evidence gathered from previous analyses.\n- **Overall Assessment Summary**: Provide a concise rationale, highlighting significant indicators such as psychological manipulation, domain inconsistencies, URL irregularities, and any other relevant findings.\n\n### Expected JSON Output Format:\n\n{\n    \"FinalEvaluation\": {\n      \"Classification\": \"PHISHING\", \"SUSPICIOUS\", or \"BENIGN\",\n      \"ConfidenceLevel\": \"High\", \"Medium\", or \"Low\",\n      \"OverallAssessmentSummary\": \"Concise reasoning behind the classification, referencing key indicators from prior findings.\"\n    }\n}\n\n### Example JSON Output:\n{\n    \"FinalEvaluation\": {\n      \"Classification\": \"PHISHING\",\n      \"ConfidenceLevel\": \"High\",\n      \"OverallAssessmentSummary\": \"Indicators include psychological manipulation, domain inconsistencies, and unusual URL structures. Collectively, these suggest phishing intent.\"\n    }\n}\n",
+                                    "SessionId": "@body('Summarize_Email_Intent')?['sessionId']"
+                                },
+                                "path": "/process-prompt",
+                                "retryPolicy": {
+                                    "type": "fixed",
+                                    "count": 12,
+                                    "interval": "PT5M"
+                                }
+                            }
+                        },
+                        "Initialize_variable_attachments": {
+                            "runAfter": {
+                                "Initialize_variable_attachment_extracted_text": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "attachments",
+                                        "type": "array",
+                                        "value": "@body('Process_JSON')?['email_content']?['attachments']"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable": {
+                            "runAfter": {
+                                "Check_if_domains_exist": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "response_array",
+                                        "type": "array",
+                                        "value": []
+                                    }
+                                ]
+                            }
+                        },
+                        "Append_response1_to_array": {
+                            "runAfter": {
+                                "Analyze_email_body_and_attachment_data": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                                "name": "response_array",
+                                "value": "@body('Analyze_email_body_and_attachment_data')?['EvaluationResultContent']"
+                            }
+                        },
+                        "Append_response2_to_array": {
+                            "runAfter": {
+                                "Analyze_domains_and_URLs": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                                "name": "response_array",
+                                "value": "@body('Analyze_domains_and_URLs')?['EvaluationResultContent']"
+                            }
+                        },
+                        "Append_response3_to_array": {
+                            "runAfter": {
+                                "Final_Summary": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                                "name": "response_array",
+                                "value": "@body('Final_Summary')?['EvaluationResultContent']"
+                            }
+                        },
+                        "For_each": {
+                            "foreach": "@variables('response_array')",
+                            "actions": {
+                                "Normalize_JSON": {
+                                    "type": "Function",
+                                    "inputs": {
+                                        "body": "@item()",
+                                        "function": {
+                                            "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('FunctionAppRG'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName03'))]"
+                                        }
+                                    }
+                                },
+                                "Append_to_final_response_array_variable": {
+                                    "runAfter": {
+                                        "Normalize_JSON": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "AppendToArrayVariable",
+                                    "inputs": {
+                                        "name": "final_response_array",
+                                        "value": "@body('Normalize_JSON')"
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_final_json_array": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach",
+                            "runtimeConfiguration": {
+                                "concurrency": {
+                                    "repetitions": 1
+                                }
+                            }
+                        },
+                        "Initialize_final_json_array": {
+                            "runAfter": {
+                                "Append_response3_to_array": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "final_response_array",
+                                        "type": "array",
+                                        "value": []
+                                    }
+                                ]
+                            }
+                        },
+                        "Show_final_array_here": {
+                            "runAfter": {
+                                "For_each": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Compose",
+                            "inputs": "@variables('final_response_array')"
+                        },
+                        "JSON_to_HTML_Report": {
+                            "runAfter": {
+                                "Show_final_array_here": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Function",
+                            "inputs": {
+                                "body": "@outputs('Show_final_array_here')",
+                                "function": {
+                                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('FunctionAppRG'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName04'))]"
+                                }
+                            }
+                        },
+                        "Show_HTML_report_here": {
+                            "runAfter": {
+                                "JSON_to_HTML_Report": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Compose",
+                            "inputs": "@body('JSON_to_HTML_Report')"
+                        },
+                        "Show_URL_Array_here": {
+                            "runAfter": {
+                                "For_each_raw_url_truncate_if_too_long": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Compose",
+                            "inputs": "@variables('urls')"
+                        },
+                        "Send_an_email_(V2)": {
+                            "runAfter": {
+                                "Show_HTML_report_here": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "To": "[parameters('PhishingReportEmailAddress')]",
+                                    "Subject": "Phishing Email Analysis",
+                                    "Body": "<p class=\"editor-paragraph\">@{outputs('Show_HTML_report_here')}</p><br>",
+                                    "Attachments": [
+                                        {
+                                            "Name": "@concat(body('Process_JSON')?['email_content']?['subject'], '.eml')",
+                                            "ContentBytes": "@base64(variables('raw_email'))"
+                                        }
+                                    ],
+                                    "Importance": "Normal"
+                                },
+                                "path": "/v2/Mail"
+                            }
+                        },
+                        "Summarize_Email_Intent": {
+                            "runAfter": {
+                                "Initialize_variable_email_body": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "/AskGpt\n\n### Task: Conduct a detailed analysis of the email body to assess for phishing intent, focusing on the email's intent and any actions it encourages. Break down your analysis step-by-step, emphasizing any suspicious requests or manipulative tactics that could suggest phishing. Be mindful of legitimate transactional emails from known companies, especially where legitimate and suspicious elements may overlap.\n\nEmail Body:\n\"\"\"\n@{variables('email_body')}\n\"\"\"\nSender and Subject Information:\n\"\"\"\nSender: @{body('Process_JSON')?['email_content']?['sender']}\nReply-To: @{body('Process_JSON')?['email_content']?['reply_to']}\nSubject: @{body('Process_JSON')?['email_content']?['subject']}\n\"\"\"\n\n### Analysis Steps:\n\n1. **Intent and Action Encouraged**: Determine the email's primary intent. Is it prompting the recipient to take an action (e.g., click a link, download an attachment, or provide information)? If an action is requested, assess whether it’s consistent with expected interactions from a legitimate sender.\n\n2. **Sender Analysis**: Review the sender’s email address and domain for authenticity. Confirm if the domain matches the expected sender and evaluate whether it resembles known and trusted contacts or companies. Consider common tactics like domain impersonation or subtle misspellings.\n\n3. **Psychological Tactics**:\n   - Identify if the email uses urgency, fear, or other manipulative tactics to encourage action. For well-known brands, recognize that some urgency (e.g., shipping notifications) may be legitimate.\n   - Differentiate legitimate service-related urgency from manipulative tactics by assessing if the urgency aligns with the company’s usual communication style.\n\n4. **Requests for Sensitive Information**: Examine the content for direct or indirect requests for sensitive data, such as credentials, financial information, or personal identifiers. Legitimate transactional emails generally avoid unnecessary sensitive requests.\n\n5. **Link and Attachment Inspection**:\n   - Carefully evaluate URLs, domains, and attachments in the email. For known brands, identify if tracking links (e.g., `click.e.usa.experian.com`) or subdomains align with the sender’s typical patterns.\n   - Ensure that links and attachments match the sender’s domain or established tracking subdomains, and avoid flagging tracking links that adhere to known known patterns.\n\n6. **Consistency with Legitimate Brand Communication**: Assess if the email’s language, branding, and structure are consistent with the expected brand identity. While professional emails should be well-structured, legitimate transactional emails from known companies may vary in formatting based on system-generated content.\n\n### Additional Guidance for Known Brands:\n- **Tracking Links**: For recognized brands, identify if URLs are structured as common tracking links. Treat these as neutral if they follow expected patterns.\n- **Routine Service Notifications**: If the email's urgency or request aligns with typical service notifications (e.g., order shipment confirmations), do not classify it as suspicious based solely on urgency.\n\n### Output Format:\n- **Summary**: Provide a concise overview of the email's intent, based on the actions it encourages and other indicators.\n- **Detected Indicators**:\n  - **PhishingIndicators**: Only list indicators of phishing here, focusing on suspicious requests, inconsistent branding, manipulative tactics, or unusual links/attachments.\n  - **PositiveIndicators**: (Optional) List positive or neutral traits here, such as verified sender address, tracking links matching known patterns, or routine service notifications.\n- **Assessment**: Conclude with one of the following: 'Benign,' 'Suspicious,' or 'Phishing.'\n\n### Example:\nDetected Indicators:\n1. **PhishingIndicators**: None detected.\n2. **PositiveIndicators**: \n   - Verified sender domain.\n   - Routine service-related urgency.\n   - Legitimate tracking link structure.\n\nAssessment: Benign\n"
+                                },
+                                "path": "/process-prompt",
+                                "retryPolicy": {
+                                    "type": "fixed",
+                                    "count": 12,
+                                    "interval": "PT5M"
+                                }
+                            }
+                        },
+                        "Compose": {
+                            "runAfter": {
+                                "Summarize_Email_Intent": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Compose",
+                            "inputs": "@actions('Summarize_Email_Intent').outputs.statusCode\n"
+                        }
+                    },                    
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "office365-1": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365-1ConnectionName'))]",
+                                "connectionName": "[variables('Office365-1ConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                            },
+                            "securitycopilot-1": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('Securitycopilot-1ConnectionName'))]",
+                                "connectionName": "[variables('Securitycopilot-1ConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "name": "[parameters('LogicAppName')]",
+            "type": "Microsoft.Logic/workflows",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "apiVersion": "2017-07-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/connections', variables('Office365-1ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Securitycopilot-1ConnectionName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[variables('Office365-1ConnectionName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "V1",
+            "properties": {
+                "displayName": "[variables('Office365-1ConnectionName')]",
+                "customParameterValues": {},
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[variables('Securitycopilot-1ConnectionName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "V1",
+            "properties": {
+                "displayName": "[variables('Securitycopilot-1ConnectionName')]",
+                "customParameterValues": {},
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                }
+            }
+        }
+    ]
+}

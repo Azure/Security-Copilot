@@ -1,21 +1,21 @@
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
-# Microsoft Copilot For Security 
+# Microsoft Security Copilot 
 ## Featured Capability: Generate Hunting Queries
 
 ### Introduction
-**Advanced Hunting in Copilot For Security **  
-Copilot For Security  is now enabled with purpose-built skills that leverage the generative AI capabilities of GPT-4 to reason over a natural-language prompt and generate a KQL query capable of retrieving data from Advanced Hunting tables in Microsoft Defender and top data tables in Microsoft Sentinel. See the full list of supported tables in [Appendix](#appendix).  
+**Advanced Hunting in Security Copilot **  
+Security Copilot  is now enabled with purpose-built skills that leverage the generative AI capabilities of GPT-4 to reason over a natural-language prompt and generate a KQL query capable of retrieving data from Advanced Hunting tables in Microsoft Defender and top data tables in Microsoft Sentinel. See the full list of supported tables in [Appendix](#appendix).  
 This new functionality replaces an earlier implementation with a vastly improved algorithm and access to the latest Azure OpenAI models. Research is underway that would extend the functionality to additional data tables in Sentinel.
 
 ### Getting Started
 **Prerequisites**
-1. Access to Microsoft Copilot For Security 
-2. Access to Defender Advanced Hunting and Microsoft Sentinel with the same credentials used to access Copilot For Security .
+1. Access to Microsoft Security Copilot 
+2. Access to Defender Advanced Hunting and Microsoft Sentinel with the same credentials used to access Security Copilot .
 3. Access to the necessary features and licenses in Defender and Sentinel to activate all supported tables.
 
 **Activating the Skillset**
 - Enable “Natural language to Defender 365 KQL” and “Natural language to Sentinel KQL” in the admin console under “My connections”.
-- The NL2KQL skills can be automatically selected by Copilot For Security  based on your prompt.
+- The NL2KQL skills can be automatically selected by Security Copilot  based on your prompt.
 - In the prompt box, type “/kql” to select the skill explicitly before entering a prompt.
 
 ### Use Case Scenarios
@@ -40,7 +40,7 @@ You can also ask questions such as:
 1. Be unambiguous: try to ask questions with a clear subject.
 2. Ask one question at a time: ask for a single task/type of information at a time when possible.
 3. Be specific: if you know anything about the data you are looking for, help provide that information in your question.
-4. Use other skills: You can use Copilot For Security 's other skills to help gather information that might provide useful context while writing hunting queries.
+4. Use other skills: You can use Security Copilot 's other skills to help gather information that might provide useful context while writing hunting queries.
 
 **Example guidelines:**
 | Ambiguous | Good | Explanation |

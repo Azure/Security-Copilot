@@ -1,0 +1,18 @@
+Descriptor:
+  Name: eDiscovery Case Plugin
+  DisplayName: eDiscovery Case Plugin
+  Description: The skills in this plugin will help create eDiscovery case & additional steps all the way to export in Purview via Graph API Call
+  DescriptionForModel: The skills in this plugin will help create eDiscovery case, add custodian, add hold, create search, create reviewset and kickoff export in Purview
+
+  Authorization:
+    Type: OAuthAuthorizationCodeFlow
+    ClientId: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx #ClientId from App Registration in EntraID
+    AuthorizationEndpoint: https://login.microsoftonline.com/Directory(tenant)ID/oauth2/v2.0/authorize #Directory(tenant)ID from Overview page of your App Registration in EntraID
+    TokenEndpoint: https://login.microsoftonline.com/Directory(tenant)ID/oauth2/v2.0/token #Directory(tenant)ID from Overview page of your App Registration in EntraID
+    Scopes: offline_access user.read eDiscovery.Read.All eDiscovery.ReadWrite.All #EntraID permissions for this App & delegated permissions assigned to your App in EntraID
+    AuthorizationContentType: application/x-www-form-urlencoded
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/Azure/Copilot-For-Security/refs/heads/main/Plugins/Community%20Based%20Plugins/Purview/eDiscovery/eDiscovery_API_Plugin.yaml

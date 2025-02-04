@@ -22,7 +22,7 @@ Select Next and confirm that the System assigned check box is checked.
  <br />
 
  <br />Now that the account is created, we need to give it permissions to make the SCU change. 
- <br />In another browser tab, locate your Copilot for Security Resource and select Access Control (IAM). 
+ <br />In another browser tab, locate your Security Copilot Resource and select Access Control (IAM). 
  <br />Select the +Add button and choose Add role assignment.
  <br />
 ![Image4](https://github.com/anfisher1967/Copilot-For-Security/blob/main/Images/Azure%20Automation%20Images/_IAM.png)

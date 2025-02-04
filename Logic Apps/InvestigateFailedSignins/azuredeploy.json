@@ -1,313 +1,275 @@
 {
-    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion":  "1.0.0.0",
-    "metadata":  {
-        "title":  "",
-        "description":  "",
-        "prerequisites":  "",
-        "postDeployment":  [
-        ],
-        "prerequisitesDeployTemplateFile":  "",
-        "lastUpdateTime":  "",
-        "entities":  [
-        ],
-        "tags":  [
-        ],
-        "support":  {
-            "tier":  "community",
-            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "",
+        "description": "",
+        "prerequisites": "",
+    "postDeployment": [],
+    "prerequisitesDeployTemplateFile": "",
+    "lastUpdateTime": "",
+"entities": [],
+"tags": [],
+"support": {
+"tier": "community",
+"armtemplate": "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+},
+"author": {
+"name": ""
+}
+},
+"parameters": {
+"PlaybookName": {
+"defaultValue": "InvestigateFailedSignIns",
+"type": "string"
+},
+"email": {
+"type": "String",
+"metadata": {
+    "description": "Enter value for email"
+}
+}
+},
+"variables": {
+"SecuritycopilotConnectionName": "[concat('Securitycopilot-', parameters('PlaybookName'))]",
+"Office365ConnectionName": "[concat('Office365-', parameters('PlaybookName'))]"
+},
+"resources": [
+{
+"properties": {
+    "provisioningState": "Succeeded",
+    "state": "Enabled",
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {
+            "$connections": {
+            "defaultValue": {},
+            "type": "Object"
         },
-        "author":  {
-            "name":  ""
+        "email": {
+            "type": "String",
+            "defaultValue": "[parameters('email')]"
         }
     },
-    "parameters":  {
-        "PlaybookName":  {
-            "defaultValue":  "InvestigateFailedSignIns",
-            "type":  "string"
-        },
-        "email":  {
-            "type":  "string",
-            "metadata":  {
-                "description":  "Enter value for email"
-            }
+    "triggers": {
+        "Recurrence": {
+            "recurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "evaluatedRecurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "type": "Recurrence"
         }
     },
-    "variables":  {
-        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
-        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]"
-    },
-    "resources":  [
-        {
-            "properties":  {
-                "provisioningState":  "Succeeded",
-                "state":  "Enabled",
-                "definition":  {
-                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-                    "contentVersion":  "1.0.0.0",
-                    "parameters":  {
-                        "$connections":  {
-                            "defaultValue":  {
-                            },
-                            "type":  "Object"
-                        },
-                        "email":  {
-                            "defaultValue":  "[parameters('email')]",
-                            "type":  "string"
-                        }
+    "actions": {
+        "Running_the_Copilot_for_Security_Prompts": {
+            "actions": {
+                "Pull_the_result_and_place_it_in_JSON_FORMAT": {
+                    "runAfter": {
+                        "Run_KQL_query_to_identify_Failed_sign_ins": [
+                            "Succeeded"
+                        ]
                     },
-                    "triggers":  {
-                        "Recurrence":  {
-                            "recurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "evaluatedRecurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "type":  "Recurrence"
-                        }
-                    },
-                    "actions":  {
-                        "Parse_Recommendations_from_Security_Copilot":  {
-                            "actions":  {
-                                "Compose_6":  {
-                                    "runAfter":  {
-                                        "Compose_summary_Recommendations":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "Compose",
-                                    "inputs":  "@decodeUriComponent(replace(encodeUriComponent(outputs('Compose_summary_Recommendations')), '%0A', '%3Cbr%3E'))"
-                                },
-                                "Compose_summary_Recommendations":  {
-                                    "runAfter":  {
-                                        "Parse_JSON_4":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "Compose",
-                                    "inputs":  "@body('Parse_JSON_4')?['Evaluation Result Content']"
-                                },
-                                "Parse_JSON_4":  {
-                                    "runAfter":  {
-                                    },
-                                    "type":  "ParseJson",
-                                    "inputs":  {
-                                        "content":  "@body('Summary_and_recommendations')",
-                                        "schema":  {
-                                            "properties":  {
-                                                "Evaluation Result Content":  {
-                                                    "type":  "string"
-                                                },
-                                                "Evaluation Result Type":  {
-                                                    "type":  "string"
-                                                },
-                                                "Prompt Content":  {
-                                                    "type":  "string"
-                                                },
-                                                "SessionId":  {
-                                                    "type":  "string"
-                                                },
-                                                "Skill Name":  {
-                                                },
-                                                "Skill Sources":  {
-                                                    "type":  "array"
-                                                }
-                                            },
-                                            "type":  "object"
-                                        }
-                                    }
-                                }
-                            },
-                            "runAfter":  {
-                                "Running_the_Copilot_for_Security_Prompts":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Scope"
-                        },
-                        "Running_the_Copilot_for_Security_Prompts":  {
-                            "actions":  {
-                                "Pull_the_result_and_place_it_in_JSON_FORMAT":  {
-                                    "runAfter":  {
-                                        "Run_KQL_query_to_identify_Failed_sign_ins":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Provide a representation of the above table result in JSON FORMAT of the 5 records with the highest sign-in counts",
-                                            "SessionId":  "@body('Run_KQL_query_to_identify_Failed_sign_ins')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Run_KQL_query_to_identify_Failed_sign_ins":  {
-                                    "runAfter":  {
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "SigninLogs | where TimeGenerated \u003e= ago(24h) // Filter events in the last 24 hours | summarize SignInCount = count() by Identity, IPAddress, Location, ClientAppUsed | extend AbnormalSignIn = SignInCount \u003e 3 // Set your own threshold for abnormal sign-ins | project Identity, IPAddress, AbnormalSignIn, Location, ClientAppUsed, SignInCount | where AbnormalSignIn == true | sort by SignInCount",
-                                            "SkillName":  "NL2KQLSentinel"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins":  {
-                                    "runAfter":  {
-                                        "Pull_the_result_and_place_it_in_JSON_FORMAT":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Run Reputation scoring and Geo location for the IP addresses Identified in the Prompt above",
-                                            "SessionId":  "@body('Pull_the_result_and_place_it_in_JSON_FORMAT')?['sessionId']",
-                                            "SkillName":  "GetReputationsForIndicators"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Summary_and_recommendations":  {
-                                    "runAfter":  {
-                                        "Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Create a report with the findings from the above investigation, please assess whether these users pose a potential risk warranting further scrutiny due to anomalous sign-ins. Consider factors such as sign-in details, association with security groups, IPs reputation scoring , Authentication methods , Device compliance information and any other relevant indicators. \nSummarize the risk level into a percentage scale, where. \n- 0-30% denotes it as Neutral status, \n- 30%-50% categorizes as Low risk, \n- 50%-74% as Medium risk, and \n-anything exceeding 75% falls under the High-risk category\nif there is any thing in Medium risk or High risk please add some context to that account\nloop in some recommendations if you can. Present the rationale for your assessment in a bullet points. ( make the report technical)",
-                                            "SessionId":  "@body('Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                }
-                            },
-                            "runAfter":  {
-                            },
-                            "type":  "Scope"
-                        },
-                        "Send_an_email_(V2)":  {
-                            "runAfter":  {
-                                "Parse_Recommendations_from_Security_Copilot":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "Body":  "\u003cp\u003e\u003cspan style=\"font-size: 16px\"\u003e\u003cu\u003eReport Summary / Recommendations\u003c/u\u003e\u003c/span\u003e\u003cstrong\u003e\u003cbr\u003e\n\u003c/strong\u003e@{outputs('Compose_6')}\u003cbr\u003e\n\u003c/p\u003e",
-                                    "Importance":  "Normal",
-                                    "Subject":  "Summary of Abnormal Failed Sign ins over the last 24 hours",
-                                    "To":  "@parameters('email')"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/v2/Mail"
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['securitycopilot']['connectionId']"
                             }
-                        }
-                    },
-                    "outputs":  {
+                        },
+                        "method": "post",
+                        "body": {
+                            "PromptContent": "/AskGpt Provide a representation of the above table result in JSON FORMAT of  the top 5 records ",
+                            "SessionId": "@body('Run_KQL_query_to_identify_Failed_sign_ins')?['sessionId']"
+                        },
+                        "path": "/process-prompt"
                     }
                 },
-                "parameters":  {
-                    "$connections":  {
-                        "value":  {
-                            "office365_1":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                                "connectionName":  "[variables('Office365ConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
-                            },
-                            "securitycopilot_1":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
-                                "connectionName":  "[variables('SecuritycopilotConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                "Run_KQL_query_to_identify_Failed_sign_ins": {
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['securitycopilot']['connectionId']"
                             }
-                        }
+                        },
+                        "method": "post",
+                        "body": {
+                            "PromptContent": "SigninLogs | where TimeGenerated >= ago(24h) // Filter events in the last 24 hours | summarize SignInCount = count() by Identity, IPAddress, Location, ClientAppUsed | extend AbnormalSignIn = SignInCount > 3 // Set your own threshold for abnormal sign-ins | project Identity, IPAddress, AbnormalSignIn, Location, ClientAppUsed, SignInCount | where AbnormalSignIn == true | sort by SignInCount",
+                            "SkillName": "NL2KQLSentinel"
+                        },
+                        "path": "/process-prompt"
                     }
+                },
+                "Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins": {
+                    "runAfter": {
+                        "Pull_the_result_and_place_it_in_JSON_FORMAT": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                            }
+                        },
+                        "method": "post",
+                        "body": {
+                            "PromptContent": "Run Reputation scoring and Geo location for the IP addresses Identified in the Prompt above",
+                            "SessionId": "@body('Pull_the_result_and_place_it_in_JSON_FORMAT')?['sessionId']",
+                            "SkillName": "GetReputationsForIndicators"
+                        },
+                        "path": "/process-prompt"
+                    }
+                },
+                "Summary_and_recommendations": {
+                    "runAfter": {
+                        "Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                            }
+                        },
+                        "method": "post",
+                        "body": {
+                            "PromptContent": "/AskGpt Create a report with the findings from the above investigation, please assess whether these users pose a potential risk warranting further scrutiny due to anomalous sign-ins. Consider factors such as sign-in details, association with security groups, IPs reputation scoring , Authentication methods , Device compliance information and any other relevant indicators, this can be in a table\nSummarize the risk level into a percentage scale, where. \n- 0-30% denotes it as Neutral status, \n- 30%-50% categorizes as Low risk, \n- 50%-74% as Medium risk, and \n-anything exceeding 75% falls under the High-risk category\nif there is any thing in Medium risk or High risk please add some context to that account\nloop in some recommendations if you can. Present the rationale for your assessment in a bullet points. ( make the report technical)",
+                            "SessionId": "@body('Run_Reputation_Scoring_for_IP_addresses_associated_with_Sign_Ins')?['sessionId']"
+                        },
+                        "path": "/process-prompt"
+                    }
+                },
+                "Convert_Response_into_HTML_Format_for_Proper_Output": {
+                    "runAfter": {
+                        "Summary_and_recommendations": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                            }
+                        },
+                        "method": "post",
+                        "body": {
+                            "PromptContent": "/AskGpt Provide the previous Response in optimized HTML format",
+                            "SessionId": "@body('Summary_and_recommendations')?['sessionId']"
+                        },
+                        "path": "/process-prompt"
+                    }
+                },
+                "Add_Copilot_Logo": {
+                    "runAfter": {
+                        "Convert_Response_into_HTML_Format_for_Proper_Output": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "Compose",
+                    "inputs": "<img src=\"https://raw.githubusercontent.com/Azure/Copilot-For-Security/main/Images/ic_fluent_copilot_64_64%402x.png\" alt=\"Copilot Logo\"/>"
                 }
             },
-            "name":  "[parameters('PlaybookName')]",
-            "type":  "Microsoft.Logic/workflows",
-            "location":  "[resourceGroup().location]",
-            "tags":  {
-                "Created By":  "Sean Wesonga",
-                "CreatorUPN":  "sean Wasonga",
-                "hidden-SentinelTemplateName":  "InvestigateFailedSignIns",
-                "hidden-SentinelTemplateVersion":  "1.0"
-            },
-            "identity":  {
-                "type":  "SystemAssigned"
-            },
-            "apiVersion":  "2017-07-01",
-            "dependsOn":  [
-                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+        "runAfter": {},
+        "type": "Scope"
+    },
+    "Send_an_email_(V2)": {
+        "runAfter": {
+            "Running_the_Copilot_for_Security_Prompts": [
+                "Succeeded"
             ]
         },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('Office365ConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('Office365ConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
                 }
-            }
-        },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('SecuritycopilotConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('SecuritycopilotConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
-                }
-            }
+            },
+            "method": "post",
+            "body": {
+                "To": "@parameters('email')",
+                "Subject": "Summary of Abnormal Failed Sign ins over the last 24 hours",
+                "Body": "<p class=\"editor-paragraph\">@{outputs('Add_Copilot_Logo')}</p><p class=\"editor-paragraph\">@{body('Convert_Response_into_HTML_Format_for_Proper_Output')?['EvaluationResultContent']}</p>",
+                "Importance": "Normal"
+            },
+            "path": "/v2/Mail"
         }
-    ]
+    }
+},
+"outputs": {}
+},
+"parameters": {
+"$connections": {
+"value": {
+    "securitycopilot": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+        "connectionName": "[variables('SecuritycopilotConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+    },
+    "office365": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+        "connectionName": "[variables('Office365ConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+    }
+}
+}
+}
+},
+"name": "[parameters('PlaybookName')]",
+"type": "Microsoft.Logic/workflows",
+"location": "[resourceGroup().location]",
+"tags": {
+"Created By": "Sean Wesonga",
+"CreatorUPN": "sean Wasonga",
+"hidden-SentinelTemplateName": "InvestigateFailedSignIns",
+"hidden-SentinelTemplateVersion": "1.0"
+},
+"identity": {
+"type": "SystemAssigned"
+},
+"apiVersion": "2017-07-01",
+"dependsOn": [
+"[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+"[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+]
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('SecuritycopilotConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('SecuritycopilotConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+}
+}
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('Office365ConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('Office365ConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+}
+}
+}
+]
 }

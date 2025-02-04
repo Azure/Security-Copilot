@@ -1,0 +1,189 @@
+Descriptor:
+  Name: QRCodeHunter
+  DisplayName: Hunting for QR Code AiTM Phishing and User Compromise
+  Description: Hunting for QR Code AiTM Phishing and User Compromise based off https://techcommunity.microsoft.com/t5/microsoft-security-experts-blog/hunting-for-qr-code-aitm-phishing-and-user-compromise/ba-p/4053324
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: QRCode_SigninventsLinkedtoQrCodePhishing
+        DisplayName: Hunting for User Behavior to Identify Suspicious Sign-In Events Linked to QR Code Phishing Campaigns
+        Description: This detection identifies suspicious sign-in attempts linked to QR code phishing campaigns by correlating email access with attached images or documents and risky sign-ins from non-trusted devices, validating differing locations between email access and sign-in attempts in the last 30 days
+        Settings:
+          Target: Defender
+          Template: |-
+            let timeback = (30d);
+            let successfulRiskySignIn = materialize(AADSignInEventsBeta| where Timestamp > ago(timeback)| where isempty(DeviceTrustType)
+                            | where IsManaged != 1
+                            | where IsCompliant != 1
+                            | where RiskLevelDuringSignIn in (50, 100)
+                            | project Timestamp, ReportId, IPAddress, AccountUpn, AccountObjectId, SessionId, Country, State, City
+                        );
+            let suspiciousSignInUsers = successfulRiskySignIn
+                            | distinct AccountObjectId;
+                        let suspiciousSignInIPs = successfulRiskySignIn
+                            | distinct IPAddress;
+                        let suspiciousSignInCities = successfulRiskySignIn
+                            | distinct City;
+                        CloudAppEvents
+                            | where Timestamp > ago(timeback)
+                            | where ActionType == "MailItemsAccessed"
+                            | where AccountObjectId in (suspiciousSignInUsers)
+                            | where IPAddress !in (suspiciousSignInIPs)
+                            | where City !in (suspiciousSignInCities)
+                            | join kind=inner successfulRiskySignIn on AccountObjectId
+                            | where (Timestamp - Timestamp1) between (-5min .. 5min)
+                            | extend folders = RawEventData.Folders
+                            | mv-expand folders
+                            | extend items = folders.FolderItems
+                            | mv-expand items
+                            | extend InternetMessageId = tostring(items.InternetMessageId)
+                            | project Timestamp, ReportId, IPAddress, InternetMessageId, AccountObjectId, SessionId, Country;
+      - Name: QRCode_EmailswithImpersonationIntents
+        DisplayName: Fetch All Emails from Non-Prevalent Senders in the Organization with Impersonation Intents
+        Description: In this detection approach, we correlate email from non-prevalent senders in the organization with impersonation intents.
+        Settings:
+          Target: Defender
+          Template: |-
+            let PhishingSenderDisplayNames = pack_array(
+                "IT", "support", "Payroll", "HR", "admin", "2FA", "notification", "sign", "reminder", "consent", "workplace",
+                "administrator", "administration", "benefits", "employee", "update", "on behalf"
+            );
+            let suspiciousEmails = EmailEvents
+                | where Timestamp > ago(30d)
+                | where isnotempty(RecipientObjectId)
+                | where isnotempty(SenderFromAddress)
+                | where EmailDirection == "Inbound"
+                | where DeliveryAction == "Delivered"
+                | join kind=inner (
+                    EmailAttachmentInfo
+                    | where Timestamp > ago(1d)
+                    | where isempty(SenderObjectId)
+                    | where FileType has_any ("png", "jpg", "jpeg", "bmp", "gif")
+                ) on NetworkMessageId
+                | where SenderDisplayName has_any (PhishingSenderDisplayNames)
+                | project Timestamp, Subject, FileName, SenderFromDomain, RecipientObjectId, NetworkMessageId;
+            let suspiciousSenders = suspiciousEmails
+                | distinct SenderFromDomain;
+            let prevalentSenders = materialize(
+                EmailEvents
+                | where Timestamp between (ago(7d) .. ago(1d))
+                | where isnotempty(RecipientObjectId)
+                | where isnotempty(SenderFromAddress)
+                | where SenderFromDomain in (suspiciousSenders)
+                | where EmailDirection == "Inbound"
+                | where DeliveryAction == "Delivered"
+                | distinct SenderFromDomain
+            );
+            suspiciousEmails
+                | where SenderFromDomain !in (prevalentSenders)
+                | project Timestamp, Subject, FileName, SenderFromDomain, RecipientObjectId, NetworkMessageId;
+      - Name: QRCode_Huntingcampaignwithfewkeywords
+        DisplayName: Get Personalized Campaigns Based on the First Few Keywords
+        Description: Personalized campaigns based on the first few keywords
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where Timestamp > ago(30d)
+            | where EmailDirection == "Inbound"
+            | where DeliveryAction == "Delivered"
+            | where isempty(SenderObjectId)
+            | extend words = split(Subject, " ")
+            | project 
+                firstWord = tostring(words[0]), 
+                secondWord = tostring(words[1]), 
+                thirdWord = tostring(words[2]), 
+                Subject, 
+                SenderFromAddress, 
+                RecipientEmailAddress, 
+                NetworkMessageId
+            | summarize 
+                SubjectsCount = dcount(Subject), 
+                RecipientsCount = dcount(RecipientEmailAddress), 
+                suspiciousEmails = make_set(NetworkMessageId, 10) by firstWord, secondWord, thirdWord, SenderFromAddress
+            | where SubjectsCount >= 10
+
+      - Name: QRCode_Huntingcampaignwithlastkeywords
+        DisplayName: Get Personalized Campaigns Based on the Last Few Keywords
+        Description: Personalized campaigns based on the last few keywords
+        Settings:
+            Target: Defender
+            Template: |-
+              EmailEvents
+              | where Timestamp > ago(1d)
+              | where EmailDirection == "Inbound"
+              | where DeliveryAction == "Delivered"
+              | where isempty(SenderObjectId)
+              | extend words = split(Subject," ")
+              | project firstLastWord = tostring(words[-1]), secondLastWord = tostring(words[-2]), thirdLastWord = tostring(words[-3]), Subject, SenderFromAddress, RecipientEmailAddress, NetworkMessageId
+              | summarize SubjectsCount = dcount(Subject), RecipientsCount = dcount(RecipientEmailAddress), suspiciousEmails = make_set(NetworkMessageId, 10) by firstLastWord, secondLastWord, thirdLastWord
+              , SenderFromAddress
+              | where SubjectsCount >= 10
+
+      - Name: QRCode_Campaignwithsuspiciouskeywords
+        DisplayName: Get Campaign with Suspicious Keywords 
+        Description: Personalized Campaign with suspicious keywords in the last month
+        Inputs:
+          - Name: suspiciouskeywords
+            Description: Add your suspicious keyword you want to hunt for here
+            Required: true
+          - Name: suspiciouskeywords1
+            Description: Add your suspicious keyword you want to hunt for here
+            Required: true  
+          - Name: suspiciouskeywords2
+            Description: Add your suspicious keyword you want to hunt for here
+            Required: true 
+          - Name: suspiciouskeywords3
+            Description: Add your suspicious keyword you want to hunt for here
+            Required: true 
+          - Name: suspiciouskeywords4
+            Description: Add your suspicious keyword you want to hunt for here
+            Required: true 
+        Settings:
+          Target: Defender
+          Template: |-
+            let suspiciouskeywords ='{{suspiciouskeywords}}';
+            let suspiciouskeywords1 ='{{suspiciouskeywords1}}';
+            let suspiciouskeywords2 ='{{suspiciouskeywords2}}';
+            let suspiciouskeywords3 ='{{suspiciouskeywords3}}';
+            let suspiciouskeywords4 ='{{suspiciouskeywords4}}';
+            let PhishingKeywords = pack_array("suspiciouskeywords4","suspiciouskeywords3","suspiciouskeywords2","suspiciouskeywords1","suspiciouskeywords");
+            EmailEvents
+            | where Timestamp > ago(30d)
+            | where EmailDirection == "Inbound"
+            | where DeliveryAction == "Delivered"
+            | where isempty(SenderObjectId)
+            | where Subject has_any (PhishingKeywords())
+
+      - Name: QRCode_Huntingforattachmentnamepatterns
+        DisplayName: Hunt for Randomized Attachment Names Associated with QR Code Phishing Attacks
+        Description: Hunts for randomized attachment names associated with QR code phishing attacks in the last 7 days
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailAttachmentInfo
+            | where Timestamp > ago(7d)
+            | where FileType in ("png", "jpg", "jpeg", "gif", "svg")
+            | where isnotempty(FileName)
+            | extend firstFourFileName = substring(FileName, 0, 4)
+            | summarize RecipientsCount = dcount(RecipientEmailAddress), FirstFourFilesCount = dcount(firstFourFileName), suspiciousEmails = make_set(NetworkMessageId, 10) by SenderFromAddress
+            | where FirstFourFilesCount >= 10
+
+      - Name: QRCode_Huntingforusersignalsclusters
+        DisplayName: Hunting for user Signal and Clusters associated with QR phishing scores
+        Description: Identify and scope QR code phishing campaigns targeting organizations triggered by user-reported alerts in the last 7 days
+        Settings:
+          Target: Defender
+          Template: |-
+           let suspiciousClusters = EmailEvents
+            | where Timestamp > ago(7d)
+            | where EmailDirection == "Inbound"
+            | where NetworkMessageId in ("<List of suspicious Network Message Ids from Alerts>")
+            | distinct EmailClusterId;
+            EmailEvents
+            | where Timestamp > ago(7d)
+            | where EmailDirection == "Inbound"
+            | where EmailClusterId in (suspiciousClusters)
+            | summarize make_set(Subject), make_set(SenderFromDomain), dcount(RecipientObjectId), dcount(SenderDisplayName) by EmailClusterId;
+

@@ -1,298 +1,272 @@
 {
-    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion":  "1.0.0.0",
-    "metadata":  {
-        "title":  "",
-        "description":  "",
-        "prerequisites":  "",
-        "postDeployment":  [
-        ],
-        "prerequisitesDeployTemplateFile":  "",
-        "lastUpdateTime":  "",
-        "entities":  [
-        ],
-        "tags":  [
-        ],
-        "support":  {
-            "tier":  "community",
-            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "",
+        "description": "",
+        "prerequisites": "",
+    "postDeployment": [],
+    "prerequisitesDeployTemplateFile": "",
+    "lastUpdateTime": "",
+"entities": [],
+"tags": [],
+"support": {
+"tier": "community",
+"armtemplate": "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+},
+"author": {
+"name": ""
+}
+},
+"parameters": {
+"PlaybookName": {
+"defaultValue": "DailyThreatExposureReport-Copilot",
+"type": "string"
+},
+"email": {
+"type": "String",
+"metadata": {
+    "description": "Enter value for email"
+}
+}
+},
+"variables": {
+"SecuritycopilotConnectionName": "[concat('Securitycopilot-', parameters('PlaybookName'))]",
+"Office365ConnectionName": "[concat('Office365-', parameters('PlaybookName'))]"
+},
+"resources": [
+{
+"properties": {
+    "provisioningState": "Succeeded",
+    "state": "Enabled",
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {
+            "$connections": {
+            "defaultValue": {},
+            "type": "Object"
         },
-        "author":  {
-            "name":  ""
+        "email": {
+            "type": "String",
+            "defaultValue": "[parameters('email')]"
         }
     },
-    "parameters":  {
-        "PlaybookName":  {
-            "defaultValue":  "DailyThreatExposureReport-Copilot",
-            "type":  "string"
-        },
-        "email":  {
-            "type":  "string",
-            "metadata":  {
-                "description":  "Enter value for email"
-            }
+    "triggers": {
+        "Recurrence": {
+            "recurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "evaluatedRecurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "type": "Recurrence"
         }
     },
-    "variables":  {
-        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
-        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]"
-    },
-    "resources":  [
-        {
-            "properties":  {
-                "provisioningState":  "Succeeded",
-                "state":  "Enabled",
-                "definition":  {
-                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-                    "contentVersion":  "1.0.0.0",
-                    "parameters":  {
-                        "$connections":  {
-                            "defaultValue":  {
-                            },
-                            "type":  "Object"
-                        },
-                        "email":  {
-                            "defaultValue":  "[parameters('email')]",
-                            "type":  "string"
-                        }
-                    },
-                    "triggers":  {
-                        "Recurrence":  {
-                            "recurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "evaluatedRecurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "type":  "Recurrence"
-                        }
-                    },
-                    "actions":  {
-                        "CVE_information":  {
-                            "runAfter":  {
-                                "Overview_of_latest_threats":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "If there are CVEs listed above can you provide more detail on the CVE profile and the affected technologies associated with the CVE",
-                                    "SessionId":  "@body('Overview_of_latest_threats')?['sessionId']"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot_3']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        },
-                        "Compose":  {
-                            "runAfter":  {
-                                "Parse_JSON":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "@body('Parse_JSON')?['Evaluation Result Content']"
-                        },
-                        "Compose_2":  {
-                            "runAfter":  {
-                                "Compose":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "@decodeUriComponent(replace(encodeUriComponent(outputs('Compose')), '%0A', '%3Cbr%3E'))"
-                        },
-                        "Overview_of_latest_threats":  {
-                            "runAfter":  {
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "Give me an overview of the latest threats in my organization"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot_3']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        },
-                        "Parse_JSON":  {
-                            "runAfter":  {
-                                "Summarize_the_investigation":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Summarize_the_investigation')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        },
-                                        "Skill Sources":  {
-                                            "type":  "array"
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Recommendations":  {
-                            "runAfter":  {
-                                "CVE_information":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "What recommendations do you advise to put in place in regards to these vulnerabilities using defender threat intelligence",
-                                    "SessionId":  "@body('CVE_information')?['sessionId']"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot_3']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        },
-                        "Send_an_email_(V2)":  {
-                            "runAfter":  {
-                                "Compose_2":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "Body":  "\u003cp\u003e@{outputs('Compose_2')}\u003c/p\u003e",
-                                    "Importance":  "Normal",
-                                    "Subject":  "Daily Threat Exposure Report ",
-                                    "To":  "@parameters('email')"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/v2/Mail"
-                            }
-                        },
-                        "Summarize_the_investigation":  {
-                            "runAfter":  {
-                                "Recommendations":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "Summarize this in a report and call it Daily Threat exposure report with the current date , capturing the overview of the latest threats in my organization above , CVEs associated and their mitigation steps , it should be for a technical audience ",
-                                    "SessionId":  "@body('Recommendations')?['sessionId']"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot_3']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        }
-                    },
-                    "outputs":  {
+    "actions": {
+        "CVE_information": {
+            "runAfter": {
+                "Overview_of_latest_threats": [
+                    "Succeeded"
+                ]
+            },
+            "type": "ApiConnection",
+            "inputs": {
+                "host": {
+                    "connection": {
+                        "name": "@parameters('$connections')['securitycopilot_3']['connectionId']"
                     }
                 },
-                "parameters":  {
-                    "$connections":  {
-                        "value":  {
-                            "office365_1":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                                "connectionName":  "[variables('Office365ConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
-                            },
-                            "securitycopilot_3":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
-                                "connectionName":  "[variables('SecuritycopilotConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
-                            }
-                        }
+                "method": "post",
+                "body": {
+                    "PromptContent": "If there are CVEs listed above can you provide more detail on the CVE profile and the affected technologies associated with the CVE",
+                    "SessionId": "@body('Overview_of_latest_threats')?['sessionId']",
+                    "SkillName": "FindThreatIntelligence"
+                },
+                "path": "/process-prompt"
+            }
+        },
+        "Convert_Response_into_HTML_Format_for_Proper_Output": {
+            "runAfter": {
+                "Summarize_the_investigation": [
+                    "Succeeded"
+                ]
+            },
+            "type": "ApiConnection",
+            "inputs": {
+                "host": {
+                    "connection": {
+                        "name": "@parameters('$connections')['securitycopilot_3']['connectionId']"
                     }
+                },
+                "method": "post",
+                "body": {
+                    "PromptContent": "/AskGpt Provide the previous Response in optimized professional HTML format",
+                    "SessionId": "@body('Summarize_the_investigation')?['sessionId']"
+                },
+                "path": "/process-prompt"
+            }
+        },
+        "Overview_of_latest_threats": {
+        "runAfter": {},
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['securitycopilot_3']['connectionId']"
                 }
             },
-            "name":  "[parameters('PlaybookName')]",
-            "type":  "Microsoft.Logic/workflows",
-            "location":  "[resourceGroup().location]",
-            "tags":  {
-                "Created By":  "Sean Wasonga",
-                "CreatedDate":  "1/31/2024 5:12:16 PM",
-                "CreatorUPN":  "sean Wasonga",
-                "hidden-SentinelTemplateName":  "DailyThreatExposureReport-Copilot",
-                "hidden-SentinelTemplateVersion":  "1.0"
+            "method": "post",
+            "body": {
+                "PromptContent": "Give me an overview of the latest threats targeting my organization",
+                "SkillName": "FindThreatIntelligence"
             },
-            "identity":  {
-                "type":  "SystemAssigned"
-            },
-            "apiVersion":  "2017-07-01",
-            "dependsOn":  [
-                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+            "path": "/process-prompt"
+        }
+    },
+    "Recommendations": {
+        "runAfter": {
+            "CVE_information": [
+                "Succeeded"
             ]
         },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('Office365ConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('Office365ConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['securitycopilot_3']['connectionId']"
                 }
-            }
-        },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('SecuritycopilotConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('SecuritycopilotConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
-                }
-            }
+            },
+            "method": "post",
+            "body": {
+                "PromptContent": "What recommendations do you advise to put in place in regards to these vulnerabilities using defender threat intelligence",
+                "SessionId": "@body('CVE_information')?['sessionId']",
+                "SkillName": "FindThreatIntelligence"
+            },
+            "path": "/process-prompt"
         }
-    ]
+    },
+    "Send_an_email_(V2)": {
+        "runAfter": {
+            "Add_Copilot_Logo": [
+                "Succeeded"
+            ]
+        },
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['office365_1']['connectionId']"
+                }
+            },
+            "method": "post",
+            "body": {
+                "To": "@parameters('email')",
+                "Subject": "Daily Threat Exposure Report - Microsoft Copilot for Security",
+                "Body": "<p class=\"editor-paragraph\">@{outputs('Add_Copilot_Logo')}<br>@{body('Convert_Response_into_HTML_Format_for_Proper_Output')?['EvaluationResultContent']}</p>",
+                "Importance": "Normal"
+            },
+            "path": "/v2/Mail"
+        }
+    },
+    "Summarize_the_investigation": {
+        "runAfter": {
+            "Recommendations": [
+                "Succeeded"
+            ]
+        },
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['securitycopilot_3']['connectionId']"
+                }
+            },
+            "method": "post",
+            "body": {
+                "PromptContent": "/AskGpt Generate a report titled \"Daily Threat Exposure Report\" for today's date. The report should provide a summary of the most recent threats detected within the organization, presented in the following structure:\n\nSummary of Latest Detected Threats:\n\nInclude a table with the following columns:\nThreat Name and CVE (hyperlinked to detailed CVE information)\n- List of Vulnerable Devices, Impacted Assets, or Alerts within the organization\n- Brief Description of the threat or vulnerability \nHighlight Critical Threats:\n\n- Emphasize any critical threats identified and the reason they have been deemed Critical, ensuring they stand out visually with mitigations highlighted above \n\nSection for 'Not Urgent' Threats:\n\nProvide a separate section for threats categorized as not urgent.\nAlso Include a list of these threats, their categorization rationale, relevant mitigations, and a table with vulnerable devices (with hyperlinks for more information) where appropriate.\nFinally, conclude the report with a sign-off:\n\"Generated by Microsoft Copilot for Security.\"",
+                "SessionId": "@body('Recommendations')?['sessionId']"
+            },
+            "path": "/process-prompt"
+        }
+    },
+    "Add_Copilot_Logo": {
+        "runAfter": {
+            "Convert_Response_into_HTML_Format_for_Proper_Output": [
+                "Succeeded"
+            ]
+        },
+        "type": "Compose",
+        "inputs": "<img src=\"https://raw.githubusercontent.com/Azure/Copilot-For-Security/main/Images/ic_fluent_copilot_64_64%402x.png\" alt=\"Copilot Logo\"/>"
+    }
+},
+"outputs": {}
+},
+"parameters": {
+"$connections": {
+"value": {
+    "securitycopilot_3": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+        "connectionName": "[variables('SecuritycopilotConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+    },
+    "office365_1": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+        "connectionName": "[variables('Office365ConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+    }
+}
+}
+}
+},
+"name": "[parameters('PlaybookName')]",
+"type": "Microsoft.Logic/workflows",
+"location": "[resourceGroup().location]",
+"tags": {
+"Created By": "Sean Wasonga",
+"CreatedDate": "1/31/2024 5:12:16 PM",
+"CreatorUPN": "sean Wasonga",
+"hidden-SentinelTemplateName": "DailyThreatExposureReport-Copilot",
+"hidden-SentinelTemplateVersion": "1.0"
+},
+"identity": {
+"type": "SystemAssigned"
+},
+"apiVersion": "2017-07-01",
+"dependsOn": [
+"[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+"[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+]
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('SecuritycopilotConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('SecuritycopilotConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+}
+}
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('Office365ConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('Office365ConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+}
+}
+}
+]
 }

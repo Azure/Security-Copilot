@@ -1,9 +1,9 @@
-![Copilot for Security Overview](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Overview](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
 # Disclaimer
-- The plugins  above were developed by the Community for Microsoft Security Copilot through contribtions. It's important to note that these plugins might not be entirely comprehensive or fully encapsulate the capabilities of third-party tools. For those interested in exploring a wider range of functionalities, access to both Vendor and Microsoft Published Plugins for Microsoft Copilot for Security proceed here: [**Published Plugins**](https://github.com/Azure/Copilot-For-Security/tree/main/Plugins/Published%20Plugins)
+- The plugins  above were developed by the Community for Microsoft Security Copilot through contribtions. It's important to note that these plugins might not be entirely comprehensive or fully encapsulate the capabilities of third-party tools. For those interested in exploring a wider range of functionalities, access to both Vendor and Microsoft Published Plugins for Microsoft Security Copilot proceed here: [**Published Plugins**](https://github.com/Azure/Copilot-For-Security/tree/main/Plugins/Published%20Plugins)
 
-## Responsible AI Publishing Requirements for 3P Plugins for Microsoft Copilot for Security 
+## Responsible AI Publishing Requirements for 3P Plugins for Microsoft Security Copilot 
 
 #### Responsible AI Publishing Requirements for 3P Plugins to GitHub:
 

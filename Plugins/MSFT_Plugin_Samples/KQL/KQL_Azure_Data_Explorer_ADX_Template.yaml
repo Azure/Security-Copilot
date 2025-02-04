@@ -1,0 +1,50 @@
+# Author Rick Kotlarz
+# Updated 2024-12-12
+
+Descriptor:
+  Name:  Azure Data Explorer (ADX) template
+  DisplayName: Azure Data Explorer (ADX) plugin
+  Description: This Azure Data Explorer (ADX) plugin ....
+  Icon: https://raw.githubusercontent.com/MicrosoftDocs/architecture-center/refs/heads/main/docs/_images/azbb.svg
+# Source: https://github.com/MicrosoftDocs/architecture-center/blob/main/docs/_images/azbb.svg
+  
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+
+      - Name: GetADXlogs
+        DisplayName: GetADXlogs
+        Description: |
+          Gets top n rows of the ADX cluster sorted by TimeGenerated
+#          This area can be multiple lines when using the pipe character after the colon character.
+#          You'll want to include additional information that is relevant for the Orchestreator to understand
+        ExamplePrompts:
+          - Gets the top 10 rows of the 'TableYouWantToQuery' table from the 'Your-Cluster-Name-01' ADX cluster sort by TimeGenerated.
+#          - An example prompt that a user might type to invoke this skill
+#          - Another example prompt.
+#          - Make sure you exclude named entities that are meant to change from user input (e.g. IP, username, IoCs, etc.) as these will actually lower skill selection probability.     
+        Inputs:
+          - Name: numberOfRows
+            PlaceholderValue: Number of rows you wish to return from the top (e.g. 10)
+            Description: Number of rows to return from the top
+            DefaultValue: 3
+            Required: true
+#         - Name: variableNameYouWantFromTheUserThatIsReferencedInYourKQL
+#            PlaceholderValue: Description or examples that user will see before filling out this variable. Note this field is displayed to the user.
+#            Description: Description that the orchestrator will use which includes any situations that explain when this input field should or should not be skipped. For example 'this field should be only used if an IP address is in IPv4 format'. Do not use the 'PlaceholderValue' field if you don't have any specific instructions for the orchestrator. Also this field is not displayed to the user.
+#            DefaultValue: defaultValue used if the 'Required' field is set to 'False'
+#            Required: true or false            
+        Settings:
+          Target: Kusto
+          Cluster: '{{ClusterURL}}'
+          Database: '{{DatabaseName}}'
+#         Cluster: https://YourClusterName.eastus.kusto.windows.net
+#         Database: ADX-01
+          Template: |-
+            //KQL comment to help the Orchestrator or users responsible for maintaining the code understand what the skill does
+            TableYouWantToQuery
+              | sort by TimeGenerated desc
+              | take {{numberOfRows}}

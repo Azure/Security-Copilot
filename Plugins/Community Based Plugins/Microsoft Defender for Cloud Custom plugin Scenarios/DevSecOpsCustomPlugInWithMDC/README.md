@@ -1,4 +1,4 @@
-# Copilot for Security Custom Plugin - KQL - DevSecOps with Defender for Cloud (based on GhAS and GAzDO)
+# Security Copilot Custom Plugin - KQL - DevSecOps with Defender for Cloud (based on GhAS and GAzDO)
 
 This custom plugins contains two skills: 
 * The first skill (GetNewDevSecOpsAlertsInTheLastTimespan) returns the list of new alerts related to DevSecOps and generated within a user-defined past period, relative to the current timestamp. The user must specificy the timespan to consider in the past (e.g. 1d for 1 day, 4h for 4 hours, etc...). Only new alerts are shown: if an alert is repeated but was already fired with the same identical information in a period of time before the considered timespan, then this alert is not returned. 
@@ -21,4 +21,4 @@ This custom plugins contains two skills:
     * ResourceGroupName: [Write the name of your resource group]
     * WorkspaceName: [Write the name of your Log Analytics or Sentinel workspace] 
    Note: these parameters should be set in both skills defined in the YAML file.
-3. Add the plugin by uploading the customized YAML in Copilot for Security (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)
+3. Add the plugin by uploading the customized YAML in Security Copilot (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)

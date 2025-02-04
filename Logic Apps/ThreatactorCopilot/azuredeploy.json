@@ -23,7 +23,7 @@
     },
     "parameters":  {
         "PlaybookName":  {
-            "defaultValue":  "ThreatactorCopilot",
+            "defaultValue":  "ThreatactorPlaybook",
             "type":  "string"
         },
         "email":  {
@@ -125,6 +125,162 @@
                                 "Parse_recommendation":  [
                                     "Succeeded"
                                 ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "Copilot_for_Security_prompts":  {
+                            "actions":  {
+                                "CVES_on_threat_actor":  {
+                                    "runAfter":  {
+                                        "Check_for_Mitre_attack_techniques_with_Threat_Actor":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "If there are any CVES references in regards to the threat Actor please share them in a table format",
+                                            "SessionId":  "@body('Check_for_Mitre_attack_techniques_with_Threat_Actor')?['sessionId']",
+                                            "SkillName":  "GetCvesByIdsDti"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Check_for_Mitre_attack_techniques_with_Threat_Actor":  {
+                                    "runAfter":  {
+                                        "Check_for_Threat_articles_on_threat_actor_profile":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "Based on the above can you share a list of Mitre attack techniques referencing the Threat Actor",
+                                            "SessionId":  "@body('Check_for_Threat_articles_on_threat_actor_profile')?['sessionId']",
+                                            "SkillName":  "FindThreatIntelligence"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Check_for_Threat_articles_on_threat_actor_profile":  {
+                                    "runAfter":  {
+                                        "Summary_of_threat_actor":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "Based on the above can you share the latest articles referencing the threat actor and when it was published in a table",
+                                            "SessionId":  "@body('Summary_of_threat_actor')?['sessionId']",
+                                            "SkillName":  "FindThreatIntelligence"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Hunt_my_environment_against_CVE":  {
+                                    "runAfter":  {
+                                        "CVES_on_threat_actor":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "Hunt across my defender environment and determine if these CVEs have exploited my devices",
+                                            "SessionId":  "@body('CVES_on_threat_actor')?['sessionId']",
+                                            "SkillName":  "NL2KQLDefender"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Recommendations_against_Threat_actor":  {
+                                    "runAfter":  {
+                                        "Hunt_my_environment_against_CVE":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "Based on your understanding , what recommendations can you provide to protect my environment from the following threat Actor",
+                                            "SessionId":  "@body('Hunt_my_environment_against_CVE')?['sessionId']",
+                                            "SkillName":  "FindThreatIntelligence"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Summarize_investigation":  {
+                                    "runAfter":  {
+                                        "Recommendations_against_Threat_actor":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "/AskGpt Can you create a report , capturing Each and every step in the investigation above ,Make sure to capture the CVEs and their References , the Articles and their references as well ,  the report is intended for a technical audience and should encapsulate actions that need to be taken in regards to this investigation",
+                                            "SessionId":  "@body('Recommendations_against_Threat_actor')?['sessionId']"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Summary_of_threat_actor":  {
+                                    "runAfter":  {
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "PromptContent":  "Share with me a summary of threat actor Hazel Sandstorm",
+                                            "SkillName":  "FindThreatIntelligence"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/process-prompt"
+                                    }
+                                }
+                            },
+                            "runAfter":  {
                             },
                             "type":  "Scope"
                         },
@@ -238,7 +394,7 @@
                                 }
                             },
                             "runAfter":  {
-                                "Security_Copilot_Prompts":  [
+                                "Copilot_for_Security_prompts":  [
                                     "Succeeded"
                                 ]
                             },
@@ -360,156 +516,6 @@
                             },
                             "type":  "Scope"
                         },
-                        "Security_Copilot_Prompts":  {
-                            "actions":  {
-                                "CVES_on_threat_actor":  {
-                                    "runAfter":  {
-                                        "Check_for_Mitre_attack_techniques_with_Threat_Actor":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "If there are any CVES references in regards to the threat Actor please share them in a table format",
-                                            "SessionId":  "@body('Check_for_Mitre_attack_techniques_with_Threat_Actor')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Check_for_Mitre_attack_techniques_with_Threat_Actor":  {
-                                    "runAfter":  {
-                                        "Check_for_Threat_articles_on_threat_actor_profile":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Based on the above can you share a list of Mitre attack techniques referencing the Threat Actor",
-                                            "SessionId":  "@body('Check_for_Threat_articles_on_threat_actor_profile')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Check_for_Threat_articles_on_threat_actor_profile":  {
-                                    "runAfter":  {
-                                        "Summary_of_threat_actor":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Based on the above can you share the latest articles referencing the threat actor and when it was published in a table",
-                                            "SessionId":  "@body('Summary_of_threat_actor')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Hunt_my_environment_against_CVE":  {
-                                    "runAfter":  {
-                                        "CVES_on_threat_actor":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "/LookupDataFromDefender365Hunting hunt across my defender environment and determine if these CVEs have exploited my devices",
-                                            "SessionId":  "@body('CVES_on_threat_actor')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Recommendations_against_Threat_actor":  {
-                                    "runAfter":  {
-                                        "Hunt_my_environment_against_CVE":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Based on your understanding , what recommendations can you provide to protect my environment from the following threat Actor",
-                                            "SessionId":  "@body('Hunt_my_environment_against_CVE')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Summarize_investigation":  {
-                                    "runAfter":  {
-                                        "Recommendations_against_Threat_actor":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Can you create a report , capturing Each and every step in the investigation above ,Make sure to capture the CVEs and their References , the Articles and their references as well ,  the report is intended for a technical audience and should encapsulate actions that need to be taken in regards to this investigation",
-                                            "SessionId":  "@body('Recommendations_against_Threat_actor')?['sessionId']"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Summary_of_threat_actor":  {
-                                    "runAfter":  {
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "body":  {
-                                            "PromptContent":  "Share with me a summary of threat actor APT28"
-                                        },
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "path":  "/process-prompt"
-                                    }
-                                }
-                            },
-                            "runAfter":  {
-                            },
-                            "type":  "Scope"
-                        },
                         "Send_an_email_(V2)":  {
                             "runAfter":  {
                                 "Summarize_the_report":  [
@@ -521,12 +527,12 @@
                                 "body":  {
                                     "Body":  "\u003cp\u003e@{outputs('Compose_4')}\u003c/p\u003e",
                                     "Importance":  "Normal",
-                                    "Subject":  "Threat Actor Profle Analysis - APT28",
+                                    "Subject":  "Threat Actor Profle Analysis ",
                                     "To":  "@parameters('email')"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
+                                        "name":  "@parameters('$connections')['office365']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -656,12 +662,12 @@
                 "parameters":  {
                     "$connections":  {
                         "value":  {
-                            "office365_1":  {
+                            "office365":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
                                 "connectionName":  "[variables('Office365ConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
                             },
-                            "securitycopilot":  {
+                            "securitycopilot_1":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
                                 "connectionName":  "[variables('SecuritycopilotConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
@@ -675,7 +681,7 @@
             "location":  "[resourceGroup().location]",
             "tags":  {
                 "Created By":  "Sean Wesonga",
-                "hidden-SentinelTemplateName":  "ThreatactorCopilot",
+                "hidden-SentinelTemplateName":  "",
                 "hidden-SentinelTemplateVersion":  "1.0"
             },
             "identity":  {

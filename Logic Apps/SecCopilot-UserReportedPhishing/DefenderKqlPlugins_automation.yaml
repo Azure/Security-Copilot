@@ -1,0 +1,41 @@
+Descriptor:
+  Name: DefenderKqlPlugins_automation
+  DisplayName: Defender Email KQL Automation
+  Description: Skills to query email logs and url clicks in M365 Advanced Hunting
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetEmailsByEmailSubject
+        DisplayName: Get Emails by Subject
+        Description: Fetches the emails with the specified subject name
+        Inputs:
+          - Name: subject
+            Description: The subject of the email
+            Required: true
+        Settings:
+           Target: Defender
+           Template: |-
+            EmailEvents
+            | where Subject == '{{subject}}'
+      - Name: GetUrlClicksBySubjectAndSenderEmail
+        DisplayName: Get Url Clicks by Subject and Sender Email
+        Description: Fetches the URLs clicked in emails with the specified subject and sender email
+        Inputs:
+          - Name: subject
+            Description: The subject of the email
+            Required: true
+          - Name: senderEmail
+            Description: The sender of the email
+            Required: true
+        Settings:
+           Target: Defender
+           Template: |-
+            let email = EmailEvents
+            | where Subject == '{{subject}}' and SenderFromAddress == '{{senderEmail}}'
+            | project NetworkMessageId;
+            let urls = EmailUrlInfo
+            | join email on NetworkMessageId
+            | project Url;
+            UrlClickEvents
+            | join urls on Url
+            | summarize UsersWhoClicked = dcount(AccountUpn)

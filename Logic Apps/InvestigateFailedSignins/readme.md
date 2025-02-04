@@ -14,7 +14,7 @@ Prior to beginning the installation process, it's crucial to confirm that you ha
 ## Deployment
 
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FCopilot-For-Security%2Fmain%2FLogic%2520Apps%2FInvestigateFailedSignins%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FSecurity-Copilot%2Fmain%2FLogic%2520Apps%2FInvestigateFailedSignins%2Fazuredeploy.json" target="_blank">
     <img src="https://aka.ms/deploytoazurebutton"/>
 </a>
 
@@ -26,5 +26,5 @@ Prior to beginning the installation process, it's crucial to confirm that you ha
 3. Proceed to run the Logic app and Prepare for the results 
 
 
-![Investigate Failed Sign-Ins](https://raw.githubusercontent.com/KwachSean/SecurityCopilot/main/playbooks/InvestigateFailedSignins/investigatefailedsignins.png)
+![Investigate Failed Sign-Ins](https://github.com/Azure/Copilot-For-Security/blob/main/Logic%20Apps/InvestigateFailedSignins/investigatefailedsignins.png)
 

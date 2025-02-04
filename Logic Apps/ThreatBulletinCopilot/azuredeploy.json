@@ -1,256 +1,228 @@
 {
-    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion":  "1.0.0.0",
-    "metadata":  {
-        "title":  "",
-        "description":  "",
-        "prerequisites":  "",
-        "postDeployment":  [
-        ],
-        "prerequisitesDeployTemplateFile":  "",
-        "lastUpdateTime":  "",
-        "entities":  [
-        ],
-        "tags":  [
-        ],
-        "support":  {
-            "tier":  "community",
-            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "",
+        "description": "",
+        "prerequisites": "",
+    "postDeployment": [],
+    "prerequisitesDeployTemplateFile": "",
+    "lastUpdateTime": "",
+"entities": [],
+"tags": [],
+"support": {
+"tier": "community",
+"armtemplate": "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+},
+"author": {
+"name": ""
+}
+},
+"parameters": {
+"PlaybookName": {
+"defaultValue": "ThreatBulletinCopilot",
+"type": "string"
+},
+"email": {
+"type": "String",
+"metadata": {
+    "description": "Enter value for email"
+}
+}
+},
+"variables": {
+"SecuritycopilotConnectionName": "[concat('Securitycopilot-', parameters('PlaybookName'))]",
+"Office365ConnectionName": "[concat('Office365-', parameters('PlaybookName'))]"
+},
+"resources": [
+{
+"properties": {
+    "provisioningState": "Succeeded",
+    "state": "Enabled",
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {
+            "$connections": {
+            "defaultValue": {},
+            "type": "Object"
         },
-        "author":  {
-            "name":  ""
+        "email": {
+            "type": "String",
+            "defaultValue": "[parameters('email')]"
         }
     },
-    "parameters":  {
-        "PlaybookName":  {
-            "defaultValue":  "ThreatBulletinCopilot",
-            "type":  "string"
-        },
-        "email":  {
-            "type":  "string",
-            "metadata":  {
-                "description":  "Enter value for email"
-            }
+    "triggers": {
+        "Recurrence": {
+            "recurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "evaluatedRecurrence": {
+                "frequency": "Day",
+                "interval": 1
+            },
+            "type": "Recurrence"
         }
     },
-    "variables":  {
-        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
-        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]"
-    },
-    "resources":  [
-        {
-            "properties":  {
-                "provisioningState":  "Succeeded",
-                "state":  "Enabled",
-                "definition":  {
-                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-                    "contentVersion":  "1.0.0.0",
-                    "parameters":  {
-                        "$connections":  {
-                            "defaultValue":  {
-                            },
-                            "type":  "Object"
-                        },
-                        "email":  {
-                            "defaultValue":  "[parameters('email')]",
-                            "type":  "string"
-                        }
-                    },
-                    "triggers":  {
-                        "Recurrence":  {
-                            "recurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "evaluatedRecurrence":  {
-                                "frequency":  "Day",
-                                "interval":  1
-                            },
-                            "type":  "Recurrence"
-                        }
-                    },
-                    "actions":  {
-                        "Compose":  {
-                            "runAfter":  {
-                                "Parse_JSON":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "@body('Parse_JSON')?['Evaluation Result Content']"
-                        },
-                        "Compose_2":  {
-                            "runAfter":  {
-                                "Compose":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "@decodeUriComponent(replace(encodeUriComponent(outputs('Compose')), '%0A', '%3Cbr%3E'))"
-                        },
-                        "Get_the_latest_threat_articles_over_the_last_24_hours":  {
-                            "runAfter":  {
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "Share the latest Threat articles published in the last 24 hours in a table format"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        },
-                        "Parse_JSON":  {
-                            "runAfter":  {
-                                "Summarize_into_a_threat_bulletin":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Summarize_into_a_threat_bulletin')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        },
-                                        "Skill Sources":  {
-                                            "type":  "array"
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Send_an_email_(V2)":  {
-                            "runAfter":  {
-                                "Compose_2":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "Body":  "\u003cp\u003e@{outputs('Compose_2')}\u003c/p\u003e",
-                                    "Importance":  "Normal",
-                                    "Subject":  "Daily Threat Bulletin",
-                                    "To":  "@parameters('email')"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['office365']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/v2/Mail"
-                            }
-                        },
-                        "Summarize_into_a_threat_bulletin":  {
-                            "runAfter":  {
-                                "Get_the_latest_threat_articles_over_the_last_24_hours":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "Summarize the following articles and consolidate them in a Threat Bulletin format Named Threat bulletin with the current date . In the bulletin ensure to capture all details including the title summary , link , Created date , also highlight the action items the Team should prioritize in relation to these article",
-                                    "SessionId":  "@body('Get_the_latest_threat_articles_over_the_last_24_hours')?['sessionId']"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        }
-                    },
-                    "outputs":  {
+    "actions": {
+        "Convert_Response_into_HTML_Format_for_Proper_Output": {
+            "runAfter": {
+                "Summarize_into_a_threat_bulletin": [
+                    "Succeeded"
+                ]
+            },
+            "type": "ApiConnection",
+            "inputs": {
+                "host": {
+                    "connection": {
+                        "name": "@parameters('$connections')['securitycopilot_1']['connectionId']"
                     }
                 },
-                "parameters":  {
-                    "$connections":  {
-                        "value":  {
-                            "office365":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                                "connectionName":  "[variables('Office365ConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
-                            },
-                            "securitycopilot":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
-                                "connectionName":  "[variables('SecuritycopilotConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
-                            }
-                        }
-                    }
+                "method": "post",
+                "body": {
+                    "PromptContent": "/AskGpt Provide the previous response in optimized HTML format ",
+                    "SessionId": "@body('Summarize_into_a_threat_bulletin')?['sessionId']"
+                },
+                "path": "/process-prompt"
+            }
+        },
+        "Get_the_latest_threat_articles_over_the_last_24_hours": {
+        "runAfter": {},
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['securitycopilot_1']['connectionId']"
                 }
             },
-            "name":  "[parameters('PlaybookName')]",
-            "type":  "Microsoft.Logic/workflows",
-            "location":  "[resourceGroup().location]",
-            "tags":  {
-                "Created By":  "Sean Wasonga",
-                "CreatedDate":  "",
-                "CreatorUPN":  "Sean Wasonga",
-                "hidden-SentinelTemplateName":  "ThreatBulletinCopilot",
-                "hidden-SentinelTemplateVersion":  "1.0"
+            "method": "post",
+            "body": {
+                "PromptContent": "Share the latest Threat articles published in the last 24 hours in a table format",
+                "SkillName": "FindThreatIntelligence"
             },
-            "identity":  {
-                "type":  "SystemAssigned"
-            },
-            "apiVersion":  "2017-07-01",
-            "dependsOn":  [
-                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
-                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+            "path": "/process-prompt"
+        }
+    },
+    "Send_an_email_(V2)": {
+        "runAfter": {
+            "Add_Copilot_Logo": [
+                "Succeeded"
             ]
         },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('Office365ConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('Office365ConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['office365_1']['connectionId']"
                 }
-            }
-        },
-        {
-            "type":  "Microsoft.Web/connections",
-            "apiVersion":  "2016-06-01",
-            "name":  "[variables('SecuritycopilotConnectionName')]",
-            "location":  "[resourceGroup().location]",
-            "kind":  "V1",
-            "properties":  {
-                "displayName":  "[variables('SecuritycopilotConnectionName')]",
-                "customParameterValues":  {
-                },
-                "api":  {
-                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
-                }
-            }
+            },
+            "method": "post",
+            "body": {
+                "To": "@parameters('email')",
+                "Subject": "Daily Threat Bulletin - Microsoft Copilot for Security",
+                "Body": "<p class=\"editor-paragraph\">@{outputs('Add_Copilot_Logo')}<br>@{body('Convert_Response_into_HTML_Format_for_Proper_Output')?['EvaluationResultContent']}</p>",
+                "Importance": "Normal"
+            },
+            "path": "/v2/Mail"
         }
-    ]
+    },
+    "Summarize_into_a_threat_bulletin": {
+        "runAfter": {
+            "Get_the_latest_threat_articles_over_the_last_24_hours": [
+                "Succeeded"
+            ]
+        },
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['securitycopilot_1']['connectionId']"
+                }
+            },
+            "method": "post",
+            "body": {
+                "PromptContent": "/AskGPT Summarize the following articles and consolidate them in a Threat Bulletin format Named Microsoft Copilot for Security -Threat bulletin with the current date . In the bulletin , ensure to capture all details including the title summary , link , Created date , also highlight the action items the Team should prioritize in relation to these article. Include a sign off Generated by Micrososoft Copilot for Security at the end",
+                "SessionId": "@body('Get_the_latest_threat_articles_over_the_last_24_hours')?['sessionId']"
+            },
+            "path": "/process-prompt"
+        }
+    },
+    "Add_Copilot_Logo": {
+        "runAfter": {
+            "Convert_Response_into_HTML_Format_for_Proper_Output": [
+                "Succeeded"
+            ]
+        },
+        "type": "Compose",
+        "inputs": "<img src=\"https://raw.githubusercontent.com/Azure/Copilot-For-Security/main/Images/ic_fluent_copilot_64_64%402x.png\" alt=\"Copilot Logo\"/>"
+    }
+},
+"outputs": {}
+},
+"parameters": {
+"$connections": {
+"value": {
+    "securitycopilot_1": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+        "connectionName": "[variables('SecuritycopilotConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+    },
+    "office365_1": {
+        "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+        "connectionName": "[variables('Office365ConnectionName')]",
+        "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+    }
+}
+}
+}
+},
+"name": "[parameters('PlaybookName')]",
+"type": "Microsoft.Logic/workflows",
+"location": "[resourceGroup().location]",
+"tags": {
+"Created By": "Sean Wasonga",
+"CreatedDate": "",
+"CreatorUPN": "Sean Wasonga",
+"hidden-SentinelTemplateName": "ThreatBulletinCopilot",
+"hidden-SentinelTemplateVersion": "1.0"
+},
+"identity": {
+"type": "SystemAssigned"
+},
+"apiVersion": "2017-07-01",
+"dependsOn": [
+"[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+"[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+]
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('SecuritycopilotConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('SecuritycopilotConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+}
+}
+},
+{
+"type": "Microsoft.Web/connections",
+"apiVersion": "2016-06-01",
+"name": "[variables('Office365ConnectionName')]",
+"location": "[resourceGroup().location]",
+"kind": "V1",
+"properties": {
+"displayName": "[variables('Office365ConnectionName')]",
+"customParameterValues": {},
+"api": {
+"id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+}
+}
+}
+]
 }

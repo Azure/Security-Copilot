@@ -1,4 +1,4 @@
-## Leveraging the Microsoft Copilot For Security Logic App Connector
+## Leveraging the Microsoft Security Copilot Logic App Connector
 
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
@@ -10,12 +10,12 @@ Logic app connector documentation: [Link](https://learn.microsoft.com/en-us/secu
 #### Objectives
 Upon completing this technical guide, you will gain the following abilities:<br>
 
-* Deploy an Azure Logic App capable of handling Microsoft Copilot for Security prompts using the Logic app connector.<br>
+* Deploy an Azure Logic App capable of handling Microsoft Security Copilot prompts using the Logic app connector.<br>
 
 #### Prerequisites
 To successfully complete this task, you must meet the following prerequisites:<br>
 
-1. You need your own tenant and Microsoft Copilot for Security instance.<br>
+1. You need your own tenant and Microsoft Security Copilot instance.<br>
 2. **Azure Subscription**: You need an active [Azure subscription](https://azure.microsoft.com/en-us/free/) to create and deploy a Logic App.
 3. **Azure Resource Group**: Logic Apps are deployed within [Azure resource groups](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups). Ensure that you have an appropriate resource group created or create one during the deployment process.
 4. **Access Permissions**: Ensure that you have the necessary [permissions](https://docs.microsoft.com/en-us/azure/role-based-access-control/overview) to create resources in the Azure subscription and resource group where you plan to deploy the Logic App.
@@ -46,14 +46,14 @@ To successfully complete this task, you must meet the following prerequisites:<b
 - Choose the Recurrence Trigger and Select the Logic app should be initiated once a day 
 ![Logic App Image](https://github.com/Azure/Copilot-For-Security/raw/main/Images/Logicapp%20images/logicapp6.png)
 
-### 4. Add the Copilot for Security Logic App connector within the workflow 
-- Select the Logic App Copilot For Security Connector 
+### 4. Add the Security Copilot Logic App connector within the workflow 
+- Select the Logic App Security Copilot Connector 
 ![Logic App Image](https://github.com/Azure/Copilot-For-Security/raw/main/Images/Logicapp%20images/logicapp7.png)
-- Authenticate the Logic App Copilot For Security Connector 
+- Authenticate the Logic App Security Copilot Connector 
 - Add context on the prompt 
 
 ![Logic App Image](https://github.com/Azure/Copilot-For-Security/raw/main/Images/Logicapp%20images/logicapp9.png)
-- Review the parameters in the Logic App Copilot for Security connector
+- Review the parameters in the Logic App Security Copilot connector
 ![Logic App Image](https://github.com/Azure/Copilot-For-Security/raw/main/Images/Logicapp%20images/logicapp8.png)
 
 Optional Parameters and Inputs:

@@ -1,0 +1,47 @@
+Descriptor:
+  Name: File Enrichment Skills
+  DisplayName: File Enrichment Skills
+  DescriptionForModel: |- 
+    - A set of skills providing enrichment data on files across devices. Capabilities include:
+      - Searching for filenames on specific devices based on user-provided criteria.
+      - Assisting in identifying potential security threats by locating and analyzing files across the network.
+      - Guiding users in remediation steps if suspicious files are identified.
+  Description: A set of skills for locating and analyzing files on devices to assist in identifying and addressing security threats.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: SearchFilesWritten
+        DisplayName: Search Written Files on Device
+        DescriptionForModel: |-
+          Performs a KQL query on the `DeviceFileEvents` table to search for file events on a specified device where the file name or related attributes contain a user-provided partial string (e.g., "chrome"). Key details include:
+          - **File Matching**: Matches files by name, folder path, initiating process name, or command line.
+          - **Device Context**: Filters results to focus on a specific device if provided.
+          - **Event Details**: Provides information such as the file name, device name, folder path, process details, and file hashes (`SHA1`, `SHA256`).
+          Designed to identify potentially malicious or suspicious files written on devices. GPT can analyze findings to determine security risks and recommend remediation actions, such as quarantining files, investigating their origin, or monitoring for further compromise. Summarizes results to support threat detection and incident response.
+        Description: Search for files written on a specific device based on a partial file name string provided by the user. Analyze potential security threats by identifying suspicious files and providing guidance for further investigation or remediation.
+        Inputs:
+          - Name: software
+            Description: Partial string supplied by the user to search for a file name, e.g., "chrome"
+            Required: true
+          - Name: device_name
+            Description: The name of the device to focus the search on, e.g., "computer.domain.local"
+            Default: ""
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query searches for file events on a specific device where the file name matches the user-provided string.
+            // The user provides a partial file name, which is matched against written files on the network.
+            let search_string = "{{software}}";
+            DeviceFileEvents
+            | where DeviceName contains "{{device_name}}"
+            | where FileName contains search_string
+                or InitiatingProcessFileName contains search_string
+                or InitiatingProcessCommandLine contains search_string
+                or FolderPath contains search_string
+            // Filter the results to focus on events from the specific device provided by the user
+            | project Timestamp, FileName, DeviceName, ActionType, FolderPath,  InitiatingProcessFileName, InitiatingProcessCommandLine, SHA1, SHA256
+            | order by Timestamp asc
+
+

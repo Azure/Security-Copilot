@@ -1,0 +1,218 @@
+Descriptor:
+  Name: Device Enrichment Skills
+  DisplayName: Device Enrichment Skills
+  Description: A set of KQL-based skills designed to enrich device-related data in Microsoft Defender and Sentinel. These skills provide insights into device vulnerabilities, logon events, exposure levels, and event timelines, empowering security analysts to monitor, investigate, and prioritize device-level security risks.
+  DescriptionForModel: |-
+    A collection of KQL-based skills that interact with Microsoft Defender and Sentinel to enhance device-related data analysis. These skills include:
+      - Summarizing device exposure levels to identify high-risk and internet-facing devices.
+      - Retrieving detailed logon events for specified accounts and devices.
+      - Constructing event timelines around specific timestamps to analyze suspicious device activities.
+      - Identifying vulnerabilities (CVEs) affecting devices and assessing their impact.
+      - Listing devices affected by specific CVEs to prioritize remediation efforts.
+    This skillset enables comprehensive device-level security investigations, helping analysts understand vulnerabilities, logon behavior, and event patterns to mitigate risks effectively. Use these skills for detailed insights into device security posture and incident response.
+  SupportedAuthTypes:
+    - None
+
+  Settings:
+
+    - Name: SubscriptionName
+      Label: SubscriptionName
+      Description: This is the subscription name that security copilot will use for sentinel.
+      HintText: yoursubscriptionname
+      SettingType: String
+      Required: true
+      
+    - Name: WorkspaceName
+      Label: WorkspaceName
+      Description: This is the  workspace name that security copilot will use for sentinel.
+      HintText: yourworkspace
+      SettingType: String
+      Required: true
+
+    - Name: ResourceGroupName
+      Label: ResourceGroupName
+      Description: This is the resource group name that security copilot will use for sentinel.
+      HintText: yourresourcegroup
+      SettingType: String
+      Required: true
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: DeviceExposureLevel
+        DisplayName: Summarize Device Exposure Levels
+        DescriptionForModel: |- 
+          Performs a KQL query on the `DeviceInfo` table to evaluate the exposure posture of devices by calculating two key metrics:
+          - **Total Number of High-Risk Devices**: The count of devices classified with a "High" exposure level.
+          - **High Exposure Internet-Facing Devices**: The count of high-risk devices that are accessible from the internet.
+          Designed to provide insights into the security posture of devices, this skill helps prioritize remediation actions by highlighting critical and exposed devices, enabling GPT to suggest further steps to reduce risk.
+        Description: Summarize device exposure levels in the environment by identifying the total number of high-risk devices and high-risk internet-facing devices. Helps prioritize remediation efforts for critical assets.
+        Settings:
+          Target: Defender
+          Template: |-
+            // Count the number of devices with a High Exposure Level
+            let highRiskDevices = 
+                DeviceInfo
+                | where ExposureLevel == "High"
+                | summarize HighRiskDeviceCount = count();
+            // Count the number of high exposure level devices that are internet-facing
+            let highExposureInternetFacingDevices = 
+                DeviceInfo
+                | where ExposureLevel == "High" and IsInternetFacing == true
+                | summarize HighExposureInternetFacingCount = count();
+            // Combine both summaries in a single output
+            union highRiskDevices, highExposureInternetFacingDevices
+
+      - Name: DeviceLogonSearch
+        DisplayName: Device Logon & Owner
+        DescriptionForModel: |- 
+          Performs a KQL query on the `DeviceLogonEvents` table to retrieve interactive and remote logon activities for a specified account and date. Key details include:
+          - `Timestamp`: Logon event time.
+          - `DeviceId`: Unique identifier of the device.
+          - `DeviceName`: Name of the device.
+          - `AccountName`: Account name used for the logon.
+          - `LogonType`: Type of logon (e.g., Interactive, Remote).
+          This skill enables security analysts to track and investigate logon events for specific accounts, identify devices associated with the account, and review activity timelines for further analysis.
+        Description: Retrieve a detailed log of interactive and remote device logon events for a specified account on a specific date. Includes device ID, device name, logon timestamps, and account name to aid in tracking user activity and identifying associated devices.
+        Inputs:
+          - Name: AccountName
+            Description: The account name, NOT the UPN. Example jsmith
+            Required: true
+          - Name: event_date
+            Description: The date to retrieve logon events for, formatted as YYYY-MM-DD. Example 2024-09-13
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query retrieves detailed device logon events for a specified account on a given date.
+            // It focuses on interactive and remote logon types, providing details like device IDs and names.
+            let userDate = "{{event_date}}"; 
+            let start = strcat(userDate, "T00:00:00"); 
+            let stop = strcat(userDate, "T23:59:59"); 
+            let startDatetime = todatetime(start); 
+            let stopDatetime = todatetime(stop); 
+            DeviceLogonEvents
+            | where AccountName == "{{AccountName}}" 
+                  and Timestamp >= startDatetime  
+                  and Timestamp < stopDatetime 
+                  and LogonType in ("Interactive", "Remote")  // Includes only interactive logons (2: Interactive, 10: RemoteInteractive)
+            | project Timestamp, DeviceId, DeviceName, AccountName, LogonType
+            | order by Timestamp desc
+
+      - Name: DeviceTimeline
+        DisplayName: Device Timeline
+        DescriptionForModel: |- 
+          Performs a KQL query to construct a timeline of device events and security alerts for a specified device, centered around a user-provided timestamp. Captures events within a defined time window (e.g., 15 seconds before and after) to identify suspicious behavior, anomalies, and patterns. 
+          Key features include:
+          - Events: File actions, network connections, process activity, and logon events.
+          - Alerts: Related security alerts and evidence for additional context.
+          - Time categorization: Events are classified as occurring "Before," "Pivot," or "After" the specified timestamp.
+          This skill enables security analysts to investigate device behavior comprehensively, focusing on potential malicious actions or correlated events, and provides actionable insights for remediation or further inquiry.
+        Description: Retrieve and analyze a detailed timeline of device events and security alerts surrounding a specific timestamp for a given device. Includes file actions, network connections, process activity, and related alerts to investigate suspicious behavior and anomalies.
+        Inputs:
+          - Name: device_name
+            Description: The name of the device for which the timeline is being constructed. Example vnevado-win10v
+            Required: true
+          - Name: event_timestamp
+            Description: The timestamp to build the timeline around, formatted in ISO 8601. Example 2024-08-30T01:10:39.501000
+            Required: true
+          - Name: time_window
+            Description: The time window to search. Example 30s for 30 seconds.
+            Default: 15s
+            Required: false
+        Settings:
+          Target: Sentinel
+          SubscriptionName: "{{SubscriptionName}}"
+          ResourceGroupName: "{{ResourceGroupName}}"
+          WorkspaceName: "{{WorkspaceName}}"
+          Template: |-
+            // This query retrieves and analyzes a timeline of device events and security alerts for a specific device, 
+            // centered around a user-provided timestamp.
+            // The query focuses on a user specified time window (X seconds before and after the provided timestamp) 
+            // to understand events before, during, and after a key moment.
+            // Results include key information like file actions, network connections, and process activity.
+            // The GPT model should analyze the data to identify suspicious patterns or anomalies, 
+            // focusing on potential malicious behaviors or correlating events.
+
+            let deviceName = "{{device_name}}"; // The name of the device to filter the timeline
+            let timelineWindow = {{time_window}}; // Default of 15 seconds before and after the provided timestamp
+            let pivotTimestampInput = datetime('{{event_timestamp}}'); // Timestamp provided by the user
+            let pivotTimestamp = pivotTimestampInput;
+            // Define the start and end times of the time window to capture relevant events
+            let startTime = pivotTimestamp - timelineWindow; 
+            let endTime = pivotTimestamp + timelineWindow; 
+            // Fetch and combine relevant device events: file events, network events, logon events, and process events.
+            // The union of these event types is filtered by the device name and the defined time window.
+            // Exclude network signature inspection events as they are less relevant for the analysis.
+            let deviceEvents = DeviceEvents
+            | union DeviceFileEvents, DeviceNetworkEvents, DeviceLogonEvents, DeviceProcessEvents
+            | where DeviceName contains deviceName  // Filter events by the specified device name
+            | where Timestamp between (startTime .. endTime) // Capture only events within the time window
+            | where ActionType != "NetworkSignatureInspected" // Exclude irrelevant network signature inspection events
+            // Classify events as "Before", "Pivot", or "After" based on their relationship to the pivot timestamp
+            | extend TimeRelation = case(
+                Timestamp < pivotTimestamp, "Before", 
+                Timestamp == pivotTimestamp, "Pivot", 
+                Timestamp > pivotTimestamp, "After",
+                "Unknown") // Default case for any unexpected values
+            // Project relevant event details for analysis, including timestamp, action type, filenames, and network information
+            | project Timestamp, ActionType, FileName, FolderPath, ProcessCommandLine, RemoteIP, RemotePort, AccountName, 
+              InitiatingProcessFileName, InitiatingProcessCommandLine, AlertId = "", Title = "", Category = "", AttackTechniques = "", TimeRelation;
+            // Fetch alert evidence for the specified device within the same time window.
+            // Alert evidence provides additional context about alerts triggered around the device.
+            deviceEvents
+            | distinct Timestamp, ActionType, FileName, FolderPath, ProcessCommandLine, RemoteIP, RemotePort, AccountName, 
+                InitiatingProcessFileName, InitiatingProcessCommandLine
+            | order by Timestamp asc
+
+      - Name: DeviceCVESearch
+        DisplayName: Device CVE Search
+        DescriptionForModel: |-
+          Performs a KQL query to identify software vulnerabilities (CVEs) affecting a specified device based on the selected severity level. For each vulnerability, it:
+            1. **Analyzes Software Vendors**: Evaluates the type of software the vendor produces and the potential risks associated with the vulnerability, considering the software's role in the system and possible exploitation impacts.
+            2. **Summarizes Device Security State**: Assesses the device's security posture by reviewing the number and severity of CVEs and identifying critical areas requiring immediate attention.
+          This skill provides actionable security insights, enabling security analysts to prioritize remediation and address vulnerabilities effectively.
+        Description: Retrieve a list of software vulnerabilities (CVEs) affecting a specified device, filtered by severity level (Critical, High, Medium, or Low). Provides insights into software vendors, vulnerability impacts, and the device's overall security posture to help prioritize remediation efforts.
+        Inputs:
+          - Name: device_name
+            Description: Device to search on
+            Required: true
+          - Name: severity_level
+            Description: Critical, High, Medium, or Low
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Retrieve vulnerabilities affecting the specified device and severity level
+            DeviceTvmSoftwareVulnerabilities
+            | where DeviceName == "{{device_name}}"
+            | where VulnerabilitySeverityLevel contains "{{severity_level}}"
+            // For each vulnerability:
+            // 1. Analyze the software vendors to determine what type of software they produce and explain why the vulnerability could be problematic.
+            // 2. Summarize the device's security state based on the number of CVEs, their severity levels, and any other relevant information.
+            // Use this information to provide security insights and prioritize remediation efforts.
+            | project DeviceName, SoftwareVendor, SoftwareName, CveId
+
+      - Name: CVEHostSearch
+        DisplayName: CVE Host Search
+        DescriptionForModel: |-
+          Performs a KQL query to identify devices impacted by a specific CVE identifier. For each affected device, it:
+            1. **Analyzes Impact**: Examines how the vulnerability affects the device, considering the type of software involved, its role in the system, and potential impacts if the vulnerability is exploited.
+            2. **Summarizes Security Posture**: Evaluates the overall security risk by analyzing the number of affected devices, their importance within the network, and the severity of the vulnerability.
+          This skill provides actionable insights to prioritize remediation, mitigate security risks, and strengthen the overall security posture of the environment.
+        Description: Retrieve a list of devices affected by a specified CVE identifier. Provides insights into the impact of the vulnerability on each device, highlights critical risks, and assesses the overall security posture to support remediation efforts across the network.
+        Inputs:
+          - Name: cve_id
+            Description: CVE identifier to search for (e.g., CVE-2023-12345)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Retrieve devices affected by the specified CVE
+            DeviceTvmSoftwareVulnerabilities
+            | where CveId == "{{cve_id}}"
+            | project DeviceName, SoftwareVendor, SoftwareName, SoftwareVersion, VulnerabilitySeverityLevel, RecommendedSecurityUpdate
+            // For each device:
+            // 1. Analyze the impact of the vulnerability on the device, considering the type of software and why the vulnerability could be problematic.
+            // 2. Summarize the device's security posture based on the number of devices impacted and their importance.
+            // Use this information to provide security insights and prioritize remediation efforts.

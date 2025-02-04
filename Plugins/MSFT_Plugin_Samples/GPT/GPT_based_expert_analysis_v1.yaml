@@ -1,0 +1,47 @@
+# Input Examples:
+#  Input field 1: IBM 
+#  Input field 2: QRadar OCSF
+#  Input field 3: (copy raw file) https://github.com/ocsf/examples/blob/main/mappings/markdown/IBM/QRadar%20SIEM/samples/offense.ocsf
+#
+# Plugin updated on 2024-11-07
+
+Descriptor:
+  Name: GPT Based Expert Analysis v1
+  DisplayName: GPT Based Expert Analysis v1
+  Description: This plugin serves as a temporary tool for manually analyzing and evaluating configurations, vulnerabilities, and other sensitive information that are not yet accessible through a dedicated plugin. The analysis focuses on functionality and its potential impact on operations, security, governance, risk, and compliance.
+
+SkillGroups:
+  - Format: GPT
+    Skills:
+      - Name: PerformGPTbasedExpertAnalysis
+        DisplayName: Perform a GPT based expert analysis
+        Description: Perform a GPT based expert analysis focused on OPSEC and GRC.
+        DescriptionForModel: Performs an expert analysis using GPT to assess and evaluate configurations, vulnerabilities, and other sensitive information. The output provides insights into functionality, potential impacts on operational performance, security posture, governance frameworks, risk levels, and compliance requirements.
+        Inputs:
+          - Name: personaExpert
+            Description: Provide a high-level reference to the type of expert persona that you'd like reviewing your data (e.g., Microsoft Azure, Cisco, Palo-Alto, Juniper Networks, IBM, etc.).  
+            DefaultValue: null
+            Required: true
+          - Name: productNameOrFormatType
+            Description: What is the type of data that will be reviewed (e.g., Azure Policy JSON, ASA IOS configuration, Next-Generation Firewall (NGFW) XML, SRX Series Gateway Junos OS configuration, QRadar SIEM Log Event Extended Format (LEEF), OCSF, STIX, JSON, RegEx, etc.)?
+            DefaultValue: null
+            Required: true
+          - Name: productOutput
+            Description: Paste the data (configuration, rule, vulnerability, etc.), that you would like reviewed. 
+            DefaultValue: null
+            Required: true            
+        Settings:
+          ModelName: gpt-4o
+          Template: |-
+            Assume the role of an expert {{personaExpert}} engineer, specializing in security, engineering, operations, and risk management. Your task is to critically evaluate the following {{productNameOrFormatType}} output.
+
+            For each major element, provide:
+            1. A concise summary of its function and relevance.
+            2. A detailed analysis of its potential impacts broken down by operations, security, governance, risk, and compliance.
+            
+            Additionally:
+            3. Identify any concerns, vulnerabilities, or security risks, and recommend specific actions or best practices to mitigate these, referencing industry standards and {{personaExpert}} guidelines where relevant.
+            
+            4. Ensure your review is thorough and offers clear, actionable insights to strengthen operational efficiency, security, governance, risk, and compliance posture."
+
+            Data to review starts here: {{productOutput}}

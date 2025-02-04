@@ -66,12 +66,12 @@
                         },
                         "Compose":  {
                             "runAfter":  {
-                                "Parse_JSON_4":  [
+                                "Tags_collection":  [
                                     "Succeeded"
                                 ]
                             },
                             "type":  "Compose",
-                            "inputs":  "@split(body('Parse_JSON_4')?['Evaluation Result Content'],',')"
+                            "inputs":  "@split(body('Tags_collection')?['EvaluationResultContent'],',')"
                         },
                         "Create_HTML_table":  {
                             "runAfter":  {
@@ -94,12 +94,13 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/SummarizeText Explain why you selected this classifiction. Format as bullet points?",
-                                    "SessionId":  "@body('classify_incident')?['sessionId']"
+                                    "PromptContent":  "Explain why you selected this classifiction.? Format as bullet points",
+                                    "SessionId":  "@body('classify_incident')?['sessionId']",
+                                    "SkillName":  "SummarizeData"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -115,12 +116,13 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/GetEntraUserDetails Show the authentication methods setup for each user involved in that incident. Especially indicate whether they have MFA enabled.",
-                                    "SessionId":  "@body('GetReputationsByIpAddresses')?['sessionId']"
+                                    "PromptContent":  "Show the authentication methods setup for each user involved in that incident. Especially indicate whether they have MFA enabled.",
+                                    "SessionId":  "@body('GetReputationsByIpAddresses')?['sessionId']",
+                                    "SkillName":  "GetEntraUserDetails"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -136,12 +138,13 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/GetIncidentEntities Tell me about the entities associated with that incident.",
-                                    "SessionId":  "@body('GetSentinelIncident')?['sessionId']"
+                                    "PromptContent":  "Tell me about the entities associated with that incident.",
+                                    "SessionId":  "@body('GetSentinelIncident')?['sessionId']",
+                                    "SkillName":  "GetIncidentEntities"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -157,33 +160,13 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/GetIntuneDevices If a user is listed in the incident details, show which devices they have used recently and indicate whether they are compliant with policies.",
-                                    "SessionId":  "@body('GeUserDetails')?['sessionId']"
+                                    "PromptContent":  "If a user is listed in the incident details, show which devices they have used recently and indicate whether they are compliant with policies. also show details from Intune on the one that checked in most recently. Especially indicate if it is current on all operating system updates.",
+                                    "SessionId":  "@body('GeUserDetails')?['sessionId']",
+                                    "SkillName":  "GetIntuneDevices"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                    }
-                                },
-                                "method":  "post",
-                                "path":  "/process-prompt"
-                            }
-                        },
-                        "GetIntuneDevices2":  {
-                            "runAfter":  {
-                                "GetIntuneDevices":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
-                            "inputs":  {
-                                "body":  {
-                                    "PromptContent":  "/GetIntuneDevices If any devices are listed in the previous output, show details from Intune on the one that checked in most recently. Especially indicate if it is current on all operating system updates.",
-                                    "SessionId":  "@body('GetIntuneDevices')?['sessionId']"
-                                },
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -199,12 +182,13 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/GetReputationsByIpAddresses What are the reputation score for the IPv4 addresses on that incident?",
-                                    "SessionId":  "@body('GetIncidentEntities')?['sessionId']"
+                                    "PromptContent":  "What are the reputation score for the IPv4 addresses on that incident?",
+                                    "SessionId":  "@body('GetIncidentEntities')?['sessionId']",
+                                    "SkillName":  "GetReputationsForIndicators"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -220,15 +204,50 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/GetSentinelIncident Summarize Sentinel Incident @{body('Parse_JSON')?['object']?['properties']?['object']?['properties']?['properties']?['properties']?['incidentNumber']}"
+                                    "PromptContent":  "Summarize Sentinel Incident @{body('Parse_JSON')?['object']?['properties']?['incidentNumber']}",
+                                    "SkillName":  "GetSentinelIncident"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
                                 "path":  "/process-prompt"
+                            }
+                        },
+                        "Initialize_variable":  {
+                            "runAfter":  {
+                                "Report":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "summrize_report",
+                                        "type":  "string",
+                                        "value":  "@body('Report')?['EvaluationResultContent']"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_2":  {
+                            "runAfter":  {
+                                "classify_incident":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "sev",
+                                        "type":  "string",
+                                        "value":  "@trim(body('classify_incident')?['EvaluationResultContent'])"
+                                    }
+                                ]
                             }
                         },
                         "Parse_JSON":  {
@@ -242,1272 +261,303 @@
                                 "content":  "@triggerBody()",
                                 "schema":  {
                                     "properties":  {
-                                        "content":  {
-                                            "properties":  {
-                                                "eventUniqueId":  {
-                                                    "type":  "string"
-                                                },
-                                                "object":  {
-                                                    "properties":  {
-                                                        "etag":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "id":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "name":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "properties":  {
-                                                            "properties":  {
-                                                                "additionalData":  {
-                                                                    "properties":  {
-                                                                        "alertProductNames":  {
-                                                                            "items":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "type":  "array"
-                                                                        },
-                                                                        "alertsCount":  {
-                                                                            "type":  "integer"
-                                                                        },
-                                                                        "bookmarksCount":  {
-                                                                            "type":  "integer"
-                                                                        },
-                                                                        "commentsCount":  {
-                                                                            "type":  "integer"
-                                                                        },
-                                                                        "tactics":  {
-                                                                            "items":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "type":  "array"
-                                                                        },
-                                                                        "techniques":  {
-                                                                            "type":  "array"
-                                                                        }
-                                                                    },
-                                                                    "type":  "object"
-                                                                },
-                                                                "alerts":  {
-                                                                    "items":  {
-                                                                        "properties":  {
-                                                                            "id":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "kind":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "properties":  {
-                                                                                "properties":  {
-                                                                                    "additionalData":  {
-                                                                                        "properties":  {
-                                                                                            "Activity end time (UTC)":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Activity start time (UTC)":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "AlertUri":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "AssignedTo":  {
-                                                                                            },
-                                                                                            "Attacker source IP":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Attacker source computer name":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Category":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Classification":  {
-                                                                                            },
-                                                                                            "DetectionSource":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "DetectorId":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Determination":  {
-                                                                                            },
-                                                                                            "EffectiveAzureResourceId":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "EffectiveSubscriptionId":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "IncidentId":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "LastUpdated":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Number of existing accounts used by source to sign in":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Number of failed authentication attempts to host":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Number of nonexistent accounts used by source to sign in":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "OriginSource":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "OriginalAlertProductName":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "OriginalAlertProviderName":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "ProductComponentName":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "ThreatFamilyName":  {
-                                                                                            },
-                                                                                            "ThreatName":  {
-                                                                                            },
-                                                                                            "Top accounts with failed sign in attempts (count)":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "Was RDP session initiated":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "WorkspaceResourceGroup":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "WorkspaceSubscriptionId":  {
-                                                                                                "type":  "string"
-                                                                                            }
-                                                                                        },
-                                                                                        "type":  "object"
-                                                                                    },
-                                                                                    "alertDisplayName":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "alertLink":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "alertType":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "confidenceLevel":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "description":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "endTimeUtc":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "friendlyName":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "processingEndTime":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "productName":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "providerAlertId":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "remediationSteps":  {
-                                                                                        "items":  {
-                                                                                            "type":  "string"
-                                                                                        },
-                                                                                        "type":  "array"
-                                                                                    },
-                                                                                    "resourceIdentifiers":  {
-                                                                                        "items":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                },
-                                                                                                "workspaceId":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "required":  [
-                                                                                                "type",
-                                                                                                "workspaceId"
-                                                                                            ],
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "type":  "array"
-                                                                                    },
-                                                                                    "severity":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "startTimeUtc":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "status":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "systemAlertId":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "tactics":  {
-                                                                                        "items":  {
-                                                                                            "type":  "string"
-                                                                                        },
-                                                                                        "type":  "array"
-                                                                                    },
-                                                                                    "timeGenerated":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "vendorName":  {
-                                                                                        "type":  "string"
-                                                                                    }
-                                                                                },
-                                                                                "type":  "object"
-                                                                            },
-                                                                            "type":  {
-                                                                                "type":  "string"
-                                                                            }
-                                                                        },
-                                                                        "required":  [
-                                                                            "id",
-                                                                            "type",
-                                                                            "kind",
-                                                                            "properties"
-                                                                        ],
-                                                                        "type":  "object"
-                                                                    },
-                                                                    "type":  "array"
-                                                                },
-                                                                "bookmarks":  {
-                                                                    "type":  "array"
-                                                                },
-                                                                "comments":  {
-                                                                    "type":  "array"
-                                                                },
-                                                                "createdTimeUtc":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "firstActivityTimeUtc":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "incidentNumber":  {
-                                                                    "type":  "integer"
-                                                                },
-                                                                "incidentUrl":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "labels":  {
-                                                                    "type":  "array"
-                                                                },
-                                                                "lastActivityTimeUtc":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "lastModifiedTimeUtc":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "owner":  {
-                                                                    "properties":  {
-                                                                        "assignedTo":  {
-                                                                        },
-                                                                        "email":  {
-                                                                        },
-                                                                        "objectId":  {
-                                                                        },
-                                                                        "userPrincipalName":  {
-                                                                        }
-                                                                    },
-                                                                    "type":  "object"
-                                                                },
-                                                                "providerIncidentId":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "providerName":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "relatedAnalyticRuleIds":  {
-                                                                    "type":  "array"
-                                                                },
-                                                                "relatedEntities":  {
-                                                                    "items":  {
-                                                                        "properties":  {
-                                                                            "id":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "kind":  {
-                                                                                "type":  "string"
-                                                                            },
-                                                                            "properties":  {
-                                                                                "properties":  {
-                                                                                    "additionalData":  {
-                                                                                        "properties":  {
-                                                                                            "DefenderAvStatus":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "DeviceDnsName":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "FirstSeenDateTime":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "HealthStatus":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "MdatpDeviceId":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "OnboardingStatus":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "OsBuild":  {
-                                                                                                "type":  "integer"
-                                                                                            },
-                                                                                            "RbacGroupName":  {
-                                                                                                "type":  "string"
-                                                                                            },
-                                                                                            "RiskScore":  {
-                                                                                                "type":  "string"
-                                                                                            }
-                                                                                        },
-                                                                                        "type":  "object"
-                                                                                    },
-                                                                                    "friendlyName":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "hostName":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "osFamily":  {
-                                                                                        "type":  "string"
-                                                                                    },
-                                                                                    "osVersion":  {
-                                                                                        "type":  "string"
-                                                                                    }
-                                                                                },
-                                                                                "type":  "object"
-                                                                            },
-                                                                            "type":  {
-                                                                                "type":  "string"
-                                                                            }
-                                                                        },
-                                                                        "required":  [
-                                                                            "id",
-                                                                            "type",
-                                                                            "kind",
-                                                                            "properties"
-                                                                        ],
-                                                                        "type":  "object"
-                                                                    },
-                                                                    "type":  "array"
-                                                                },
-                                                                "severity":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "status":  {
-                                                                    "type":  "string"
-                                                                },
-                                                                "title":  {
-                                                                    "type":  "string"
-                                                                }
-                                                            },
-                                                            "type":  "object"
-                                                        },
-                                                        "type":  {
-                                                            "type":  "string"
-                                                        }
-                                                    },
-                                                    "type":  "object"
-                                                },
-                                                "objectEventType":  {
-                                                    "type":  "string"
-                                                },
-                                                "objectSchemaType":  {
-                                                    "type":  "string"
-                                                },
-                                                "workspaceId":  {
-                                                    "type":  "string"
-                                                },
-                                                "workspaceInfo":  {
-                                                    "properties":  {
-                                                        "ResourceGroupName":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "SubscriptionId":  {
-                                                            "type":  "string"
-                                                        },
-                                                        "WorkspaceName":  {
-                                                            "type":  "string"
-                                                        }
-                                                    },
-                                                    "type":  "object"
-                                                }
-                                            },
-                                            "type":  "object"
+                                        "eventUniqueId":  {
+                                            "type":  "string"
                                         },
-                                        "schema":  {
+                                        "object":  {
                                             "properties":  {
+                                                "etag":  {
+                                                    "type":  "string"
+                                                },
+                                                "id":  {
+                                                    "type":  "string"
+                                                },
+                                                "name":  {
+                                                    "type":  "string"
+                                                },
                                                 "properties":  {
                                                     "properties":  {
-                                                        "eventUniqueId":  {
+                                                        "additionalData":  {
                                                             "properties":  {
-                                                                "type":  {
-                                                                    "type":  "string"
+                                                                "alertProductNames":  {
+                                                                    "items":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "type":  "array"
+                                                                },
+                                                                "alertsCount":  {
+                                                                    "type":  "integer"
+                                                                },
+                                                                "bookmarksCount":  {
+                                                                    "type":  "integer"
+                                                                },
+                                                                "commentsCount":  {
+                                                                    "type":  "integer"
+                                                                },
+                                                                "tactics":  {
+                                                                    "items":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "type":  "array"
+                                                                },
+                                                                "techniques":  {
+                                                                    "type":  "array"
                                                                 }
                                                             },
                                                             "type":  "object"
                                                         },
-                                                        "object":  {
-                                                            "properties":  {
+                                                        "alerts":  {
+                                                            "items":  {
                                                                 "properties":  {
+                                                                    "id":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "kind":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "name":  {
+                                                                        "type":  "string"
+                                                                    },
                                                                     "properties":  {
-                                                                        "etag":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        },
-                                                                        "id":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        },
-                                                                        "name":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        },
                                                                         "properties":  {
-                                                                            "properties":  {
+                                                                            "additionalData":  {
                                                                                 "properties":  {
+                                                                                    "Alert generation status":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Analytic Rule Ids":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Analytic Rule Name":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Correlation Id":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Data Sources":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Event Grouping":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "ProcessedBySentinel":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Query":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Query End Time UTC":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Query Period":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Query Start Time UTC":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Search Query Results Overall Count":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Trigger Operator":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                                    "Trigger Threshold":  {
+                                                                                        "type":  "string"
+                                                                                    }
+                                                                                },
+                                                                                "type":  "object"
+                                                                            },
+                                                                            "alertDisplayName":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "alertType":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "confidenceLevel":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "description":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "endTimeUtc":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "friendlyName":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "processingEndTime":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "productComponentName":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "productName":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "providerAlertId":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "resourceIdentifiers":  {
+                                                                                "items":  {
                                                                                     "properties":  {
-                                                                                        "additionalData":  {
-                                                                                            "properties":  {
-                                                                                                "properties":  {
-                                                                                                    "properties":  {
-                                                                                                        "alertProductNames":  {
-                                                                                                            "properties":  {
-                                                                                                                "items":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "alertsCount":  {
-                                                                                                            "properties":  {
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "bookmarksCount":  {
-                                                                                                            "properties":  {
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "commentsCount":  {
-                                                                                                            "properties":  {
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "tactics":  {
-                                                                                                            "properties":  {
-                                                                                                                "items":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "techniques":  {
-                                                                                                            "properties":  {
-                                                                                                                "items":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "type":  {
-                                                                                                                    "type":  "string"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    "type":  "object"
-                                                                                                },
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
+                                                                                        "type":  {
+                                                                                            "type":  "string"
                                                                                         },
-                                                                                        "alerts":  {
-                                                                                            "properties":  {
-                                                                                                "items":  {
-                                                                                                    "properties":  {
-                                                                                                        "properties":  {
-                                                                                                            "properties":  {
-                                                                                                                "id":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "kind":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "name":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "properties":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "properties":  {
-                                                                                                                            "properties":  {
-                                                                                                                                "additionalData":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "properties":  {
-                                                                                                                                            "properties":  {
-                                                                                                                                                "Alert generation status":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Analytic Rule Ids":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Analytic Rule Name":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Analytics Template Id":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Correlation Id":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Data Sources":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Event Grouping":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "ProcessedBySentinel":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Query":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Query End Time UTC":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Query Period":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Query Start Time UTC":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Search Query Results Overall Count":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Trigger Operator":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "Trigger Threshold":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "type":  "string"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                }
-                                                                                                                                            },
-                                                                                                                                            "type":  "object"
-                                                                                                                                        },
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "alertDisplayName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "alertType":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "confidenceLevel":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "description":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "endTimeUtc":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "friendlyName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "processingEndTime":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "productComponentName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "productName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "providerAlertId":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "resourceIdentifiers":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "items":  {
-                                                                                                                                            "properties":  {
-                                                                                                                                                "properties":  {
-                                                                                                                                                    "properties":  {
-                                                                                                                                                        "type":  {
-                                                                                                                                                            "properties":  {
-                                                                                                                                                                "type":  {
-                                                                                                                                                                    "type":  "string"
-                                                                                                                                                                }
-                                                                                                                                                            },
-                                                                                                                                                            "type":  "object"
-                                                                                                                                                        },
-                                                                                                                                                        "workspaceId":  {
-                                                                                                                                                            "properties":  {
-                                                                                                                                                                "type":  {
-                                                                                                                                                                    "type":  "string"
-                                                                                                                                                                }
-                                                                                                                                                            },
-                                                                                                                                                            "type":  "object"
-                                                                                                                                                        }
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "object"
-                                                                                                                                                },
-                                                                                                                                                "required":  {
-                                                                                                                                                    "items":  {
-                                                                                                                                                        "type":  "string"
-                                                                                                                                                    },
-                                                                                                                                                    "type":  "array"
-                                                                                                                                                },
-                                                                                                                                                "type":  {
-                                                                                                                                                    "type":  "string"
-                                                                                                                                                }
-                                                                                                                                            },
-                                                                                                                                            "type":  "object"
-                                                                                                                                        },
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "severity":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "startTimeUtc":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "status":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "systemAlertId":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "tactics":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "items":  {
-                                                                                                                                            "properties":  {
-                                                                                                                                                "type":  {
-                                                                                                                                                    "type":  "string"
-                                                                                                                                                }
-                                                                                                                                            },
-                                                                                                                                            "type":  "object"
-                                                                                                                                        },
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "timeGenerated":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "vendorName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                }
-                                                                                                                            },
-                                                                                                                            "type":  "object"
-                                                                                                                        },
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "type":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "required":  {
-                                                                                                            "items":  {
-                                                                                                                "type":  "string"
-                                                                                                            },
-                                                                                                            "type":  "array"
-                                                                                                        },
-                                                                                                        "type":  {
-                                                                                                            "type":  "string"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    "type":  "object"
-                                                                                                },
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "bookmarks":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "comments":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "createdTimeUtc":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "description":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "firstActivityTimeUtc":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "incidentNumber":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "incidentUrl":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "labels":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "lastActivityTimeUtc":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "lastModifiedTimeUtc":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "owner":  {
-                                                                                            "properties":  {
-                                                                                                "properties":  {
-                                                                                                    "properties":  {
-                                                                                                        "assignedTo":  {
-                                                                                                            "properties":  {
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "email":  {
-                                                                                                            "properties":  {
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "objectId":  {
-                                                                                                            "properties":  {
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "userPrincipalName":  {
-                                                                                                            "properties":  {
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    "type":  "object"
-                                                                                                },
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "providerIncidentId":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "providerName":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "relatedAnalyticRuleIds":  {
-                                                                                            "properties":  {
-                                                                                                "items":  {
-                                                                                                    "properties":  {
-                                                                                                        "type":  {
-                                                                                                            "type":  "string"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    "type":  "object"
-                                                                                                },
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "relatedEntities":  {
-                                                                                            "properties":  {
-                                                                                                "items":  {
-                                                                                                    "properties":  {
-                                                                                                        "properties":  {
-                                                                                                            "properties":  {
-                                                                                                                "id":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "kind":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "name":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "properties":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "properties":  {
-                                                                                                                            "properties":  {
-                                                                                                                                "address":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                },
-                                                                                                                                "friendlyName":  {
-                                                                                                                                    "properties":  {
-                                                                                                                                        "type":  {
-                                                                                                                                            "type":  "string"
-                                                                                                                                        }
-                                                                                                                                    },
-                                                                                                                                    "type":  "object"
-                                                                                                                                }
-                                                                                                                            },
-                                                                                                                            "type":  "object"
-                                                                                                                        },
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                },
-                                                                                                                "type":  {
-                                                                                                                    "properties":  {
-                                                                                                                        "type":  {
-                                                                                                                            "type":  "string"
-                                                                                                                        }
-                                                                                                                    },
-                                                                                                                    "type":  "object"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "type":  "object"
-                                                                                                        },
-                                                                                                        "required":  {
-                                                                                                            "items":  {
-                                                                                                                "type":  "string"
-                                                                                                            },
-                                                                                                            "type":  "array"
-                                                                                                        },
-                                                                                                        "type":  {
-                                                                                                            "type":  "string"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    "type":  "object"
-                                                                                                },
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "severity":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "status":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
-                                                                                        },
-                                                                                        "title":  {
-                                                                                            "properties":  {
-                                                                                                "type":  {
-                                                                                                    "type":  "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "type":  "object"
+                                                                                        "workspaceId":  {
+                                                                                            "type":  "string"
                                                                                         }
                                                                                     },
+                                                                                    "required":  [
+                                                                                        "type",
+                                                                                        "workspaceId"
+                                                                                    ],
                                                                                     "type":  "object"
                                                                                 },
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
+                                                                                "type":  "array"
                                                                             },
-                                                                            "type":  "object"
+                                                                            "severity":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "startTimeUtc":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "status":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "systemAlertId":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "tactics":  {
+                                                                                "items":  {
+                                                                                    "type":  "string"
+                                                                                },
+                                                                                "type":  "array"
+                                                                            },
+                                                                            "timeGenerated":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "vendorName":  {
+                                                                                "type":  "string"
+                                                                            }
                                                                         },
-                                                                        "type":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        }
+                                                                        "type":  "object"
                                                                     },
-                                                                    "type":  "object"
+                                                                    "type":  {
+                                                                        "type":  "string"
+                                                                    }
                                                                 },
-                                                                "type":  {
-                                                                    "type":  "string"
+                                                                "required":  [
+                                                                    "id",
+                                                                    "name",
+                                                                    "type",
+                                                                    "kind",
+                                                                    "properties"
+                                                                ],
+                                                                "type":  "object"
+                                                            },
+                                                            "type":  "array"
+                                                        },
+                                                        "bookmarks":  {
+                                                            "type":  "array"
+                                                        },
+                                                        "comments":  {
+                                                            "type":  "array"
+                                                        },
+                                                        "createdTimeUtc":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "description":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "firstActivityTimeUtc":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "incidentNumber":  {
+                                                            "type":  "integer"
+                                                        },
+                                                        "incidentUrl":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "labels":  {
+                                                            "type":  "array"
+                                                        },
+                                                        "lastActivityTimeUtc":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "lastModifiedTimeUtc":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "owner":  {
+                                                            "properties":  {
+                                                                "assignedTo":  {
+                                                                },
+                                                                "email":  {
+                                                                },
+                                                                "objectId":  {
+                                                                },
+                                                                "userPrincipalName":  {
                                                                 }
                                                             },
                                                             "type":  "object"
                                                         },
-                                                        "objectEventType":  {
-                                                            "properties":  {
-                                                                "type":  {
-                                                                    "type":  "string"
-                                                                }
-                                                            },
-                                                            "type":  "object"
+                                                        "providerIncidentId":  {
+                                                            "type":  "string"
                                                         },
-                                                        "objectSchemaType":  {
-                                                            "properties":  {
-                                                                "type":  {
-                                                                    "type":  "string"
-                                                                }
-                                                            },
-                                                            "type":  "object"
+                                                        "providerName":  {
+                                                            "type":  "string"
                                                         },
-                                                        "workspaceId":  {
-                                                            "properties":  {
-                                                                "type":  {
-                                                                    "type":  "string"
-                                                                }
+                                                        "relatedAnalyticRuleIds":  {
+                                                            "items":  {
+                                                                "type":  "string"
                                                             },
-                                                            "type":  "object"
+                                                            "type":  "array"
                                                         },
-                                                        "workspaceInfo":  {
-                                                            "properties":  {
+                                                        "relatedEntities":  {
+                                                            "items":  {
                                                                 "properties":  {
-                                                                    "properties":  {
-                                                                        "ResourceGroupName":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        },
-                                                                        "SubscriptionId":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        },
-                                                                        "WorkspaceName":  {
-                                                                            "properties":  {
-                                                                                "type":  {
-                                                                                    "type":  "string"
-                                                                                }
-                                                                            },
-                                                                            "type":  "object"
-                                                                        }
+                                                                    "id":  {
+                                                                        "type":  "string"
                                                                     },
-                                                                    "type":  "object"
+                                                                    "kind":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "name":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                                    "properties":  {
+                                                                        "properties":  {
+                                                                            "address":  {
+                                                                                "type":  "string"
+                                                                            },
+                                                                            "friendlyName":  {
+                                                                                "type":  "string"
+                                                                            }
+                                                                        },
+                                                                        "type":  "object"
+                                                                    },
+                                                                    "type":  {
+                                                                        "type":  "string"
+                                                                    }
                                                                 },
-                                                                "type":  {
-                                                                    "type":  "string"
-                                                                }
+                                                                "required":  [
+                                                                    "id",
+                                                                    "name",
+                                                                    "type",
+                                                                    "kind",
+                                                                    "properties"
+                                                                ],
+                                                                "type":  "object"
                                                             },
-                                                            "type":  "object"
+                                                            "type":  "array"
+                                                        },
+                                                        "severity":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "status":  {
+                                                            "type":  "string"
+                                                        },
+                                                        "title":  {
+                                                            "type":  "string"
                                                         }
                                                     },
                                                     "type":  "object"
@@ -1517,134 +567,29 @@
                                                 }
                                             },
                                             "type":  "object"
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Parse_JSON_2":  {
-                            "runAfter":  {
-                                "classify_incident":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('classify_incident')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
+                                        },
+                                        "objectEventType":  {
                                             "type":  "string"
                                         },
-                                        "Evaluation Result Type":  {
+                                        "objectSchemaType":  {
                                             "type":  "string"
                                         },
-                                        "Next Prompt Suggestions":  {
-                                        },
-                                        "Prompt Content":  {
+                                        "workspaceId":  {
                                             "type":  "string"
                                         },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Parse_JSON_3":  {
-                            "runAfter":  {
-                                "Explain_classify":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Explain_classify')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Next Prompt Suggestions":  {
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Parse_JSON_4":  {
-                            "runAfter":  {
-                                "Tags_collection":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Tags_collection')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Next Prompt Suggestions":  {
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
-                                        }
-                                    },
-                                    "type":  "object"
-                                }
-                            }
-                        },
-                        "Parse_JSON_5":  {
-                            "runAfter":  {
-                                "adding_tags_for_the_incident":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ParseJson",
-                            "inputs":  {
-                                "content":  "@body('Tags_collection')",
-                                "schema":  {
-                                    "properties":  {
-                                        "Evaluation Result Content":  {
-                                            "type":  "string"
-                                        },
-                                        "Evaluation Result Type":  {
-                                            "type":  "string"
-                                        },
-                                        "Next Prompt Suggestions":  {
-                                        },
-                                        "Prompt Content":  {
-                                            "type":  "string"
-                                        },
-                                        "SessionId":  {
-                                            "type":  "string"
-                                        },
-                                        "Skill Name":  {
+                                        "workspaceInfo":  {
+                                            "properties":  {
+                                                "ResourceGroupName":  {
+                                                    "type":  "string"
+                                                },
+                                                "SubscriptionId":  {
+                                                    "type":  "string"
+                                                },
+                                                "WorkspaceName":  {
+                                                    "type":  "string"
+                                                }
+                                            },
+                                            "type":  "object"
                                         }
                                     },
                                     "type":  "object"
@@ -1653,19 +598,20 @@
                         },
                         "Report":  {
                             "runAfter":  {
-                                "GetIntuneDevices2":  [
+                                "GetIntuneDevices":  [
                                     "Succeeded"
                                 ]
                             },
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "/SummarizeData Write a report based on this investigation. Lead with your assessment of the incident and supporting evidence for your conclusion with a confidence level, including whether or not this incident is likely to be a true positive. Conclude with a set of recommendations.",
-                                    "SessionId":  "@body('GetIntuneDevices2')?['sessionId']"
+                                    "PromptContent":  "Write a report based on this investigation. Lead with your assessment of the incident and supporting evidence for your conclusion with a confidence level, including whether or not this incident is likely to be a true positive. Conclude with a set of recommendations.",
+                                    "SessionId":  "@body('GetIntuneDevices')?['sessionId']",
+                                    "SkillName":  "SummarizeData"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -1674,7 +620,7 @@
                         },
                         "Report_answer":  {
                             "runAfter":  {
-                                "Parse_JSON_5":  [
+                                "adding_tags_for_the_incident":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1684,7 +630,7 @@
                                     {
                                         "name":  "Answer",
                                         "type":  "array",
-                                        "value":  "@array(body('Parse_JSON_5')?['Evaluation Result Content'])"
+                                        "value":  "@array(body('Tags_collection')?['EvaluationResultContent'])"
                                     }
                                 ]
                             }
@@ -1699,14 +645,14 @@
                             "inputs":  {
                                 "from":  "@variables('Answer')",
                                 "select":  {
-                                    "Copilot Report":  "@variables('Answer')",
-                                    "Explain Classify":  "@variables('Answer')"
+                                    "Copilot Report":  "@variables('summrize_report')",
+                                    "Explain Classify":  "@variables('classified explain')"
                                 }
                             }
                         },
                         "Switch":  {
                             "runAfter":  {
-                                "Parse_JSON_2":  [
+                                "Initialize_variable_2":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1788,7 +734,7 @@
                                 "actions":  {
                                 }
                             },
-                            "expression":  "@toLower(body('Parse_JSON_2')?['Evaluation Result Content'])",
+                            "expression":  "@toLower(variables('sev'))",
                             "type":  "Switch"
                         },
                         "Tags_collection":  {
@@ -1801,11 +747,12 @@
                             "inputs":  {
                                 "body":  {
                                     "PromptContent":  "Derive a set of tags (5 tags) to describe this incident. the Tags will be used to group other incidents, include a tag for \"Security Copilot Triaged\", only respond with the category, write it as single line with comma between Tags to tags, and dont add bullet points.",
-                                    "SessionId":  "@body('Explain_classify')?['sessionId']"
+                                    "SessionId":  "@body('Explain_classify')?['sessionId']",
+                                    "SkillName":  "SummarizeData"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -1888,7 +835,7 @@
                         },
                         "classified_explain":  {
                             "runAfter":  {
-                                "Parse_JSON_3":  [
+                                "Explain_classify":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1898,26 +845,27 @@
                                     {
                                         "name":  "classified explain",
                                         "type":  "string",
-                                        "value":  "@body('Parse_JSON_3')?['Evaluation Result Content']"
+                                        "value":  "@body('Explain_classify')?['EvaluationResultContent']"
                                     }
                                 ]
                             }
                         },
                         "classify_incident":  {
                             "runAfter":  {
-                                "Report":  [
+                                "Initialize_variable":  [
                                     "Succeeded"
                                 ]
                             },
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "PromptContent":  "Based on this investigation details, classify this incident based on the following rules. If it appears malicious, label it as \"high\". If it appears suspicious, label it as \"medium\". If it is not clear, label it is \"low\". Respond with the label only. ",
-                                    "SessionId":  "@body('Report')?['sessionId']"
+                                    "PromptContent":  "Based on this investigation details, classify this incident based on the following rules. If it appears malicious, label it as \"high\". If it appears suspicious, label it as \"medium\". If it is not clear, label it is \"low\". Only include the label in the response. ",
+                                    "SessionId":  "@body('Report')?['sessionId']",
+                                    "SkillName":  "AnalyzeSecurityData"
                                 },
                                 "host":  {
                                     "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                        "name":  "@parameters('$connections')['securitycopilot_1']['connectionId']"
                                     }
                                 },
                                 "method":  "post",
@@ -1936,7 +884,7 @@
                                 "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]"
                             },
-                            "securitycopilot":  {
+                            "securitycopilot_1":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
                                 "connectionName":  "[variables('SecuritycopilotConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
@@ -1951,7 +899,7 @@
             "tags":  {
                 "Created By":  "Yaniv Shasha",
                 "CreatedDate":  "11/21/2023 8:37:47 PM",
-                "CreatorUPN":  "yanivsh@woodgrove.ms"
+                "CreatorUPN":  ""
             },
             "apiVersion":  "2017-07-01",
             "dependsOn":  [

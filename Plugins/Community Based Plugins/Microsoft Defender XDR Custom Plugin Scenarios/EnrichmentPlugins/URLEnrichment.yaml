@@ -1,0 +1,137 @@
+Descriptor:
+  Name: URL Enrichment Skills
+  DisplayName: URL Enrichment Skills
+  DescriptionForModel: |-
+    A set of KQL-based skills designed to enhance URL analysis within a network. These skills help security analysts:
+    - Identify users who clicked a specific URL, focusing on Safe Links from email, Microsoft Teams, and Office 365 apps.
+    - Analyze the frequency and recency of URL clicks to assess usage patterns and potential threats.
+    - Correlate URL click events with other security-related data, including alerts, email events, and network activity, to provide a comprehensive risk overview.
+    - Highlight related incidents and provide actionable insights for investigations.
+  Description: A collection of tools to identify who accessed a URL, analyze click patterns, and correlate URL activity with other security events. Designed for security analysts in Defender and Copilot for Security.
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: WhoClickedUrl
+        DisplayName: URL & User Correlation
+        DescriptionForModel: |-
+          Performs a KQL query on the `UrlClickEvents` table to identify user activity associated with a specified URL. Key features include:
+          - **User Identification**: Correlates the URL click to the user's account (UPN).
+          - **Event Context**: Captures details such as the time of the click, action type, and email metadata (e.g., `NetworkMessageId` and `Workload`).
+          - **Threat Indicators**: Includes information about potential threats, such as `ThreatTypes` and `UrlChain`.
+          - **Focus on SafeLinks**: Targets clicks originating from email messages processed through SafeLinks.
+          This skill helps trace user activity related to specific URLs, enabling security analysts to investigate potential breaches, monitor suspicious behavior, and take appropriate remediation actions.
+        Description: Identify users who clicked on a specific URL from an email on a given date. Provides details such as the time of the click, action type, user information, and any related network or threat data to assist in investigating potential security breaches.
+        Inputs:
+          - Name: url
+            Description: The URL to search for user clicks. Example https://example.com
+            Required: true
+
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query identifies users who clicked on the specified URL in the last 30 days.
+            // It retrieves user activity, including the time of click and additional context like network or threat details.
+            let urlToSearch = "{{url}}";
+            UrlClickEvents
+            | where TimeGenerated >= ago(30d)
+            | where Url has urlToSearch
+            // Uncomment this for customers
+            //| where IsClickedThrough == true
+            | project TimeGenerated, Url, ActionType, AccountUpn, Workload, NetworkMessageId, ThreatTypes, IPAddress, IsClickedThrough, UrlChain, ReportId
+
+      - Name: UrlClickCount
+        DisplayName: URL Click Count Last 30 Days
+        DescriptionForModel: |- 
+          Performs a KQL query on the `UrlClickEvents` table to analyze how many times a specific URL has been clicked in the last 30 days. Key features include:
+          - **Click Count**: Calculates the total number of clicks for the specified URL.
+          - **Access Timeline**: Identifies the timestamps of the first and last clicks for trend analysis.
+          - **Context**: Focuses on Safe Links clicks from email, Microsoft Teams, and Office 365 apps (supported desktop, mobile, and web apps).
+          This skill is useful for assessing the frequency and recency of URL access, helping security analysts understand usage patterns and evaluate potential risks associated with the URL.
+        Description: Analyze the frequency and recency of clicks for a specific URL over the past 30 days. Provides the total number of clicks, along with the timestamps of the first and last clicks, to support threat assessment and investigation.
+        Inputs:
+          - Name: url
+            Description: The URL to search for click counts. Example https://example.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // This query provides the number of times a specific URL was clicked in the past 30 days.
+            // It also retrieves the first and last time the URL was clicked to help identify patterns in access.
+            UrlClickEvents
+            | where Timestamp >= ago(30d) and Url has "{{url}}"
+            // Uncomment this for only results that a user clicked through to original URL
+            //| where IsClickedThrough == true
+            | summarize Count = count(), FirstClicked = min(Timestamp), LastClicked = max(Timestamp)
+
+      - Name: UrlCorrelation
+        DisplayName: URL Correlation to Other Security Events
+        DescriptionForModel: |-
+          Performs a KQL query to correlate a specific URL with multiple security-related events over the last 30 days. Key features include:
+          - **Event Correlation**: Aggregates data from URL click events, security alerts, email events, and network events.
+          - **Details Provided**:
+            - `TimeGenerated`: Timestamp of the event.
+            - `AccountUpn`: User associated with the event.
+            - `Url`: URL involved in the event.
+            - `EventType`: Type of event (e.g., URL click, security alert, email event, or network event).
+            - `AlertId`: Identifier for associated security alerts.
+            - `IncidentId`: Related incident IDs for cross-referencing.
+          - **Incident Highlighting**: Notes any associated incidents for prioritization and investigation.
+          This skill provides a comprehensive view of activity related to a URL, enabling security analysts to assess risks, trace potential threats, and correlate user activity with security events for an in-depth investigation.
+        Description: Correlate clicks on a specific URL with security alerts, email events, and network events over the past 30 days. Provides a comprehensive risk overview, including event times, users, related alerts, and associated incident IDs.
+        Inputs:
+          - Name: url
+            Description: The URL to search for correlations with other events. Example https://example.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let timeframe = 30d;
+            let targetUrl = "{{url}}";
+            // Find all events where the URL was clicked within the specified timeframe
+            let urlClicks = UrlClickEvents
+                | where Timestamp >= ago(timeframe)
+                | where Url has targetUrl
+                | project TimeGenerated, AccountUpn, Url, EventType = "UrlClickEvent", AlertId = "", IncidentId = "";
+
+            // Find security alerts where the URL is mentioned in the RemoteUrl field
+            let alertsContainingUrl = AlertEvidence
+                | where Timestamp >= ago(timeframe)
+                | where tostring(RemoteUrl) has targetUrl
+                | join kind=leftouter (
+                    SecurityAlert
+                    | extend ExtendedPropertiesJson = parse_json(ExtendedProperties)
+                    | project VendorOriginalId, IncidentId = tostring(ExtendedPropertiesJson.IncidentId)
+                ) on $left.AlertId == $right.VendorOriginalId
+                | project TimeGenerated, AccountUpn, Url = tostring(RemoteUrl), EventType = "AlertEvidence", AlertId = VendorOriginalId, IncidentId;
+
+            // Find email events related to the target URL using EmailUrlInfo and EmailEvents
+            let emailUrlInfo = EmailUrlInfo
+                | where Timestamp >= ago(timeframe)
+                | where Url has targetUrl
+                | project NetworkMessageId;
+
+            let emailEvents = EmailEvents
+                | where Timestamp >= ago(timeframe)
+                | where NetworkMessageId in (emailUrlInfo)
+                | project TimeGenerated, AccountUpn = RecipientEmailAddress, Url = targetUrl, EventType = "EmailEvent", AlertId = "", IncidentId = "";
+
+            // Find network events where the URL is accessed via RemoteUrl in network connections
+            let deviceNetworkEvents = DeviceNetworkEvents
+                | where Timestamp >= ago(timeframe)
+                | where RemoteUrl has targetUrl
+                | project TimeGenerated, AccountUpn = InitiatingProcessAccountName, Url = RemoteUrl, EventType = "DeviceNetworkEvent", AlertId = "", IncidentId = "";
+
+            // Combine all results from the different tables (URL clicks, alerts, email events, network events)
+            urlClicks
+            | union isfuzzy=true alertsContainingUrl, emailEvents, deviceNetworkEvents
+            // Order the combined results by the event timestamp for easy analysis
+            | order by TimeGenerated desc
+            // Return only distinct rows to avoid duplicates
+            | distinct TimeGenerated, AccountUpn, Url, EventType, AlertId, IncidentId
+            // If any `IncidentId`s are present, highlight them for the user
+            | summarize Alerts = make_list(IncidentId) by Url, AccountUpn, TimeGenerated, EventType, AlertId
+            | extend IncidentNotes = iff(array_length(Alerts) > 0, strcat("Related incidents have been observed: ", tostring(Alerts)), "")
+

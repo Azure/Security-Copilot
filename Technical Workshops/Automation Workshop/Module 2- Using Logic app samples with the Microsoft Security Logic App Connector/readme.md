@@ -1,4 +1,4 @@
-## Leveraging the Microsoft Copilot For Security Logic App Connector
+## Leveraging the Microsoft Security Copilot Logic App Connector
 
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
@@ -10,20 +10,20 @@ Logic app connector documentation: [Link](https://learn.microsoft.com/en-us/secu
 #### Objectives
 Upon completing this technical guide, you will gain the following abilities:
 
-* Deploy an Azure Logic Apps capable of handling Microsoft Copilot for Security prompts using the Logic app connector.
-* Leverage the Microsoft Copilot For Security GitHub to access logic app samples for testing.
+* Deploy an Azure Logic Apps capable of handling Microsoft Security Copilot prompts using the Logic app connector.
+* Leverage the Microsoft Security Copilot GitHub to access logic app samples for testing.
 
 #### Prerequisites
 To successfully complete this task, you must meet the following prerequisites:
 
-1. You need your own tenant and Microsoft Copilot for Security instance.
+1. You need your own tenant and Microsoft Security Copilot instance.
 2. **Azure Subscription**: You need an active [Azure subscription](https://azure.microsoft.com/en-us/free/) to create and deploy a Logic App.
 3. **Azure Resource Group**: Logic Apps are deployed within [Azure resource groups](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups). Ensure that you have an appropriate resource group created or create one during the deployment process.
 4. **Access Permissions**: Ensure that you have the necessary [permissions](https://docs.microsoft.com/en-us/azure/role-based-access-control/overview) to create resources in the Azure subscription and resource group where you plan to deploy the Logic App.
-5. **ACCESS to GitHub for Copilot For Security:** ensure you have access to the [public repository](https://github.com/Azure/Copilot-For-Security/tree/main) where you will get access to the Logic app Samples.
+5. **ACCESS to GitHub for Security Copilot:** ensure you have access to the [public repository](https://github.com/Azure/Copilot-For-Security/tree/main) where you will get access to the Logic app Samples.
 
 #### Steps to Follow
-Now that we have successfully launched a Logic App utilizing the Copilot For Security connector in the previous module, we can now progress to utilize existing samples available in our [public repository](https://github.com/Azure/Copilot-For-Security/tree/main). These samples cover various security scenarios. In this module, we will focus on two specific scenarios.
+Now that we have successfully launched a Logic App utilizing the Security Copilot connector in the previous module, we can now progress to utilize existing samples available in our [public repository](https://github.com/Azure/Copilot-For-Security/tree/main). These samples cover various security scenarios. In this module, we will focus on two specific scenarios.
 
 ---
 
@@ -32,7 +32,7 @@ Now that we have successfully launched a Logic App utilizing the Copilot For Sec
 In this technical workshop, participants will learn how to deploy a Logic App designed to produce threat bulletins sourced from Microsoft Defender Threat Intelligence (MDTI) and send them to a designated email address. The workshop will cover the process of setting up the Logic App to gather threat intelligence information, create bulletins, and automate the distribution process via email.
 
 #### Steps to Follow 
-- Access the Logic app folder on the GitHub: [Azure Copilot For Security - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
+- Access the Logic app folder on the GitHub: [Azure Security Copilot - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
 - Proceed to Deploy
 
 ## Deployment
@@ -56,7 +56,7 @@ In this technical workshop, participants will learn how to deploy a Logic App de
 In this comprehensive technical workshop, participants will delve into the deployment process of a specialized Logic App. Activating the 'Deploy' button will initiate the deployment of an Azure Logic App integrated with Security Copilot Actions, which utilizes a Microsoft Sentinel incident trigger. This Logic App will transition the incident status to active, generate dynamic tags (labels), and append them to the Sentinel incident tags. Furthermore, the automation will determine and adjust the incident severity based on MDTI enrichment. It will also comprehensively document the investigation findings and the logic behind the incident classification in the comments section of the Microsoft Sentinel incident.
 
 #### Steps to Follow 
-- Access the Logic app folder on the GitHub: [Azure Copilot For Security - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
+- Access the Logic app folder on the GitHub: [Azure Security Copilot - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
 - Proceed to Deploy
 
 ## Deployment 
@@ -80,7 +80,7 @@ To deploy the above logic app, you need to:
 
 #### **Bonus Module: Test the additional playbooks on Github and Create your own**
 
-- Access the Logic app folder on the GitHub: [Azure Copilot For Security - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
+- Access the Logic app folder on the GitHub: [Azure Security Copilot - Logic Apps](https://github.com/Azure/Copilot-For-Security/tree/main/Logic%20Apps)
 
 ![Logic App Image](https://github.com/Azure/Copilot-For-Security/raw/main/Images/Logicapp%20images/logicapp10.png)
 

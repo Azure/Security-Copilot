@@ -1,10 +1,10 @@
-# Copilot for Security Custom Plugin - API - Get IP Information from IP Quality Score
+# Security Copilot Custom Plugin - API - Get IP Information from IP Quality Score
 
-#### Copilot for Security Plugin to gather type, location, reputation score, and abuse velocity for an IP Address using IP Quality Score
+#### Security Copilot Plugin to gather type, location, reputation score, and abuse velocity for an IP Address using IP Quality Score
 
 ### Pre-requisites
 
-* [Copilot for Security Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+* [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 * [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 * [API Key](https://www.ipqualityscore.com/proxy-vpn-tor-detection-service) from IP Quality Score
 

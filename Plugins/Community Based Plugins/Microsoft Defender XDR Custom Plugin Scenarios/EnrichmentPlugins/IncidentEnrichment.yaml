@@ -1,0 +1,106 @@
+Descriptor:
+  Name: Incident Enrichment Skills
+  DisplayName: Incident Enrichment Skills
+  DescriptionForModel: |-
+    - A set of KQL-based skills designed to enhance incident investigations by:
+      - Correlating and retrieving alerts associated with a specific incident using the `IncidentId`.
+      - Enabling targeted searches through alert titles to refine results and focus investigations.
+      - Retrieving all alerts tied to an incident for comprehensive review, including key details like timestamps, alert names, IDs, and severity levels.
+      - Providing actionable insights to support efficient incident analysis and response.
+  Description: A set of KQL-based skills for correlating and retrieving alerts linked to specific incidents, offering detailed insights to enhance focused investigations and response efforts.
+
+  SupportedAuthTypes:
+    - None
+
+  Settings:
+    - Name: SubscriptionName
+      Label: SubscriptionName
+      Description: This is the subscription name that security copilot will use for sentinel.
+      HintText: yoursubscriptionname
+      SettingType: String
+      Required: true
+      
+    - Name: WorkspaceName
+      Label: WorkspaceName
+      Description: This is the workspace name that security copilot will use for sentinel.
+      HintText: yourworkspace
+      SettingType: String
+      Required: true
+
+    - Name: ResourceGroupName
+      Label: ResourceGroupName
+      Description: This is the resource group name that security copilot will use for sentinel.
+      HintText: yourresourcegroup
+      SettingType: String
+      Required: true
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: AlertTitleToIncidentCorrelation
+        DisplayName: Alert Title Search to Incident Correlation
+        DescriptionForModel: |- 
+          Performs a KQL query on the `SecurityAlert` table to correlate alerts with a specified `IncidentId`. Key features include:
+          - **Alert Association**: Retrieves alerts linked to the incident ID and filters by alert title if specified.
+          - **Alert Summary**: Counts the total number of alerts and lists up to 10 `AlertNames` for an overview.
+          - **Search Refinement**: Recommends refining the search by specifying an `AlertName` if more than 10 alerts are found.
+          This skill enables users to efficiently correlate alerts with incidents, identify patterns, and refine investigations for deeper insights into potential threats. Provides actionable recommendations to focus the search on relevant alerts.
+        Description: Retrieve alerts associated with a specified incident ID and provide an overview of alert titles. Suggest search refinement by alert name if more than 10 alerts are found, enabling efficient correlation and targeted investigation.
+        Inputs:
+          - Name: IncidentId
+            Description: The unique identifier of the incident to search for associated alerts. Example "1337"
+            Required: true
+          - Name: AlertName
+            Description: A specific alert name to refine the search. Example "Suspicious Microsoft Defender AntiVirus exclusion"
+            Default: ""
+            Required: false
+        Settings:
+          Target: Sentinel
+          SubscriptionName: "{{SubscriptionName}}"
+          ResourceGroupName: "{{ResourceGroupName}}"
+          WorkspaceName: "{{WorkspaceName}}"
+          Template: |-
+            let recordCount = toscalar(
+                SecurityAlert
+                | extend ExtendedPropertiesJson = parse_json(ExtendedProperties)
+                | extend EntitiesJson = parse_json(Entities)
+                | where ExtendedPropertiesJson.IncidentId == "{{IncidentId}}"
+                | where isempty("{{AlertName}}") or AlertName contains "{{AlertName}}"
+                | summarize count()
+            );
+            SecurityAlert
+            | extend ExtendedPropertiesJson = parse_json(ExtendedProperties)
+            | extend EntitiesJson = parse_json(Entities)
+            | where ExtendedPropertiesJson.IncidentId == "{{IncidentId}}"
+            | where isempty("{{AlertName}}") or AlertName contains "{{AlertName}}"
+            | project AlertName
+            | limit iff(recordCount > 10, 10, recordCount)
+            | summarize Alerts = make_list(AlertName)
+            | project DistinctAlertTitles = Alerts, Count = recordCount
+            | extend Recommendation = iff(Count > 10, "Consider refining the search using the AlertName variable.", "")
+
+      - Name: IncidentAlertRetrieval
+        DisplayName: Retrieve Alerts for an Incident
+        DescriptionForModel: |- 
+          Performs a KQL query on the `SecurityAlert` table to retrieve all alerts linked to a specified `IncidentId`. Key details include:
+          - **`TimeGenerated`**: Timestamp indicating when the alert was generated.
+          - **`AlertId`**: Unique identifier for each alert.
+          - **`AlertName`**: Name of the alert.
+          - **`Severity`**: Severity level of the alert.
+          This skill enables a complete review of all alerts associated with an incident, helping security analysts understand the scope and context of the incident for effective analysis and response.
+        Description: Retrieve all alerts associated with a specific incident ID. Provides comprehensive details, including timestamp, unique alert ID, alert name, and severity level, to support in-depth incident investigations.
+        Inputs:
+          - Name: IncidentId
+            Description: The unique identifier of the incident to retrieve all associated alerts. Example "2807"
+            Required: true
+        Settings:
+          Target: Sentinel
+          SubscriptionName: "{{SubscriptionName}}"
+          ResourceGroupName: "{{ResourceGroupName}}"
+          WorkspaceName: "{{WorkspaceName}}"
+          Template: |-
+            SecurityAlert
+            | extend ExtendedPropertiesJson = parse_json(ExtendedProperties)
+            | extend EntitiesJson = parse_json(Entities)
+            | where ExtendedPropertiesJson.IncidentId == "{{IncidentId}}"
+            | distinct TimeGenerated, SystemAlertId, AlertName, AlertSeverity

@@ -1,0 +1,153 @@
+Descriptor:
+  Name: Potential network beaconing activity
+  DisplayName: Potential network beaconing activity
+  Description:  identifies beaconing patterns from Network traffic logs based on recurrent frequency patterns.  
+  Settings:
+    - Name: TenantId
+      Required: true
+    - Name: WorkspaceName
+      Required: true
+    - Name: SubscriptionId
+      Required: true
+    - Name: ResourceGroupName
+      Required: true
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: BeaconingActivity
+        DisplayName: Potential network beaconing activity 
+        Description: identifies beaconing patterns from Network traffic logs based on recurrent frequency patterns. 
+        Inputs:
+          - Name: querystarttime
+            Description: Query start time 
+            Required: true
+          - Name: queryendtime
+            Description: Query end time
+            Required: true
+          - Name: TimeDeltaThreshold
+            Description: Time Delta Threshold
+            Required: false
+        Settings:
+          Target: Sentinel
+          # The ID of the AAD Organization that the Sentinel workspace is in.
+          TenantId: '{{TenantId}}'
+          # The id of the Azure Subscription that the Sentinel workspace is in.
+          SubscriptionId: '{{SubscriptionId}}'
+          # The name of the Resource Group that the Sentinel workspace is in.
+          ResourceGroupName: '{{ResourceGroupName}}'
+          # The name of the Sentinel workspace.
+          WorkspaceName: '{{WorkspaceName}}'
+          # This query detects potential network beaconing activity
+          Template: |-
+            let querystarttime = 2d;
+            let queryendtime = 1d;
+            let TimeDeltaThreshold = 10;
+            let TotalEventsThreshold = 15;
+            let PercentBeaconThreshold = 80;
+            let LocalNetworks=dynamic(["169.254.0.0/16", "127.0.0.0/8"]);
+            _Im_NetworkSession(starttime=ago(querystarttime), endtime=ago(queryendtime))
+            | where not(ipv4_is_private(DstIpAddr))
+            | where not (ipv4_is_in_any_range(DstIpAddr, LocalNetworks))
+            | project 
+                TimeGenerated
+                ,
+                SrcIpAddr
+                ,
+                SrcPortNumber
+                ,
+                DstIpAddr
+                ,
+                DstPortNumber
+                ,
+                DstBytes
+                ,
+                SrcBytes
+                ,DvcHostname
+                ,DstDomain
+                ,SrcProcessIntegrityLevel
+            | sort by 
+                SrcIpAddr asc
+                ,
+                TimeGenerated asc
+                ,
+                DstIpAddr asc
+                ,
+                DstPortNumber asc
+            | serialize
+            | extend 
+                nextTimeGenerated = next(TimeGenerated, 1)
+                ,
+                nextSrcIpAddr = next(SrcIpAddr, 1)
+            | extend 
+                TimeDeltainSeconds = datetime_diff('second', nextTimeGenerated, TimeGenerated)
+            | where SrcIpAddr == nextSrcIpAddr
+            //Whitelisting criteria/ threshold criteria
+            | where TimeDeltainSeconds > TimeDeltaThreshold 
+            | project
+                TimeGenerated
+                ,
+                TimeDeltainSeconds
+                ,
+                SrcIpAddr
+                ,
+                SrcPortNumber
+                ,
+                DstIpAddr
+                ,
+                DstPortNumber
+                ,
+                DstBytes
+                ,
+                SrcBytes,
+                DvcHostname,
+                DstDomain,
+                SrcProcessIntegrityLevel
+            | summarize
+                count()
+                ,
+                sum(DstBytes)
+                ,
+                sum(SrcBytes)
+                ,
+                make_list(TimeDeltainSeconds) 
+                by
+                TimeDeltainSeconds
+                ,
+                bin(TimeGenerated, 1h)
+                ,
+                SrcIpAddr
+                ,
+                DstIpAddr
+                ,
+                DstPortNumber,
+                DvcHostname,
+                DstDomain,
+                SrcProcessIntegrityLevel
+            | summarize
+                (MostFrequentTimeDeltaCount, MostFrequentTimeDeltainSeconds) = arg_max(count_, TimeDeltainSeconds)
+                ,
+                TotalEvents=sum(count_)
+                ,
+                TotalSrcBytes = sum(sum_SrcBytes)
+                ,
+                TotalDstBytes = sum(sum_DstBytes)
+                by
+                bin(TimeGenerated, 1h)
+                ,
+                SrcIpAddr
+                ,
+                DstIpAddr
+                ,
+                DstPortNumber,
+                DvcHostname,
+                DstDomain,
+                SrcProcessIntegrityLevel
+                | extend BeaconPercent = MostFrequentTimeDeltaCount / toreal(TotalEvents) * 100
+                | extend MitreTactics="Command and Control"
+                | extend MitreTechnique1 = "T1071 - Application Layer Protocol"
+                | extend MitreTechnique2 = "T1571 - Non Standard Port"
+                | where TotalEvents > TotalEventsThreshold 
+                | where BeaconPercent > PercentBeaconThreshold      

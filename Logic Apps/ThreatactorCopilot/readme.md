@@ -1,4 +1,4 @@
-# Copilot-For-Security-ThreatActor
+# Security Copilot-ThreatActor
 Author: Sean Wasonga
 ## Overview
 This playbook emphasizes the capability to conduct thorough threat actor profiling, search for associated threat articles, CVEs, and perform comprehensive hunting across your environment. By leveraging Security Copilot's integration with Microsoft Defender Threat Intelligence (MDTI), users can efficiently gather intelligence on threat actors, associated articles, and CVEs, enhancing their understanding of potential threats. Additionally, the playbook facilitates proactive investigation by summarizing the findings from hunting activities, empowering users to strengthen their security posture. As this foundational playbook evolves, it aims to further enhance threat intelligence gathering and investigation capabilities.
@@ -15,7 +15,7 @@ Define the email you want the daily logic app to be sent too
 
 ## Deployment
 
- <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FCopilot-For-Security%2Fmain%2FLogic%2520Apps%2FThreatactorCopilot%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FSecurity-Copilot%2Fmain%2FLogic%2520Apps%2FThreatactorCopilot%2Fazuredeploy.json" target="_blank">
   <img src="https://aka.ms/deploytoazurebutton"/>
 </a>
 

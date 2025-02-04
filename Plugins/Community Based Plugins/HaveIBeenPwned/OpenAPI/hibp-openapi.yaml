@@ -51,4 +51,3 @@ paths:
             application/json: {}
         default:
           description: default
-      summary: Get list of breaches for an account

@@ -1,6 +1,6 @@
-![Copilot for Security Overview](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Overview](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
-# Copilot for Security Guide to Create your Custom Plug-in
+# Security Copilot Guide to Create your Custom Plug-in
 
 **Name of Plugin
 **Author: John DOE**
@@ -23,12 +23,12 @@ Ensure you have enough API tokens before invoking any skills to avoid displeasur
 
    ![APIKey](https://learn.microsoft.com/en-us/security-copilot/media/plugin-button.png)  
    
-3. You’ll see a dialog box to enter your API name. Give your key a short, but descriptive name, such as "Copilot for Security API Key"  
+3. You’ll see a dialog box to enter your API name. Give your key a short, but descriptive name, such as "Security Copilot API Key"  
 
 4. Copy the API key to a safe place and then dispose carefully. 
 
 
-## Select or upload the attached manifest file into your Copilot for Security console
+## Select or upload the attached manifest file into your Security Copilot console
 1. Click on Deploy to Azure  
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://aka.ms/LINK)
   

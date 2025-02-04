@@ -2,7 +2,7 @@
 
 **DISCLAIMER**: This method to upload Promptbooks uses unpublished API calls that are subject to change without notice. This is not an officially supported method from Microsoft and no guarantees are given that this method will work in your environment. Support tickets on its functionality cannot be raised.
 
-# Microsoft Copilot for Security PowerShell to manage Promptbooks
+# Microsoft Security Copilot PowerShell to manage Promptbooks
 
 There are two different PowerShell scripts, one for upload one for download.
 
@@ -50,7 +50,7 @@ Several Promptbook JSON files have been provided in the Uploads folder so you ca
 
 # Access Token
 
-Currently, the Azure CLI login command cannot fetch the token for Copilot for Security. Hence, you will need to get the access token from an existing session in the Browser. In the Microsoft Edge browser, login to the Copilot for Security console and after authentication process is complete via MFA etc, press 'F12' to open Browser devtools.  
+Currently, the Azure CLI login command cannot fetch the token for Security Copilot. Hence, you will need to get the access token from an existing session in the Browser. In the Microsoft Edge browser, login to the Security Copilot console and after authentication process is complete via MFA etc, press 'F12' to open Browser devtools.  
 
 ![Browser Tools](https://github.com/Azure/Copilot-For-Security/blob/main/Images/Promptbook_images/promptBook_devtools.png)
 
@@ -62,9 +62,9 @@ Note that you can get the token from other URIs in the Copilot console, going to
 
 # Execution for Download and Upload
 
-Navigate to the folder where the 'PromptBooksDownload.ps1' and 'PromptBooksUpload.ps1' files are placed, same folder should have the 'Downloads' and 'Uploads' sub-folder. The 'Uploads' sub-folder should contain all the Promptbook JSON's you need to upload in your Copilot for Security instance. 
+Navigate to the folder where the 'PromptBooksDownload.ps1' and 'PromptBooksUpload.ps1' files are placed, same folder should have the 'Downloads' and 'Uploads' sub-folder. The 'Uploads' sub-folder should contain all the Promptbook JSON's you need to upload in your Security Copilot instance. 
 
-If your Copilot for Security instance is not in 'eastus' you will have to change the URI in line 11 so the URI contains the correct region. The upload will fail is this is not corrected.
+If your Security Copilot instance is not in 'eastus' you will have to change the URI in line 11 so the URI contains the correct region. The upload will fail is this is not corrected.
 
 Execute the following command, pasting the token you copied from browser after the -token command line arguement.
 
@@ -80,7 +80,7 @@ As the PowerShell executes it will output the file name and the status of each o
 
 ![PowerShell Successful execution](https://github.com/Azure/Copilot-For-Security/blob/main/Images/Promptbook_images/promptBook_results.png)
 
-IMPORTANT: After the download/upload is successful, please logout of your Copilot for Security console so that the authorization token is no longer valid. While the token is valid for only a fixed amount of time, for security reasons you should do an explicit logout so the token cannot be used again.
+IMPORTANT: After the download/upload is successful, please logout of your Security Copilot console so that the authorization token is no longer valid. While the token is valid for only a fixed amount of time, for security reasons you should do an explicit logout so the token cannot be used again.
 
 # Troubleshooting:
 

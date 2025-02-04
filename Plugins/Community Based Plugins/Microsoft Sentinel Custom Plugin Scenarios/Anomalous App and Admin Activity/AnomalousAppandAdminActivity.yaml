@@ -1,0 +1,96 @@
+Descriptor:
+  Name: AnomalousAppandAdminUserActivity
+  DisplayName: Anomalous Application and Admin User Activity 
+  Description: Uses UEBA normalized Insights in Sentinel UEBA to identify Applications and admin users exhibiting anomalous behavior. It applies to profiled activities across ARM, Azure sign-in, and audit logs
+  Settings:
+    - Name: TenantId
+      Required: true
+    - Name: WorkspaceName
+      Required: true
+    - Name: SubscriptionId
+      Required: true
+    - Name: ResourceGroupName
+      Required: true
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: AnomalousAppActivity
+        DisplayName: Anomalous application activity 
+        Description: Uses Sentinel UEBA to identify unsual or anomalous activities such as first time a user used an app, an uncommonly used app, an app uncommonly used among user peers, an app that is observed in a tenant for the first time or an app that is uncommonly used in the tenant
+        Inputs:
+          - Name: fromDateTime
+            Description: The start of the lookback window
+            Required: true
+          - Name: toDateTime
+            Description: The end of the lookback window
+            Required: true
+          - Name: InvestiGationPriority
+            Description: Calculated priority for investigation between 1 and 10
+            Required: false
+        Settings:
+          Target: Sentinel
+          # The ID of the AAD Organization that the Sentinel workspace is in.
+          TenantId: '{{TenantId}}'
+          # The id of the Azure Subscription that the Sentinel workspace is in.
+          SubscriptionId: '{{SubscriptionId}}'
+          # The name of the Resource Group that the Sentinel workspace is in.
+          ResourceGroupName: '{{ResourceGroupName}}'
+          # The name of the Sentinel workspace.
+          WorkspaceName: '{{WorkspaceName}}'
+          Template: |-
+            let fromDateTime=datetime('{{fromDateTime}}');
+            let toDateTime=datetime('{{toDateTime}}');
+            BehaviorAnalytics
+            | project-away TenantId, Type, SourceRecordId, EventSource, TimeProcessed
+            | where InvestigationPriority > 5
+            | where ActivityInsights.FirstTimeUserUsedApp == true or
+            ActivityInsights.AppUncommonlyUsedByUser == true or
+            ActivityInsights.AppUncommonlyUsedAmongPeers == true or
+            ActivityInsights.FirstTimeAppObservedInTenant == true or
+            ActivityInsights.AppUncommonlyUsedInTenant == true 
+      - Name: AnomalousAdminActions
+        DisplayName: Anomalous administrative actions performed by user 
+        Description: Uses Sentinel UEBA to identify Users performing activities that are performed for the first time, uncommon by the user, uncommon among the user's peers, uncommon in the tenant, from an uncommon country or a user connecting from a country seen for the first time, or user accessing a resource for the first time or accessing a resource that is uncommon among their peers
+        Inputs:
+          - Name: fromDateTime
+            Description: The start of the lookback window
+            Required: true
+          - Name: toDateTime
+            Description: The end of the lookback window
+            Required: true
+          - Name: InvestiGationPriority
+            Description: Calculated priority for investigation between 1 and 10
+            Required: false
+        Settings:
+          Target: Sentinel
+          # The ID of the Entra ID Organization that the Sentinel workspace is in.
+          TenantId: '{{TenantId}}'
+          # The id of the Azure Subscription that the Sentinel workspace is in.
+          SubscriptionId: '{{SubscriptionId}}'
+          # The name of the Resource Group that the Sentinel workspace is in.
+          ResourceGroupName: '{{ResourceGroupName}}'
+          # The name of the Sentinel workspace.
+          WorkspaceName: '{{WorkspaceName}}'
+          Template: |-
+            let fromDateTime=datetime('{{fromDateTime}}');
+            let toDateTime=datetime('{{toDateTime}}');
+            BehaviorAnalytics
+            | where datetime_utc_to_local(TimeGenerated, "US/Eastern") between ( fromDateTime .. toDateTime )
+            | project-away TenantId, Type, SourceRecordId, EventSource, TimeProcessed
+            | where ActivityType =~ "Administrative"
+            | where isnotempty(UserName)
+            | where ActivityInsights.FirstTimeUserPerformedAction == true or
+            ActivityInsights.FirstTimeActionPerformedInTenant == true or
+            ActivityInsights.ActionUncommonlyPerformedByUser == true or
+            ActivityInsights.ActionUncommonlyPerformedAmongPeers == true or
+            ActivityInsights.FirstTimeUserAccessedResource == true or
+            ActivityInsights.CountryUncommonlyConnectedFromByUser == true or 
+            ActivityInsights.IsDormantAccount == true or 
+            ActivityInsights.IsLocalAdmin == true or 
+            ActivityInsights.IsNewAccount == true
+           
+
+

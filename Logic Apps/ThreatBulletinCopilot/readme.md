@@ -1,4 +1,4 @@
-# Copilot-For-Security-ThreatBulletin
+# Security Copilot-ThreatBulletin
 Author: Sean Wasonga
 ## Overview
 This playbook serves as a cornerstone for Security Copilot, facilitating integration with Microsoft Defender Threat Intelligence (MDTI) to swiftly provide the latest threat bulletins for threat articles. By consolidating this connection, users can efficiently access comprehensive threat article information. Over time, this foundational playbook may expand to incorporate additional capabilities. 
@@ -13,7 +13,7 @@ Prior to beginning the installation process, it's crucial to confirm that you ha
 
 ## Deployment
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FCopilot-For-Security%2Fmain%2FLogic%2520Apps%2FThreatBulletinCopilot%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FSecurity-Copilot%2Fmain%2FLogic%2520Apps%2FThreatBulletinCopilot%2Fazuredeploy.json" target="_blank">
     <img src="https://aka.ms/deploytoazurebutton"/>
 
 </a>
@@ -26,7 +26,7 @@ Prior to beginning the installation process, it's crucial to confirm that you ha
 3. Proceed to run the Logic app and Prepare for the results 
 
 Logic App View
-![Threat Bulletin Logic App](https://github.com/KwachSean/SecurityCopilot/raw/main/playbooks/ThreatBulletinCopilot/threatbulletinlogicapp.png)
+![Threat Bulletin Logic App](https://github.com/Azure/Copilot-For-Security/blob/main/Logic%20Apps/ThreatBulletinCopilot/threatbulletinlogicapp.png)
 
 Results of the Logic APP
-![Threat Bulletin Image](https://github.com/KwachSean/SecurityCopilot/raw/main/playbooks/ThreatBulletinCopilot/Threatbulletin.png)
+![Threat Bulletin Image](https://github.com/Azure/Copilot-For-Security/blob/main/Logic%20Apps/ThreatBulletinCopilot/Threatbulletin.png)

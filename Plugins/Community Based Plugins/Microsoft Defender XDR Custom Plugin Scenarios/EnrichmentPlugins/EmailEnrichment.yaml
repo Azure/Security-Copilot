@@ -1,0 +1,101 @@
+Descriptor:
+  Name: Email Enrichment Skills
+  DisplayName: Email Enrichment Skills
+  DescriptionForModel: |-
+    - A set of KQL-based skills to enhance email analysis by:
+      - Searching the `EmailEvents` table for specific domain names, recipients, or senders to identify relevant email activities.
+      - Retrieving essential details about emails, including:
+        - `TimeGenerated`: Timestamp of when the email was sent or received.
+        - `Sender`: Email address of the sender.
+        - `Recipient`: Email address of the recipient.
+        - `Subject`: Subject line of the email.
+        - `Body`: Content of the email.
+        - `AttachmentCount`: Number of attachments in the email.
+      - Allowing deeper investigation into potential email-related incidents by filtering based on specific domains, recipients, or senders.
+      - Identifying trends and patterns in email traffic to assist in compliance checks, threat detection, and incident response.
+      - Providing comprehensive context on email events to support security investigations and remediation efforts.
+  Description: A set of skills to enrich email analysis by searching the `EmailEvents` table for specific domains, recipients, or senders, and retrieving key email details for effective investigations.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: DomainEmailSearch
+        DisplayName: Search Emails by Domain
+        DescriptionForModel: |-
+          Performs a KQL query on the `EmailEvents` table to identify emails associated with a specified domain. Returns detailed information for each email, including:
+          - `TimeGenerated`: Timestamp of when the email was sent or received.
+          - `Sender`: Email address of the sender.
+          - `Recipient`: Email address of the recipient.
+          - `Subject`: Subject line of the email.
+          - `Body`: Content of the email.
+          - `AttachmentCount`: Number of attachments in the email.
+          This skill is designed to assist security analysts in investigating email activities related to specific domains, identifying potential threats, and understanding communication patterns for targeted investigations.
+        Description: Search for emails in the `EmailEvents` table containing a specified domain name. Provides key details, including the time, sender, recipient, subject, body, and attachment count, to support threat analysis and investigations.
+        Inputs:
+          - Name: DomainName
+            Description: The domain name to search for in the `EmailEvents` table. Example 'example.com'
+            Required: true
+          - Name: TimeRange
+            Description: The number of days to look back. Example 7d
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where RecipientEmailAddress contains "{{DomainName}}"
+            | where TimeGenerated >= ago(7d)
+            | project TimeGenerated, SenderFromAddress, RecipientEmailAddress, Subject, NetworkMessageId
+
+      - Name: RecipientEmailSearch
+        DisplayName: Search Emails by Recipient
+        DescriptionForModel: |-
+          Performs a KQL query on the `EmailEvents` table to identify emails sent to a specified recipient. Returns detailed information for each email, including:
+          - `TimeGenerated`: Timestamp of when the email was sent or received.
+          - `Sender`: Email address of the sender.
+          - `Recipient`: Email address of the recipient.
+          - `Subject`: Subject line of the email.
+          - `Body`: Content of the email.
+          - `AttachmentCount`: Number of attachments in the email.
+          This skill helps security analysts investigate email activities related to specific recipients, supporting threat analysis and investigations.
+        Description: Search for emails in the `EmailEvents` table containing a specified recipient. Provides key details, including the time, sender, recipient, subject, body, and attachment count.
+        Inputs:
+          - Name: RecipientAddress
+            Description: The recipient email address to search for in the `EmailEvents` table. Example 'user@example.com'
+            Required: true
+          - Name: TimeRange
+            Description: The number of days to look back. Example 7d
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where RecipientEmailAddress == "{{RecipientAddress}}"
+            | where TimeGenerated >= ago(7d)
+            | project TimeGenerated, SenderFromAddress, RecipientEmailAddress, Subject, NetworkMessageId, AttachmentCount
+
+      - Name: SenderEmailSearch
+        DisplayName: Search Emails by Sender
+        DescriptionForModel: |-
+          Performs a KQL query on the `EmailEvents` table to identify emails sent from a specified sender. Returns detailed information for each email, including:
+          - `TimeGenerated`: Timestamp of when the email was sent or received.
+          - `Sender`: Email address of the sender.
+          - `Recipient`: Email address of the recipient.
+          - `Subject`: Subject line of the email.
+          - `Body`: Content of the email.
+          - `AttachmentCount`: Number of attachments in the email.
+          This skill helps security analysts investigate email activities originating from specific senders, aiding in threat detection and analysis.
+        Description: Search for emails in the `EmailEvents` table sent by a specified sender. Provides key details, including the time, sender, recipient, subject, body, and attachment count.
+        Inputs:
+          - Name: SenderAddress
+            Description: The sender email address to search for in the `EmailEvents` table. Example 'admin@example.com'
+            Required: true
+          - Name: TimeRange
+            Description: The number of days to look back. Example 7d
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where SenderFromAddress == "{{SenderAddress}}"
+            | where TimeGenerated >= ago(7d)
+            | project TimeGenerated, SenderFromAddress, RecipientEmailAddress, Subject, NetworkMessageId, AttachmentCount

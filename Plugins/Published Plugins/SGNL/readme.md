@@ -2,7 +2,7 @@
 **Author: Marc Jordan**
 **Publisher: SGNL**
 
-This plugin enables SGNL Administrators to use Microsoft Copilot for Security to understand and identify fine-grained access decisions and trends across their enterprise.
+This plugin enables SGNL Administrators to use Microsoft Security Copilot to understand and identify fine-grained access decisions and trends across their enterprise.
 
 [Technical Blog](https://sgnl.ai/2023/11/sgnl-for-microsoft-security-copilot/)
 
@@ -10,10 +10,10 @@ This plugin enables SGNL Administrators to use Microsoft Copilot for Security to
 Ensure your account has sufficient permission to read the SGNL Access Decision Logs prior to proceeding.
 
 ## **Pre-requisites**
-1. Authenticate to SGNL (via the Console or API) and retrieve your Tenant ID (Admin-->Environment) and your ID Token, you'll need these to configure Copilot for Security
+1. Authenticate to SGNL (via the Console or API) and retrieve your Tenant ID (Admin-->Environment) and your ID Token, you'll need these to configure Security Copilot
 
 
-## Select or upload the attached manifest file into your Copilot for Security console
+## Select or upload the attached manifest file into your Security Copilot console
 1. From the plugin manager, locate the SGNL Plugin and enable it
 ![Enable Plugin](images/plugin-manager.png)
   

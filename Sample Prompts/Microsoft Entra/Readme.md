@@ -30,6 +30,7 @@ reasons.
 - Tell me about security group <**_`<name>`_**?  including who created it and how many members are in it.
 - What is the status of the user account for **_`<UPN>`_**? Is it locked out?
 -  Show me the successfully deleted users in the last 7 days.
+-  Why was Lee Majors prompted for MFA?
 
 &nbsp;
 [![alt text](../../Images/backtotop.svg)](#entra)
@@ -53,6 +54,8 @@ reasons.
 
  
  - Show me sign-in logs for the last 24 hours
+ - Have there been any failed sign-ins during the last weekend?
+ - Tell me about Lee Majors most recent failed sign-in
  - Show me the sign-in logs for **_`<UPN>`_**? 
     - Show me the sign-in logs of users who signed in from **_`<Location>`_**? 
     - Show me the sign-in logs from **_`<Application>`_**? 

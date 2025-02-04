@@ -24,11 +24,11 @@ SkillGroups:
         Settings:
           Target: Sentinel
            # The ID of the AAD Organization that the Sentinel workspace is in.
-          TenantId: 536279f6-15cc-45f2-be2d-61e352b51eef
+          TenantId: xxxx-xxxx-xxxx-xxxx-xxxx-xxxx
           # The id of the Azure Subscription that the Sentinel workspace is in.
-          SubscriptionId: ab48f397-fc82-4634-aa52-62dd91b3ebaa
+          SubscriptionId: xxxxx-xxxx-xxxx-xxxx-xxxxxxx
           # The name of the Resource Group that the Sentinel workspace is in.
-          ResourceGroupName: woodgrove-rg
+          ResourceGroupName: My-RG
           # The name of the Sentinel workspace.
           WorkspaceName: Woodgrove-LogAnalyiticsWorkspace
           Template: |-

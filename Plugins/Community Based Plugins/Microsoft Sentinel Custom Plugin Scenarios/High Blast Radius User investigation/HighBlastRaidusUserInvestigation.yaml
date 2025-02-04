@@ -1,0 +1,77 @@
+Descriptor:
+  Name: HighBlastRadiusInvestigation
+  DisplayName: Investigate or hunt for anomalous activities performed by high blast radius accounts 
+  Description: Uses normalized Insights from Sentinel UEBA to Investigate or hunt for Entra ID Accounts with a High Blast Radius exhibiting anomalous activities
+  Settings:
+    - Name: TenantId
+      Required: true
+    - Name: WorkspaceName
+      Required: true
+    - Name: SubscriptionId
+      Required: true
+    - Name: ResourceGroupName
+      Required: true
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: HighBlastRaidusInvestigation
+        DisplayName: Investigate for anomalous activities by high blast radius accounts 
+        Description: Uses normalized Insights from Sentinel UEBA to Investigate or hunt for AD Accounts with High Blast Radius exhibiting anomalous activities
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 7, 10, or 14
+            Required: true
+          - Name: InvestiGationPriority
+            Description: Calculated priority for investigation between 1 and 10
+            Required: false
+        Settings:
+          Target: Sentinel
+          # The ID of the AAD Organization that the Sentinel workspace is in.
+          TenantId: '{{TenantId}}'
+          # The id of the Azure Subscription that the Sentinel workspace is in.
+          SubscriptionId: '{{SubscriptionId}}'
+          # The name of the Resource Group that the Sentinel workspace is in.
+          ResourceGroupName: '{{ResourceGroupName}}'
+          # The name of the Sentinel workspace.
+          WorkspaceName: '{{WorkspaceName}}'
+          Template: |-
+            IdentityInfo 
+            | where TimeGenerated > ago({{days}}d)
+            | where AccountDisplayName != "On-Premises Directory Synchronization Service Account"
+            | project
+                TimeGenerated,
+                AccountUPN,
+                AccountDisplayName,
+                AccountCreationTime,
+                RiskState,
+                BlastRadius,
+                GroupMembership,
+                AssignedRoles,
+                IsAccountEnabled,
+                IsServiceAccount,
+                DeletedDateTime,
+                IsMFARegistered 
+            | summarize arg_max(TimeGenerated, *) by AccountUPN
+            | where isnotempty(AssignedRoles) and AssignedRoles != "[]"
+            | where BlastRadius == "High"
+            | join (BehaviorAnalytics
+                | where TimeGenerated > ago({{days}}d)
+                | where isnotempty(UserPrincipalName)
+                | project
+                    UserPrincipalName,
+                    TimeGenerated,
+                    ActivityType,
+                    ActionType,
+                    SourceIPAddress,
+                    SourceIPLocation,
+                    UsersInsights,
+                    DevicesInsights,
+                    ActivityInsights,
+                    InvestigationPriority)
+                on $left.AccountUPN == $right.UserPrincipalName
+            | summarize arg_max(TimeGenerated, *) by UserPrincipalName
+            | extend IsNewAccount_ = tostring(UsersInsights.IsNewAccount)
+            | extend Is_VIPUser = tostring(UsersInsights.IsVIPUser)

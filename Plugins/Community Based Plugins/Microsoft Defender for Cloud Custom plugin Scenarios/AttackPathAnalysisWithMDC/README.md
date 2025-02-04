@@ -1,4 +1,4 @@
-# Attack Paths Analysis with Defender CSPM in Defender for Cloud (Custom Plugin for Copilot for Security) 
+# Attack Paths Analysis with Defender CSPM in Defender for Cloud (Custom Plugin for Security Copilot) 
 
 The skill in this custom pluging allows to retrieve the list of "Attack Paths" identified the Defender CSPM (Cloud Security Posture Management) feature of Microsoft Defender for Cloud in the protected Azure, AWS and GPC cloud environments.
 
@@ -15,9 +15,9 @@ The skill in this custom pluging allows to retrieve the list of "Attack Paths" i
     * SubscriptionId: [Write your Subscription Id]
     * ResourceGroupName: [Write the name of your resource group]
     * WorkspaceName: [Write the name of your Log Analytics or Sentinel workspace] 
-3. Add the plugin by uploading the YAML in Copilot for Security (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)
+3. Add the plugin by uploading the YAML in Security Copilot (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)
 
 
 ### Additional references: 
 * [Operationalizing Attack Path Insights](https://techcommunity.microsoft.com/t5/microsoft-defender-for-cloud/operationalizing-attack-path-insights/ba-p/4121643), by Giulio Astori
-* [Sharing my first experiences on how to build custom KQL plugins for Copilot for Security](https://www.linkedin.com/feed/update/urn:li:activity:7199175292278505472/), my blog post on how this plugin was designed and developed
+* [Sharing my first experiences on how to build custom KQL plugins for Security Copilot](https://www.linkedin.com/feed/update/urn:li:activity:7199175292278505472/), my blog post on how this plugin was designed and developed

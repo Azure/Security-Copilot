@@ -1,16 +1,16 @@
-## Configure Tanium integration with Copilot for Security
+## Configure Tanium integration with Security Copilot
 
-Establish communication between a Tanium instance and Copilot for Security using:  
+Establish communication between a Tanium instance and Security Copilot using:  
 
-- a Tanium plugin manifest URL to upload the Tanium Skills custom plugin to Copilot for Security 
+- a Tanium plugin manifest URL to upload the Tanium Skills custom plugin to Security Copilot 
 
-- a Tanium instance URL to connect Copilot for Security to the Tanium instance 
+- a Tanium instance URL to connect Security Copilot to the Tanium instance 
 
-- a Tanium API token to grant Copilot for Security permission to query your network using Tanium and gather endpoint data 
+- a Tanium API token to grant Security Copilot permission to query your network using Tanium and gather endpoint data 
 
-1. In a browser window, navigate to the Microsoft Copilot for Security home page. 
+1. In a browser window, navigate to the Microsoft Security Copilot home page. 
 
-2. Click Copilot for Security plugin. The Manage plugins modal window appears. 
+2. Click Security Copilot plugin. The Manage plugins modal window appears. 
 ![image](https://github.com/shuhblam/copilot-for-security/assets/745064/ec05f712-7489-46a5-a2be-7576bca0b2f1)
 
 3. In the Custom section, click Add plugin. The Add a plugin modal window appears. 
@@ -18,7 +18,7 @@ Establish communication between a Tanium instance and Copilot for Security using
 
 4. Select Who can use this plugin?.  
 
-5. Click Copilot for Security plugin. 
+5. Click Security Copilot plugin. 
 
 6. Select the .json File type. 
 
@@ -26,26 +26,26 @@ Establish communication between a Tanium instance and Copilot for Security using
 
 8. Select Modules > Connect > Overview. The Connect Overview page appears. 
 
-9. Click Settings. Then click Microsoft Copilot for Security.  
+9. Click Settings. Then click Microsoft Security Copilot.  
 ![image](https://github.com/shuhblam/copilot-for-security/assets/745064/4c7c8e0d-6efc-48e2-874a-b6e6e022cde2)
 
 10. Click Tanium Plugin Manifest URL Copy to copy the plugin manifest URL to the clipboard. 
 
-11. In Copilot for Security, select Upload as a link. Then paste the Tanium Plugin Manifest URL. 
+11. In Security Copilot, select Upload as a link. Then paste the Tanium Plugin Manifest URL. 
 
 12. Click Add. The Set up Tanium Skills modal window appears. 
 ![image](https://github.com/shuhblam/copilot-for-security/assets/745064/82e9ad22-5031-4494-98dc-bafb4dc8971b)
 
 13. In Tanium Console, click Tanium Instance URL Copy to copy the Tanium instance URL to the clipboard.  
 
-14. In Copilot for Security, paste the Tanium Instance URL in the Set up Tanium Skills modal window. 
+14. In Security Copilot, paste the Tanium Instance URL in the Set up Tanium Skills modal window. 
 
 15. In Tanium Console, click Generate to generate an API token, valid for 365 days, and copy the token value to the clipboard. 
 
 > You cannot view the token value in Tanium Console. Paste the value in a plaintext editor and save the file in a secure location if you want to record it for future reference. 
 
 
-16. In Copilot for Security, paste the API token value in the Value field in the Set up Tanium Skills modal window.  
+16. In Security Copilot, paste the API token value in the Value field in the Set up Tanium Skills modal window.  
 
 17. Click Set up. 
 

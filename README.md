@@ -1,8 +1,8 @@
 ![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
-# Microsoft Copilot For Security Community
-Welcome to the Copilot for Security Repository!
+# Microsoft Security Copilot Community
+Welcome to the Security Copilot Repository!
 
-Microsoft Copilot for Security is a generative AI-powered assistant for daily operations in security and IT that empowers teams to protect at the speed and scale of AI.
+Microsoft Security Copilot is a generative AI-powered assistant for daily operations in security and IT that empowers teams to protect at the speed and scale of AI.
 - https://learn.microsoft.com/en-us/security-copilot/
 - https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot
 - https://learn.microsoft.com/en-us/security-copilot/plugin_overview
@@ -31,7 +31,7 @@ Here are the steps you can take to begin contributing to this project:
 - Click "Fork" -> "Create a new fork"
   ![Github New Fork](https://github.com/Azure/Copilot-For-Security/blob/main/Images/CFSGithubfork.png)
   ![Create New Fork](https://github.com/Azure/Copilot-For-Security/blob/main/Images/CFSGithubforkCreate.png)
-- This will create a copy of the Copilot for Security repository in your own GitHub account:
+- This will create a copy of the Security Copilot repository in your own GitHub account:
   ![View Your New Fork](https://github.com/Azure/Copilot-For-Security/blob/main/Images/CFSGithubforknew.png)
 
 **Clone the fork to your local machine:**:
@@ -109,4 +109,4 @@ Once the changes are merged to the main GitHub, you should be able to see change
 After your Pull Request has been merged, please check to make sure it got into the main repository. We recommend checking both in the GitHub website as well as by doing a sync to your local repo and verifying the changes are now in place.
 
 
-**Good Luck and Happy Contributing to Copilot for Security Community !!!!**
+**Good Luck and Happy Contributing to Security Copilot Community !!!!**

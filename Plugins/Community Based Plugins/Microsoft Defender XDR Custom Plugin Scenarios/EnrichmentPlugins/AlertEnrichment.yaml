@@ -1,0 +1,67 @@
+Descriptor:
+  Name: Alert Enrichment Skills
+  DisplayName: Alert Enrichment Skills
+  DescriptionForModel: |-
+    A collection of KQL-based skills to enrich security alert investigations by:
+    - Searching alert titles for specified keywords (e.g., "DLP policy") and returning key details, including `TimeGenerated`, `AlertId`, `Title`, `Category`, and `Severity`.
+    - Retrieving evidence associated with specific alerts, such as:
+      - Entity details: `EntityType`, `Title`, and `EvidenceRole`.
+      - URL and email metadata: `RemoteUrl`, `AccountUpn`, `NetworkMessageId`, and `EmailSubject`.
+      - File-related information: `FileName`, `FolderPath`, `SHA1`, `SHA256`, `FileSize`, and `ProcessCommandLine`.
+      - Contextual data: `Categories`, `AttackTechniques`, `ServiceSource`, `DetectionSource`, `AdditionalFields`, `Severity`, and `Type`.
+    - Highlighting `RemoteUrl` fields to identify potentially suspicious public domains for further investigation.
+    This skill set provides detailed alert context, enabling users to prioritize alerts and perform thorough investigations efficiently.
+  Description: A comprehensive set of KQL-based skills designed to enhance alert analysis by searching alert titles for specific keywords, retrieving detailed evidence, and providing contextual information to support effective security investigations.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: AlertTitleSearch
+        DisplayName: Search Alert Title
+        DescriptionForModel: |- 
+          Performs a KQL query to search the `AlertInfo` table for alerts containing a specified keyword in their title. Filters results by a specified time range (defaulting to the last 7 days) and returns the following details:
+          - `TimeGenerated`: Timestamp of the alert.
+          - `AlertId`: Unique identifier for the alert.
+          - `Title`: Title of the alert.
+          - `Category`: Categorization of the alert.
+          - `Severity`: Severity level of the alert.
+          Designed for identifying and analyzing alerts that match specific title keywords, helping to prioritize investigations.
+        Description: Search for alerts in the Defender database that contain a specified keyword in their title. Returns key alert details, including time generated, alert ID, title, category, and severity, to assist in quickly identifying relevant alerts.
+        Inputs:
+          - Name: StringToSearch
+            Description: A string from the Alert Title. Example 'DLP policy'
+            Required: true
+          - Name: TimeRange
+            Description: The number of days to look back. Example 7d
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            AlertInfo
+            | where Title contains "{{StringToSearch}}"
+            | where TimeGenerated >= ago(7d)
+            | project TimeGenerated, AlertId, Title, Category, Severity
+
+      - Name: AlertEvidenceSearch
+        DisplayName: Search AlertId for Evidence
+        DescriptionForModel: |- 
+          Performs a KQL query on the `AlertEvidence` table to retrieve evidence related to a specified `AlertId`. Returns comprehensive details, including:
+          - `EntityType`: The type of entity involved in the alert.
+          - `RemoteUrl`: Associated URLs, highlighting those containing public domains for investigation.
+          - `AccountUpn`: User account information related to the alert.
+          - `NetworkMessageId` and `EmailSubject`: Metadata for email-based alerts.
+          - `Title`: Evidence title summarizing the entity.
+          - `Categories`, `AttackTechniques`, `ServiceSource`, `DetectionSource`: Contextual data about the alert.
+          - `EvidenceRole`, `FileName`, `FolderPath`, `SHA1`, `SHA256`, `FileSize`, `ProcessCommandLine`: Key file-related details.
+          - `AdditionalFields`, `Severity`, `Type`: Additional information to aid in the analysis.
+          Designed to focus on associated URLs (`RemoteUrl`) and metadata to identify suspicious domains, accounts, or files for prioritizing and directing further investigation.
+        Description: Retrieve detailed evidence associated with a specific alert using its AlertId. Provides insights into entity type, associated URLs, account information, email metadata, file details, and other contextual information to assist in investigations.
+        Inputs:
+          - Name: AlertId
+            Description: The specific AlertId to search for evidence. Example dl3e6607b8-8ff6-7180-d400-08dcf2ab98ff
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            AlertEvidence
+            | where AlertId == "{{AlertId}}"
