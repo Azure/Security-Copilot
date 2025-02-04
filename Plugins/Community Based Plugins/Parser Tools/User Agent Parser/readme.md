@@ -22,9 +22,9 @@
 
 #### Example Prompts
 
-- Parse the following user agent string: <USERAGENT>
-- Identify the browser and version from this user agent: <USERAGENT>
-- Extract the operating system details from this user agent: <USERAGENT>
+- Parse the following user agent string: 
+- Identify the browser and version from this user agent: 
+- Extract the operating system details from this user agent:
 
 #### Example Usage
 
