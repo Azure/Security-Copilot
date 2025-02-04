@@ -1,10 +1,10 @@
-# Copilot for Security Plugin: MDE SmartScreen
+# Security Copilot Plugin: MDE SmartScreen
 
 ### **This KQL plugin enables SOC analysts and engineers to get insights about SmartScreen warning pages and bypasses, using the Defender for Endpoint DeviceEvents table.**
 
 ### Prerequisites
 
--   [Copilot for Security enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+-   [Security Copilot enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 -   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 -   [Microsoft Defender SmartScreen settings configured](https://learn.microsoft.com/en-us/windows/security/operating-system-security/virus-and-threat-protection/microsoft-defender-smartscreen/available-settings)
 
