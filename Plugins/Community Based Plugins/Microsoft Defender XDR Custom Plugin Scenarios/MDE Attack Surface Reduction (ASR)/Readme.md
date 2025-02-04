@@ -1,10 +1,10 @@
-# Copilot for Security Plugin: MDE Attack Surface Reduction (ASR)
+# Security Copilot Plugin: MDE Attack Surface Reduction (ASR)
 
 ### **This KQL plugin enables SOC analysts and engineers to get insights about ASR rules in their environment based on the Defender for Endpoint DeviceEvents table.**
 
 ### Pre-requisites
 
--   [Copilot for Security enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+-   [Security Copilot enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 -   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 -   [Attack Surface Reduction rules enabled](https://learn.microsoft.com/en-us/defender-endpoint/overview-attack-surface-reduction#configure-attack-surface-reduction-capabilities)
 
