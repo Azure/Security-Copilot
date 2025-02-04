@@ -1,10 +1,10 @@
-# Copilot for Security Plugin: User Agent Parser
+# Security Copilot Plugin: User Agent Parser
 
 ### **This KQL plugin enables SOC analysts to parse a provided user agent string and return browser, operating system and device details**
 
 ### Prerequisites
 
--   [Copilot for Security enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+-   [Security Copilot enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 -   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 
 ### Instructions
