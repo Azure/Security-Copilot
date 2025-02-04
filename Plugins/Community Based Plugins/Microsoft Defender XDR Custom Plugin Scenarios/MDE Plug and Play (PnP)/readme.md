@@ -1,10 +1,10 @@
-# Copilot for Security Plugin: MDE Plug and Play (PnP)
+# Security Copilot Plugin: MDE Plug and Play (PnP)
 
 ### **This KQL plugin enables SOC analysts to get insights about external devices that have been connected to a device, based on the Defender for Endpoint DeviceEvents table.**
 
 ### Prerequisites
 
--   [Copilot for Security enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+-   [Security Copilot enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 -   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 
 ### Instructions
