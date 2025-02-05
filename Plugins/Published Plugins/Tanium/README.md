@@ -1,24 +1,24 @@
-## Configure Tanium integration with Security Copilot
+## Configure Tanium integration with Copilot for Security
 
-Establish communication between a Tanium instance and Security Copilot using:  
+Establish communication between a Tanium instance and Copilot for Security using:  
 
-- a Tanium plugin manifest URL to upload the Tanium Skills custom plugin to Security Copilot 
+- a Tanium plugin manifest URL to upload the Tanium Skills custom plugin to Copilot for Security 
 
-- a Tanium instance URL to connect Security Copilot to the Tanium instance 
+- a Tanium instance URL to connect Copilot for Security to the Tanium instance 
 
-- a Tanium API token to grant Security Copilot permission to query your network using Tanium and gather endpoint data 
+- a Tanium API token to grant Copilot for Security permission to query your network using Tanium and gather endpoint data 
 
-1. In a browser window, navigate to the Microsoft Security Copilot home page. 
+1. In a browser window, navigate to the Microsoft Copilot for Security home page. 
 
-2. Click Security Copilot plugin. The Manage plugins modal window appears. 
-![image](https://github.com/shuhblam/copilot-for-security/assets/745064/ec05f712-7489-46a5-a2be-7576bca0b2f1)
+2. Click Copilot for Security plugin. The Manage plugins modal window appears. 
+![image](https://github.com/user-attachments/assets/c9699e79-272c-4b9b-be69-f7ed2141ad3e)
 
 3. In the Custom section, click Add plugin. The Add a plugin modal window appears. 
-![image](https://github.com/shuhblam/copilot-for-security/assets/745064/5254358d-8e71-4a9d-ab11-3d39e4a88fb6)
+![image](https://github.com/user-attachments/assets/6fd67b98-e4e5-4aa8-b238-e2a4ff1e6854)
 
 4. Select Who can use this plugin?.  
 
-5. Click Security Copilot plugin. 
+5. Click Copilot for Security plugin. 
 
 6. Select the .json File type. 
 
@@ -26,26 +26,26 @@ Establish communication between a Tanium instance and Security Copilot using:
 
 8. Select Modules > Connect > Overview. The Connect Overview page appears. 
 
-9. Click Settings. Then click Microsoft Security Copilot.  
-![image](https://github.com/shuhblam/copilot-for-security/assets/745064/4c7c8e0d-6efc-48e2-874a-b6e6e022cde2)
+9. Click Settings. Then click Microsoft Copilot for Security.  
+![image](https://github.com/user-attachments/assets/7c3c9e50-38ea-46c6-be4e-d7cc48456be8)
 
 10. Click Tanium Plugin Manifest URL Copy to copy the plugin manifest URL to the clipboard. 
 
-11. In Security Copilot, select Upload as a link. Then paste the Tanium Plugin Manifest URL. 
+11. In Copilot for Security, select Upload as a link. Then paste the Tanium Plugin Manifest URL. 
 
 12. Click Add. The Set up Tanium Skills modal window appears. 
-![image](https://github.com/shuhblam/copilot-for-security/assets/745064/82e9ad22-5031-4494-98dc-bafb4dc8971b)
+![image](https://github.com/user-attachments/assets/446cea24-f86b-4c22-85df-30cc93a6c2b8)
 
 13. In Tanium Console, click Tanium Instance URL Copy to copy the Tanium instance URL to the clipboard.  
 
-14. In Security Copilot, paste the Tanium Instance URL in the Set up Tanium Skills modal window. 
+14. In Copilot for Security, paste the Tanium Instance URL in the Set up Tanium Skills modal window. 
 
 15. In Tanium Console, click Generate to generate an API token, valid for 365 days, and copy the token value to the clipboard. 
 
 > You cannot view the token value in Tanium Console. Paste the value in a plaintext editor and save the file in a secure location if you want to record it for future reference. 
 
 
-16. In Security Copilot, paste the API token value in the Value field in the Set up Tanium Skills modal window.  
+16. In Copilot for Security, paste the API token value in the Value field in the Set up Tanium Skills modal window.  
 
 17. Click Set up. 
 
@@ -61,6 +61,7 @@ Establish communication between a Tanium instance and Security Copilot using:
 | Comply | Get Vulnerability Test Results | Return whether an endpoint is vulnerable to a given CVE, and the reason why it is vulnerable | Using Tanium, examine whether endpoint _hostname_ is vulnerable to _cve-id_, and return the reasons that this endpoint is vulnerable, along with a suggested plan of action to remediate the intrusion. Thank you. |
 | Comply | List Endpoints Vulnerable To CVE | Retrieve up to 10 endpoints vulnerable to a given CVE ID | Using Tanium, return the endpoints vulnerable to _cve-id_, so that I can remediate the vulnerability on these endpoints. Display the results in a table, sorted alphabetically by host name, and return a Tanium Console Question Results URL so that I can view the real-time list of endpoints. Thank you. |
 | Direct Connect, Threat Response | View Endpoint Processes | Retrieve a URL to the Threat Response Live Connection page for the requested endpoint, which contains a list of running processes | Using Tanium, return a Threat Response Live Connection URL for the endpoint with the hostname _hostname_, so that I can review the running processes and identify potential vulnerabilities. Thank you. |
+| Incident Response | List Hashes of File  |  Retrieve the SHA-256 and MD5 file hashes for a given file. | Using Tanium, retrieve the MD5 and SHA-256 hashes for the file at the file path _full-file-path_ so that I, a junior security operations center member, can determine if any malicious file behavior is occurring on the endpoint. Display the results in a table, alphabetically sorted, and return a Tanium Console Question Results URL so that I can view the real-time list. Thank you. OR Using Tanium, retrieve the MD5 and SHA-256 hashes for the file at the file path _full-file-path_ on the endpoint named _hostname_ so that I, a junior security operations center member, can determine if any malicious file behavior is occurring on the endpoint. Display the results in a table, alphabetically sorted, and return a Tanium Console Question Results URL so that I can view the real-time list. Thank you.  |
 | Incident Response | List Service Module Details | Retrieve running service module information for an endpoint, including name, caption, and image path | Using Tanium, return information for the service modules running on the endpoint with the hostname _hostname_, so that I can review the list for unexpected service modules. Display the results in a table, alphabetically sorted by service module name, and return a Tanium Console Question Results URL so that I can view the real-time list of service modules. Thank you. |
 | Incident Response | List Service Process Details | Retrieve running service process information for an endpoint, including name, process ID, and file path | Using Tanium, return information for the service processes running on the endpoint with the hostname _hostname_, so that I can review the list for unexpected service processes. Display the results in a table, alphabetically sorted by service process name, and return a Tanium Console Question Results URL so that I can view the real-time list of service processes. Thank you. |
 | Incident Response | List WMI Event Consumers | Retrieve Windows Management Instrumentation (WMI) event consumers running on an endpoint | Using Tanium, return the WMI event consumers running on the endpoint with the hostname _hostname_ so that I can ensure only expected event consumers are running, and return a Tanium Console Question Results URL so that I can view the real-time list of event consumers. Thank you. |
