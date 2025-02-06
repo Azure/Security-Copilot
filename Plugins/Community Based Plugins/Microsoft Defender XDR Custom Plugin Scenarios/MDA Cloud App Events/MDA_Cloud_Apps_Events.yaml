@@ -1,0 +1,157 @@
+Descriptor:
+  Name: MDECloudAppEvents
+  DisplayName: MDE Cloud App Events
+  Description: Skills to query MDA CloudAppEvents tables to get insights about Cloud App activity
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetOneDriveActivityForUser
+        DisplayName: Get OneDrive Activity For User
+        Description: Fetches a list of a user's OneDrive activity within a specified timeframe
+        ExamplePrompt:
+        - 'OneDrive User Activity'
+        - 'Get a list of OneDrive activity for someone@example.com from the past 2 hours'
+        - 'Get a list of OneDrive activity for someone@example.com from the past 1 day'
+        - 'Fetch a list of OneDrive activity for someone@example.com from the past 2 hours'
+        - 'Fetch a list of OneDrive activity for someone@example.com from the past 1 day'
+        - 'List all the OneDrive activity for someone@example.com from the past 2 hours'
+        - 'List all the OneDrive activity for someone@example.com from the past 1 day'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+          - Name: accountupn
+            Description: account UPN (such as someone@example.com)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let AccountUPN = toscalar(IdentityInfo | where AccountUpn =~ "{{accountupn}}" | project AccountObjectId | summarize max(AccountObjectId));
+            CloudAppEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where Application =~ @"Microsoft OneDrive for Business"
+            | where AccountObjectId =~ AccountUPN or AccountId =~ AccountUPN
+            | extend FileName = extract("([^/]+)$", 1, tostring(parse_json(ActivityObjects)[0].Name)),TargetObject=parse_json(ActivityObjects)[0].Name, TargetFolder=parse_json(ActivityObjects)[1].Name
+            | project Timestamp, ActionType, IPAddress, FileName, tostring(TargetObject), tostring(TargetFolder)
+            | summarize min(Timestamp), max(Timestamp) by ActionType, IPAddress, FileName, TargetObject, TargetFolder
+            | project ActionType, IPAddress, FileName, TargetObject, TargetFolder, FirstTimestamp = min_Timestamp, LastTimestamp = max_Timestamp
+  - Format: KQL
+    Skills:
+      - Name: GetSharePointActivityForUser
+        DisplayName: Get SharePoint Activity For User
+        Description: Fetches a list of a user's SharePoint activity within a specified timeframe
+        ExamplePrompt:
+        - 'SharePoint User Activity'
+        - 'Get a list of SharePoint activity for someone@example.com from the past 2 hours'
+        - 'Get a list of SharePoint activity for someone@example.com from the past 1 day'
+        - 'Fetch a list of SharePoint activity for someone@example.com from the past 2 hours'
+        - 'Fetch a list of SharePoint activity for someone@example.com from the past 1 day'
+        - 'List all the SharePoint activity for someone@example.com from the past 2 hours'
+        - 'List all the SharePoint activity for someone@example.com from the past 1 day'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+          - Name: accountupn
+            Description: account UPN (such as someone@example.com)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let AccountUPN = toscalar(IdentityInfo | where AccountUpn =~ "{{accountupn}}" | project AccountObjectId | summarize max(AccountObjectId));
+            CloudAppEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where Application =~ @"Microsoft SharePoint Online"
+            | where AccountObjectId =~ AccountUPN or AccountId =~ AccountUPN
+            | extend FileName=extract("([^/]+)$", 1, tostring(parse_json(ActivityObjects)[0].Name)),TargetObject=parse_json(ActivityObjects)[0].Name, TargetFolder=parse_json(ActivityObjects)[1].Name
+            | extend FileName=iff(isnotempty(FileName), FileName, tostring(parse_json(RawEventData).ListName))
+            | extend TargetObject=iff(isnotempty(TargetObject), TargetObject, tostring(parse_json(RawEventData).ListUrl))
+            | project Timestamp, ActionType, IPAddress, FileName, tostring(TargetObject), tostring(TargetFolder)
+            | summarize min(Timestamp), max(Timestamp) by ActionType, IPAddress, FileName, TargetObject, TargetFolder
+            | project ActionType, IPAddress, FileName, TargetObject, TargetFolder, FirstTimestamp = min_Timestamp, LastTimestamp = max_Timestamp
+  - Format: KQL
+    Skills:
+      - Name: GetExchangeOnlineActivityForUser
+        DisplayName: Get Exchange Online Activity For User
+        Description: Fetches a list of a user's Exchange Online activity within a specified timeframe
+        ExamplePrompt:
+        - 'Exchange Online User Activity'
+        - 'Get a list of Exchange Online activity for someone@example.com from the past 2 hours'
+        - 'Get a list of Exchange Online activity for someone@example.com from the past 1 day'
+        - 'Fetch a list of Exchange Online activity for someone@example.com from the past 2 hours'
+        - 'Fetch a list of Exchange Online activity for someone@example.com from the past 1 day'
+        - 'List all the Exchange Online activity for someone@example.com from the past 2 hours'
+        - 'List all the Exchange Online activity for someone@example.com from the past 1 day'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+          - Name: accountupn
+            Description: account UPN (such as someone@example.com)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let AccountUPN = toscalar(IdentityInfo | where AccountUpn =~ "{{accountupn}}" | project AccountObjectId | summarize max(AccountObjectId));
+            CloudAppEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where Application =~ @"Microsoft Exchange Online"
+            | where AccountObjectId =~ AccountUPN or AccountId =~ AccountUPN
+            | extend ObjectName=iff(isnotempty(ObjectName), ObjectName, parse_json(ActivityObjects)[2].Name)
+            | extend ObjectType=iff(isnotempty(ObjectType), ObjectType, parse_json(ActivityObjects)[2].Type)
+            | project Timestamp, ActionType, ActivityType, ObjectName, ObjectType ,IPAddress
+            | summarize min(Timestamp), max(Timestamp) by ActionType, ActivityType, ObjectName, ObjectType ,IPAddress
+            | project ActionType, ActivityType, ObjectName, ObjectType, IPAddress, FirstTimestamp = min_Timestamp, LastTimestamp = max_Timestamp
+  - Format: KQL
+    Skills:
+      - Name: GetTeamsActivityForUser
+        DisplayName: Get Teams Activity For User
+        Description: Fetches a list of a user's Teams activity within a specified timeframe
+        ExamplePrompt:
+        - 'Teams User Activity'
+        - 'Get a list of Teams activity for someone@example.com from the past 2 hours'
+        - 'Get a list of Teams activity for someone@example.com from the past 1 day'
+        - 'Fetch a list of Teams activity for someone@example.com from the past 2 hours'
+        - 'Fetch a list of Teams activity for someone@example.com from the past 1 day'
+        - 'List all the Teams activity for someone@example.com from the past 2 hours'
+        - 'List all the Teams activity for someone@example.com from the past 1 day'        
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+          - Name: accountupn
+            Description: account UPN (such as someone@example.com)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let AccountUPN = toscalar(IdentityInfo | where AccountUpn =~ "{{accountupn}}" | project AccountObjectId | summarize max(AccountObjectId));
+            CloudAppEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where Application =~ @"Microsoft Teams"
+            | where AccountObjectId =~ AccountUPN or AccountId =~ AccountUPN
+            | extend ChatThreadId=parse_json(RawEventData).ChatThreadId, ChatItemName=parse_json(RawEventData).ItemName, CommunicationType=parse_json(RawEventData).CommunicationType, ParticipantInfo_HasForeignTenantUsers=parse_json(RawEventData).ParticipantInfo.HasForeignTenantUsers, ParticipantInfo_HasGuestUsers=parse_json(RawEventData).ParticipantInfo.HasGuestUsers
+            | project Timestamp, ActionType, IPAddress, ChatItemName, ChatThreadId, CommunicationType, ParticipantInfo_HasForeignTenantUsers, ParticipantInfo_HasGuestUsers
+            | summarize min(Timestamp), max(Timestamp) by ActionType, IPAddress, tostring(ChatItemName), tostring(ChatThreadId), tostring(CommunicationType), tostring(ParticipantInfo_HasForeignTenantUsers), tostring(ParticipantInfo_HasGuestUsers)
+            | project ActionType, IPAddress, ChatItemName, ChatThreadId, CommunicationType, ParticipantInfo_HasForeignTenantUsers, ParticipantInfo_HasGuestUsersFirstTimestamp = min_Timestamp, LastTimestamp = max_Timestamp

@@ -1,0 +1,87 @@
+Descriptor:
+  Name: MDAAdvancedThreatProtection
+  DisplayName: MDA Advanced Threat Protection
+  Description: Skills to query MDA tables to get insights about files quarantined by Advanced Threat Protection (ATP)
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetCloudAppATPEvents
+        DisplayName: Get Cloud App ATP Events
+        Description: Fetches a list of Advanced Threat Protection events within a specified timeframe
+        ExamplePrompt:
+        - 'OneDrive Malware'
+        - 'SharePoint Malware'
+        - 'Cloud App ATP'
+        - 'Cloud App Advanced Threat Protection'
+        - 'Get a list of Advanced Threat Protection malware events from Cloud Apps for the past 24 hours'
+        - 'Get a list of Advanced Threat Protection malware events from Cloud Apps for the past 30 days'
+        - 'Get a list of ATP malware events from Cloud Apps for the past 24 hours'
+        - 'Get a list of ATP malware events from Cloud Apps for the past 30 days'
+        - 'Fetch a list of Advanced Threat Protection malware events from Cloud Apps for the past 24 hours'
+        - 'Fetch a list of Advanced Threat Protection malware events from Cloud Apps for the past 30 days'
+        - 'Fetch a list of ATP malware events from Cloud Apps for the past 24 hours'
+        - 'Fetch a list of ATP malware events from Cloud Apps for the past 30 days'
+        - 'List the Advanced Threat Protection malware events from Cloud Apps for the past 24 hours'
+        - 'List the Advanced Threat Protection malware events from Cloud Apps for the past 30 days'
+        - 'List the ATP malware events from Cloud Apps for the past 24 hours'
+        - 'List the ATP malware events from Cloud Apps for the past 30 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            CloudAppEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == @"AtpDetection"
+            | extend FileName=parse_json(RawEventData).FileData.FileName, FilePath=parse_json(RawEventData).FileData.FilePath, MalwareFamily=parse_json(RawEventData).FileData.MalwareFamily
+            | project Timestamp, ActionType, Application, AccountObjectId, AccountDisplayName, FileName, FilePath, MalwareFamily
+  - Format: KQL
+    Skills:
+      - Name: GetOfficeActivityATPEvents
+        DisplayName: Get Office Activity ATP Events
+        Description: Fetches a list of Advanced Threat Protection events within a specified timeframe
+        ExamplePrompt:
+        - 'OneDrive Malware'
+        - 'SharePoint Malware'
+        - 'Office Activity ATP'
+        - 'Office Activity Advanced Threat Protection'
+        - 'Get a list of Advanced Threat Protection malware events from Office Activity for the past 24 hours'
+        - 'Get a list of Advanced Threat Protection malware events from Office Activity for the past 30 days'
+        - 'Get a list of ATP malware events from Office Activity for the past 24 hours'
+        - 'Get a list of ATP malware events from Office Activity for the past 30 days'
+        - 'Fetch a list of Advanced Threat Protection malware events from Office Activity for the past 24 hours'
+        - 'Fetch a list of Advanced Threat Protection malware events from Office Activity for the past 30 days'
+        - 'Fetch a list of ATP malware events from Office Activity for the past 24 hours'
+        - 'Fetch a list of ATP malware events from Office Activity for the past 30 days'
+        - 'List the Advanced Threat Protection malware events from Office Activity for the past 24 hours'
+        - 'List the Advanced Threat Protection malware events from Office Activity for the past 30 days'
+        - 'List the ATP malware events from Office Activity for the past 24 hours'
+        - 'List the ATP malware events from Office Activity for the past 30 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Sentinel
+          Template: |-
+            OfficeActivity 
+            | where TimeGenerated >= ago({{unit}}{{hourorday}}) 
+            | where Operation == "FileMalwareDetected" and RecordType == "SharePointFileOperation"
+            | project TimeGenerated, Operation, OfficeWorkload, OfficeObjectId, ClientIP, Site_Url, SourceRelativeUrl, SourceFileName
+          TenantId: <your_tenant_id>
+          SubscriptionId: <your_subscription_id>
+          ResourceGroupName: <your_rg_name>
+          WorkspaceName: <your_ws_name>
