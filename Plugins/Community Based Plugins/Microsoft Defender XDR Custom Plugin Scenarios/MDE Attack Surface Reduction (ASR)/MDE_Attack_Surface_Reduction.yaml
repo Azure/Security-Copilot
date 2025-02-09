@@ -1,0 +1,208 @@
+Descriptor:
+  Name: MDEAttackSurfaceReduction
+  DisplayName: MDE Attack Surface Reduction (ASR)
+  Description: Skills to query MDE device tables to get insights about ASR rules
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetASREventCountWithinTimeframe
+        DisplayName: Get ASR Event Count Within Timeframe
+        Description: Fetches a count of ASR events within the specified timeframe
+        ExamplePrompt:
+        - 'Attack Surface Reduction Event Count'
+        - 'ASR Event Count'
+        - 'Get a count of the ASR events from the past 24 hours'
+        - 'Get a count of the ASR events from the past 7 days'
+        - 'Fetch a count of the Attack Surface Reduction events from the past 24 hours'
+        - 'Fetch a count of the Attack Surface Reduction events from the past 7 days'
+        - 'List a count of the ASR events from the past 24 hours'
+        - 'List a count of the ASR events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: true
+          - Name: unit
+            Description: number of hours or days
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType startswith "ASR"
+            | project ActionType
+            | summarize count() by ActionType
+  - Format: KQL
+    Skills:
+      - Name: GetASREventsForDevice
+        DisplayName: Get ASR Events From Device
+        Description: Fetches a count of ASR events for a specified device name or device ID
+        ExamplePrompt:
+        - 'Attack Surface Reduction Device Events'
+        - 'ASR Device Events'
+        - 'Get a count of the ASR events seen on device DEVICENAME in the past 24 hours'
+        - 'Get a count of the ASR events seen on device DEVICENAME in the past 7 days'
+        - 'Fetch a count of the ASR events seen on device DEVICENAME in the past 24 hours'
+        - 'Fetch a count of the ASR events seen on device DEVICENAME in the past 7 days'
+        - 'List the count of ASR events seen on device DEVICENAME in the past 24 hours'
+        - 'List the count of ASR events seen on device DEVICENAME in the past 7 days'
+        Inputs:
+          - Name: devicename
+            Description: device name or id
+            Required: true
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            let Device = "{{devicename}}";
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where DeviceName =~ Device or DeviceId =~ Device
+            | where ActionType startswith "ASR"
+            | project ActionType
+            | summarize count() by ActionType
+  - Format: KQL
+    Skills:
+      - Name: GetASREventsForFile
+        DisplayName: Get ASR Events For File
+        Description: Fetches a count of ASR events for a specified file name
+        ExamplePrompt:
+        - 'Attack Surface Reduction File Events'
+        - 'ASR File Events'
+        - 'Get a count of the ASR events for file FILENAME.EXE in the past 24 hours'
+        - 'Get a count of the ASR events for file FILENAME.EXE in the past 7 days'
+        - 'Fetch a count of the ASR events for file FILENAME.EXE in the past 24 hours'
+        - 'Fetch a count of the ASR events for file FILENAME.EXE in the past 7 days'
+        - 'List the count of ASR events for file FILENAME.EXE in the past 24 hours'
+        - 'List the count of ASR events for file FILENAME.EXE in the past 7 days'
+        Inputs:
+          - Name: filename
+            Description: file name
+            Required: true
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType startswith "ASR"
+            | where FileName contains "{{filename}}"
+            | project ActionType, FileName
+            | summarize count() by ActionType, FileName
+  - Format: KQL
+    Skills:
+      - Name: GetASRBlockedEvents
+        DisplayName: Get ASR Blocked Events
+        Description: Fetches a count of the top 25 ASR blocked events
+        ExamplePrompt:
+        - 'Attack Surface Reduction Blocked Events'
+        - 'ASR Blocked Events'
+        - 'Get a count of the blocked ASR events from the past 24 hours'
+        - 'Get a count of the blocked ASR events from the past 7 days'
+        - 'Fetch a count of the blocked Attack Surface Reduction events from the past 24 hours'
+        - 'Fetch a count of the blocked Attack Surface Reduction events from the past 7 days'
+        - 'List the count of the blocked ASR events from the past 24 hours'
+        - 'List the count of the blocked ASR events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: h
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 24
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType startswith "ASR" and ActionType endswith "Blocked"
+            | project ActionType, FileName
+            | summarize count() by ActionType, FileName
+            | top 25 by count_
+  - Format: KQL
+    Skills:
+      - Name: GetASRAuditedEvents
+        DisplayName: Get ASR Audited Events
+        Description: Fetches a count of the top 25 ASR audited events
+        ExamplePrompt:
+        - 'Attack Surface Reduction Audited Events'
+        - 'ASR Audited Events'
+        - 'Get a count of the audited ASR events from the past 24 hours'
+        - 'Get a count of the audited ASR events from the past 7 days'
+        - 'Fetch a count of the audited Attack Surface Reduction events from the past 24 hours'
+        - 'Fetch a count of the audited Attack Surface Reduction events from the past 7 days'
+        - 'List the count of the audited ASR events from the past 24 hours'
+        - 'List the count of the audited ASR events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: h
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 24
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType startswith "ASR" and ActionType endswith "Audited"
+            | project ActionType, FileName
+            | summarize count() by ActionType, FileName
+            | top 25 by count_
+  - Format: KQL
+    Skills:
+      - Name: GetASREventsByCategory
+        DisplayName: Get ASR Events By Category
+        Description: Fetches a count of ASR events grouped by category and day
+        ExamplePrompt:
+        - 'Attack Surface Reduction Event Category'
+        - 'ASR Event Category'
+        - 'ASR Email Events'
+        - 'ASR Script Events'
+        - 'ASR WMI Events'
+        - 'ASR Office App Events'
+        - 'ASR 3rd Party App Events'
+        - 'ASR Windows Credentials Events'
+        - 'ASR Polymorphic Threats Events'
+        - 'Get a count of the Attack Surface Reduction events grouped by category and day from the last 30 days'
+        - 'Get a count of the Attack Surface Reduction events grouped by category and day from the past 48 hours'
+        - 'Fetch a count of the ASR events grouped by category and day from the last 30 days'
+        - 'Fetch a count of the ASR events grouped by category and day from the past 48 hours'
+        - 'List the ASR events grouped by category and day from the last 30 days'
+        - 'List the ASR events grouped by category and day from the past 48 hours'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType startswith "asr"
+            | summarize Email = countif(ActionType in ("AsrExecutableEmailContentBlocked", "AsrOfficeCommAppChildProcessBlocked")), Script = countif(ActionType in ("AsrObfuscatedScriptBlocked", "AsrScriptExecutableDownloadBlocked")), WMI = countif(ActionType in ("AsrPersistenceThroughWmiBlocked", "AsrPsexecWmiChildProcessBlocked")), OfficeApp = countif(ActionType in ("AsrOfficeChildProcessBlocked", "AsrOfficeMacroWin32ApiCallsBlocked", "AsrExecutableOfficeContentBlocked", "AsrOfficeProcessInjectionBlocked")), 3rdPartyApp = countif(ActionType == "AsrAdobeReaderChildProcessBlocked"), WindowsCredentials = countif(ActionType == "AsrLsassCredentialTheftBlocked"), PolymorphicThreats = countif(ActionType in ("AsrUntrustedExecutableBlocked", "AsrUntrustedUsbProcessBlocked", "AsrRansomwareBlocked", "AsrVulnerableSignedDriverBlocked")) by bin(Timestamp, 1d)
+            | sort by Timestamp
