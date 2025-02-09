@@ -1,0 +1,45 @@
+Descriptor:
+  Name: Summarize Sentinel Entities across MITRE tactics for a specified time and date range.
+  DisplayName: "Sentinel Entities on MITRE"
+  Description: Skills summarizes Entities from the alerts from Sentinel workspace.
+  # Please share sentinel entities on MITRE for last 30 days in a tabular format
+  # Please share sentinel entities on MITRE for last 30 days
+  # Cloud you please provide sentinel entities on MITRE for since April 1st in a tabular format 
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: SentinelEntitiesonMITRE
+        DisplayName: Sentinel Entities on MITRE
+        Description: Summarizes the entities created in Sentinel for the specified time and date range.
+        Inputs:
+          - Name: fromDateTime
+            Description: The from time and date
+            Required: true
+          - Name: toDateTime
+            Description: The to time and date
+            Required: true
+        Settings:
+          Target: Sentinel
+           # The ID of the AAD Organization that the Sentinel workspace is in.
+          TenantId: **ENTRA TENANT GUID**
+          # The id of the Azure Subscription that the Sentinel workspace is in.
+          SubscriptionId: **AZURE SUBSCRIPTION ID**
+          # The name of the Resource Group that the Sentinel workspace is in.
+          ResourceGroupName: **LOG ANALYTICS RESOURCE GROUP NAME**
+          # The name of the Sentinel workspace.
+          WorkspaceName: **LOG ANALYTICS WORKSPACE NAME**
+          Template: |-
+            let fromDateTime=datetime('{{fromDateTime}}');
+            let toDateTime=datetime('{{toDateTime}}');
+            SecurityAlert
+            | where TimeGenerated between ( fromDateTime .. toDateTime )
+            | summarize arg_max(TimeGenerated,*) by SystemAlertId
+            | where isnotempty(Tactics)
+            | extend Tactics = split(Tactics,',')
+            | mv-expand Tactics
+            | extend Tactics = tostring(Tactics)
+            | mv-expand todynamic(Entities)
+            | extend EntityType = tostring(Entities.Type)
+            | summarize count(), make_set(Entities) by EntityType, Tactics, ProductName
+            | order by count_ desc
+
