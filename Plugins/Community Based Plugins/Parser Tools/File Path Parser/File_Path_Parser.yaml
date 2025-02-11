@@ -1,0 +1,40 @@
+Descriptor:
+  Name: FilePathParser
+  DisplayName: File Path Parser
+  Description: Skill to parse a single file path
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: ParseFilePath
+        DisplayName: Parse File Path
+        Description: Parse provided file path and return a dynamic object that contains the following parts of the path - Scheme, RootPath, DirectoryPath, DirectoryName, Filename, Extension, AlternateDataStreamName
+        ExamplePrompt:
+        - 'Parse File Path'
+        - 'Parse Folder Path'
+        - 'Parse the following file path:'
+        - 'Parse the following folder path:'
+        - 'Identify the root and directory from this file path:'
+        - 'Identify the file name and extension from this folder path:'
+        - 'Identify the alternative data stream from this file path:'
+        - 'Extract the root and directory from this file path:'
+        - 'Extract the file name and extension from this folder path:'
+        - 'Extract the alternative data stream from this file path:'
+        - 'Provide the full details of this file path:'
+        - 'Analyse this file path and provide a summary:'
+        Inputs:
+          - Name: filepath
+            Description: The file path to parse
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            print parse_path(@"{{filepath}}")
+            | extend Scheme = parse_json(print_0)["Scheme"]
+            | extend RootPath = parse_json(print_0)["RootPath"]
+            | extend DirectoryPath = parse_json(print_0)["DirectoryPath"]
+            | extend DirectoryName = parse_json(print_0)["DirectoryName"]
+            | extend Filename = parse_json(print_0)["Filename"]
+            | extend Extension = parse_json(print_0)["Extension"]
+            | extend AlternateDataStreamName = parse_json(print_0)["AlternateDataStreamName"]
+            | project-away print_0
