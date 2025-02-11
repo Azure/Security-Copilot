@@ -1,23 +1,23 @@
 Descriptor:
-  Name: fetch sentinel incident comments
-  DisplayName: "fetch sentinel incident comments"
-  Description: pullback sentinel incident comments
+  Name: Fetch Sentinel incident comments
+  DisplayName: Fetch Sentinel incident comments
+  Description: Pullback Sentinel incident comments
 SkillGroups:
   - Format: KQL
     Skills:
-      - Name: fetch sentinel incident comments
-        DisplayName: fetch sentinel incident comments
-        Description: fetch sentinel incident comments
+      - Name: SentinelIncidentComments
+        DisplayName: Fetch Sentinel incident comments
+        Description: Fetch Sentinel incident comments
         Inputs:
           - Name: incidentNumber
             Description: incident number
             Required: true
         Settings:
           Target: Sentinel
-          TenantId: xxxxx
-          SubscriptionId: xxxxx
-          ResourceGroupName: xxxxx
-          WorkspaceName: xxxxx
+          TenantId: <your_tenant_ID>
+          SubscriptionId: <your_subscription_ID>
+          ResourceGroupName: <your_RG_name>
+          WorkspaceName: <your_WS_name>
           Template: |- 
             SecurityIncident
             | where TimeGenerated > ago(14d) 
