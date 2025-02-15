@@ -1,0 +1,17 @@
+Descriptor:
+  Name: WHOIS
+  DisplayName: WHOIS
+  Description: WHOIS domain lookup  
+  Icon: https://github.com/rod-trent/Copilot-for-Security/blob/main/Plugins/WHOIS/WHOIS_icon.png?raw=true
+  SupportedAuthTypes:
+    - ApiKey
+  Authorization:
+    Type: APIKey
+    Key: apiKey
+    Location: QueryParams
+    AuthScheme: '' 
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/rod-trent/Copilot-for-Security/main/Plugins/WHOIS/WHOIS.txt
