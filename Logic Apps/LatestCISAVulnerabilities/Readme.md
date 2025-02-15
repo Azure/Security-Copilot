@@ -16,13 +16,10 @@ Open your new Logic App.
 
 Click "API Connections"
 
-![alt text](image.png)
+![alt text](image-2.png)
 
 Authorize both of the API connections.
 ![alt text](image-1.png)
-
-### Step 4: Enable the Logic App
-![alt text](image-3.png)
 
 ### Deployment Notes
 If you want to change the function app code you can git clone the repo. Every time you change the FunctionApp code, be sure to repackage the FunctionApp.zip file. The zip file is what is referenced when the solution is deployed. The .python_packages folder is required in this deployment scenario. I can't figure out how to get Azure FunctionApps to install python libraries automatically.
