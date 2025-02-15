@@ -32,3 +32,9 @@ Open your new Logic App.
 3. Edit the default value to an email address of your choice.
 
 ![alt text](image-3.png)
+
+### Step 4: Email Notification
+
+Below is an example of the email received for each finding.
+
+![alt text](image-4.png)
