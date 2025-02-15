@@ -1,0 +1,467 @@
+Descriptor:
+  Name: SoCOpimizationTrend
+  DisplayName: SoC OpimizationTrend plugin
+  Description: This plugin will enable users to gather metrics and trends related to SoC operations.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: SOC Incident Count by High Severity by month/year
+        DisplayName: SOC Incident Count by High Severity by month/year
+        Description: Incident Count by High Severity by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident 
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Severity == 'High'
+            | summarize Count = count_distinct(IncidentNumber)
+      - Name: SOC Incident Count by Medium Severity by month/year
+        DisplayName: Incident Count by Medium Severity by month/year
+        Description: Incident Count by Medium Severity by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident 
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Severity == 'Medium'
+            | summarize Count = count_distinct(IncidentNumber)
+      - Name: SOC Incident Count by Low Severity by month/year
+        DisplayName: SOC Incident Count by Low Severity by month/year
+        Description: Incident Count by Low Severity by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true 
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident 
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Severity == 'Low'
+            | summarize Count = count_distinct(IncidentNumber)
+      - Name: SOC Average time to acknowledge an incident by month/year
+        DisplayName: SOC Average time to acknowledge an incident by month/year
+        Description: Average time to acknowledge an incident by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(LastModifiedTime,*) by IncidentNumber 
+            | extend TimeToAcknowledge =  (FirstModifiedTime - CreatedTime)/1h
+            | summarize Average = avg(TimeToAcknowledge)/60
+      - Name: SOC Average time to closure of an incident by month/year
+        DisplayName: SOC Average time to closure of an incident by month/year
+        Description: Average time to closure of an incident by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true          
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(TimeGenerated,*) by IncidentNumber
+            | where Status == 'Closed'
+            | extend TimeToClosure =  (ClosedTime - CreatedTime)/1h
+            | summarize Average = avg(TimeToClosure)
+      - Name: SOC Number of incidents without automation by month/year
+        DisplayName: SOC Number of incidents without automation by month/year
+        Description: Number of incidents without automation by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Status != 'Closed'
+            | where LastModifiedTime != CreatedTime
+            | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+            | extend TimeOpen = datetime_diff('minute', now(), CreatedTime)
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber
+            | project IncidentNumber, TimeGenerated, TimeOpen, Title, Description, Severity, Status
+            | top 50 by TimeOpen
+            | order by TimeOpen desc
+      - Name: SOC incidents without automation by severity and month/year
+        DisplayName: SOC incidents without automation by severity and month/year
+        Description: SOC incidents without automation by severity and month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+          - Name: severity
+            Description: Please enter the severity
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}} and Severity == '{{severity}}'
+            | where Status == 'Closed'
+            | where LastModifiedTime != CreatedTime
+            | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+            | extend TimeOpen = datetime_diff('minute', now(), CreatedTime)
+            | project IncidentNumber, TimeGenerated, TimeOpen, Title, Description, Comments, Classification, ClassificationComment, ClassificationReason
+      - Name: SOC incidents without automation by title and month/year
+        DisplayName: SOC incidents without automation by title and month/year
+        Description: SOC incidents without automation by title and month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+          - Name: title
+            Description: Please enter the title
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}} and Title == '{{title}}'
+            | where Status == 'Closed'
+            | where LastModifiedTime != CreatedTime
+            | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+            | extend TimeOpen = datetime_diff('minute', now(), CreatedTime)
+            | project IncidentNumber, TimeGenerated, TimeOpen, Title, Description, Comments, Classification, ClassificationComment, ClassificationReason
+      - Name: SOC incidents without automation looking back x amount of days and title
+        DisplayName: SOC incidents without automation looking back x amount of days and title
+        Description: SOC incidents without automation looking back x amount of days and title
+        Inputs:
+          - Name: days
+            Description: Please enter the number of days to look back
+            Required: true
+          - Name: title
+            Description: Please enter the title
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+           SecurityIncident
+           | where CreatedTime > ago({{days}}d) and Title == '{{title}}'
+           | where Status == 'Closed'
+           | where LastModifiedTime != CreatedTime
+           | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+           | extend TimeOpen = datetime_diff('minute', now(), CreatedTime)
+           | project IncidentNumber, TimeGenerated, TimeOpen, Title, Description, Comments, Classification, ClassificationComment, ClassificationReason
+      - Name: SOC count of closed incidents without automation by month/year
+        DisplayName: SOC count of closed incidents without automation by month/year
+        Description: Count of incidents without automation by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Status == 'Closed'
+            | where LastModifiedTime != CreatedTime
+            | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+            | summarize Count = count() by Severity
+      - Name: SOC Number of Incidents with Automation Used by month/year
+        DisplayName: SOC Number of Incidents with Automation Used by month/year
+        Description: Number of Incidents with Automation Used by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where LastModifiedTime != CreatedTime
+            | where ModifiedBy has_any ('playbook', 'automation rule')
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | extend TimeOpen = datetime_diff('minute', now(), CreatedTime)
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber
+            | top 50 by TimeOpen
+            | order by TimeOpen desc
+            | project
+              IncidentNumber,
+              TimeGenerated,
+              TimeOpen,
+              Title,
+              Description,
+              Severity,
+              Status,
+              ProviderName,
+              ModifiedBy
+      - Name: SOC Mean Time to Response with Automation by month/year
+        DisplayName: SOC Mean Time to Response with Automation by month/year
+        Description: Mean Time to Response with Automation by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where ModifiedBy has_any('playbook', 'automation rule')
+            | where Status == 'Closed'
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber 
+            | extend TimeToClosure =  (ClosedTime - CreatedTime) / 1h
+            | project IncidentNumber, TimeGenerated, TimeToClosure, Title, Description, Severity, Status, Classification, ClassificationComment
+            | top 50 by TimeToClosure
+            | order by TimeToClosure desc
+      - Name: SOC Time to Acknowledge per Incident by month/year
+        DisplayName: SOC Time to Acknowledge per Incident by month/year
+        Description: Time to Acknowledge per Incident by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where ModifiedBy !has 'playbook' and ModifiedBy !has 'automation rule'
+            | summarize arg_max(LastModifiedTime, *) by IncidentNumber 
+            | extend
+            TimeToAcknowledge =  (FirstModifiedTime - CreatedTime) / 1h,
+            TimeOpen = datetime_diff('minute', now(), CreatedTime)
+            | project
+             IncidentNumber, TimeGenerated, TimeOpen, TimeToAcknowledge, Title, Description, Severity, Status
+            | top 50 by TimeToAcknowledge
+            | order by TimeToAcknowledge desc
+      - Name: SOC Average Time to Closure by month/year
+        DisplayName: SOC Average Time to Closure by month/year
+        Description: Average Time to Closure by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | where Status == 'Closed'
+            | where ModifiedBy !has 'playbook'
+            | extend TimeToClosure = (ClosedTime - CreatedTime) / 1h
+            | project IncidentNumber, TimeGenerated, TimeToClosure, Title,Description, Severity, Status
+            | top 50 by TimeToClosure
+            | order by TimeToClosure desc
+      - Name: SOC Mean Time to Respond without Automation by month/year
+        DisplayName: SOC Mean Time to Respond without Automation by month/year
+        Description: Mean Time to Respond without Automation by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where Status == 'Closed'
+            | where ModifiedBy !has 'playbook'
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber 
+            | extend TimeToClosure = (ClosedTime - CreatedTime) / 1h
+            | project IncidentNumber, TimeGenerated, TimeToClosure, Title, Description, Severity, Status, Classification
+            | order by TimeToClosure desc
+      - Name: SOC Mean Time to Response with Tasks by month/year
+        DisplayName: SOC Mean Time to Response with Tasks by month/year
+        Description: Mean Time to Response with Tasks by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where Status == 'Closed'
+            | where Tasks != '[]'
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber 
+            | extend TimeToClosure = (ClosedTime - CreatedTime) / 1h
+            | project IncidentNumber, TimeGenerated, TimeToClosure, Title, Description, Status, Classification, ClassificationComment, ClassificationReason
+      - Name: SOC Highest Mean Time to Respond by month/year
+        DisplayName: SOC Highest Mean Time to Respond by month/year
+        Description: Highest Mean Time to Respond by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where Status == 'Closed'
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber 
+            | extend TimeToClosure =  (ClosedTime - CreatedTime) / 1h
+            | project IncidentNumber, TimeGenerated, TimeToClosure, Title, Description, Severity, Status, Classification, ClassificationComment
+            | order by TimeToClosure desc
+            | top 10 by TimeToClosure
+      - Name: SOC Closing Classification over Time by month/year
+        DisplayName: SOC Closing Classification over Time by month/year
+        Description: Closing Classification over Time by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where Status == 'Closed'
+            | where datetime_part('year', CreatedTime) == {{year}} and datetime_part('month', CreatedTime) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber
+            | summarize Count = count() by Classification, Title, ProviderName, bin (TimeGenerated, 1d)
+            | evaluate pivot(Classification, count(), Title, TimeGenerated)
+            | order by TimeGenerated desc
+      - Name: SOC Alerts Over Time per Severity by Provider, month/year
+        DisplayName: SOC Alerts Over Time per Severity by Provider, month/year
+        Description: Alerts Over Time per Severity by Provider, month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityAlert
+            | where datetime_part('year', TimeGenerated) == {{year}} and datetime_part('month', TimeGenerated) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by SystemAlertId
+            | summarize by ProviderName, AlertSeverity, bin(TimeGenerated, 1d), SystemAlertId
+            | evaluate pivot(AlertSeverity, count(), ProviderName)
+            | order by ProviderName asc
+            | project-reorder ProviderName, High, Medium, Low, Informational
+      - Name: SOC Alerts Over Time per Severity by Tactics, month/year
+        DisplayName: SOC Alerts Over Time per Severity by Tactics, month/year
+        Description: Alerts Over Time per Severity by Tactics, month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityAlert 
+            | where datetime_part('year', TimeGenerated) == {{year}} and datetime_part('month', TimeGenerated) == {{month}}
+            | extend Tactics = split(Tactics, ",")
+            | extend Tactics = replace_string(tostring(Tactics), " ", "")
+            | mvexpand todynamic(Tactics)
+            | summarize arg_max(TimeGenerated, *) by SystemAlertId
+            | summarize by tostring(Tactics), AlertSeverity, bin(TimeGenerated, 1d), SystemAlertId
+            | evaluate pivot(AlertSeverity, count(), Tactics)
+            | order by Tactics asc
+            | project-reorder Tactics, High, Medium, Low, Informational
+      - Name: SOC Incidents Over Time by Severity, month/year
+        DisplayName: SOC Incidents Over Time by Severity , month/year
+        Description: Incidents Over Time by Severity, month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident 
+            | where datetime_part('year', TimeGenerated) == {{year}} and datetime_part('month', TimeGenerated) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentName 
+            | summarize by ProviderName, Severity, bin(TimeGenerated, 1d), IncidentName 
+            | evaluate pivot(Severity, count(), ProviderName) 
+            | order by ProviderName asc
+            | project-reorder ProviderName, High, Medium, Low, Informational
+      - Name: SOC Total Incidents Owned per User by month/year
+        DisplayName: SOC Total Incidents Owned per User by month/year
+        Description: Total Incidents Owned per User by month/year
+        Inputs:
+          - Name: month
+            Description: Please enter the number of the month
+            Required: true
+          - Name: year
+            Description: Please enter the year
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            SecurityIncident
+            | where datetime_part('year', TimeGenerated) == {{year}} and datetime_part('month', TimeGenerated) == {{month}}
+            | summarize arg_max(TimeGenerated, *) by IncidentNumber
+            | summarize IncidentsOwned = count() by Owner = tostring(Owner.userPrincipalName)
+            | extend Owner = iff(isempty(Owner), 'Unassigned', Owner)
