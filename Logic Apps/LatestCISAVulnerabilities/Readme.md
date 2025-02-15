@@ -37,4 +37,4 @@ Open your new Logic App.
 
 Below is an example of the email received for each finding.
 
-![alt text](image-4.png)
+![alt text](image-5.png)
