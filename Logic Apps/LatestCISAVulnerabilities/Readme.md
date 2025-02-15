@@ -8,10 +8,9 @@ This saolution checks the latest CISA feed every 24 hours and queries the CVE fi
 
 Click the button below to deploy the Logic App. Select the resource group and change the Playbook name (if needed). You will enter this information in the deployment screen. 
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FCopilot-For-Security%2Fmain%2FLogic%2520Apps%2FSecCopilot-UserReportedPhishing-FuncApp_parsing%2Flogicapp_azuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FSecurity-Copilot%2Fmain%2FLogic%2520Apps%2FLatestCISAVulnerabilities%2FCISALogicApp.json)
 
-
-### Step 3: Initialize O365 and Security Copilot API connections
+### Step 2: Initialize O365 and Security Copilot API connections
 
 Open your new Logic App.
 
