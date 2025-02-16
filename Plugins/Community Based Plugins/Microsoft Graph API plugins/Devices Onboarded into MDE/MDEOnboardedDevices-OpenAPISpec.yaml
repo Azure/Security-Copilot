@@ -1,0 +1,101 @@
+openapi: 3.0.0
+
+# This section provides metadata about the plugin, including its title, description, and version.
+info:
+  title: Retrieve devices onboarded into Microsoft Defender for Endpoint (MDE)
+  description: Plugin to retrieve a list of devices onboarded into Microsoft Defender for Endpoint (MDE) using Microsoft Graph API.
+  version: 1.0.0
+
+# Defines the base URL for the Microsoft Graph API, which is used to make requests.
+servers:
+  - url: https://graph.microsoft.com/v1.0
+    description: Microsoft Graph API url
+
+# Specifies the available API endpoints and their operations, in this case, retrieving a list of devices.
+paths:
+  /devices:
+    get:
+      summary: Get devices
+      description: Retrieve a list of devices onboarded into Microsoft Defender for Endpoint 
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Device ID.
+                        deviceName:
+                          type: string
+                          description: Name of the device.
+                        osPlatform:
+                          type: string
+                          description: Operating system of the device.
+                        complianceState:
+                          type: string
+                          description: Compliance state of the device.
+                        lastSeenDateTime:
+                          type: string
+                          format: date-time
+                          description: Last seen date and time.
+                        onboardedDate:
+                          type: string
+                          format: date
+                          description: Date the device was onboarded.
+                        manufacturer:
+                          type: string
+                          description: Manufacturer of the device.
+                        model:
+                          type: string
+                          description: Model of the device.
+                        serialNumber:
+                          type: string
+                          description: Serial number of the device.
+                        macAddress:
+                          type: string
+                          description: MAC address of the device.
+                        ipAddress:
+                          type: string
+                          description: IP address of the device.
+                        isAzureAdJoined:
+                          type: boolean
+                          description: Indicates if the device is Azure AD joined.
+                        isCompliant:
+                          type: boolean
+                          description: Indicates if the device is compliant.
+                        riskLevel:
+                          type: string
+                          description: Risk level assigned to the device.
+        '401':
+          description: Unauthorized error.
+        '403':
+          description: Forbidden access.
+        '500':
+          description: Internal server error.
+
+# Defines security mechanisms, such as authentication methods, that the API uses.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - bearerAuth: []
+
+# Provides example natural language queries that users can use to interact with the API via Security Copilot and retrieve specific device information.
+x-example-prompts:
+  - Retrieve devices onboarded to MDE that have a compliance state of 'Non-compliant'
+  - Get the list of non-compliant devices from devices onboarded to MDE
+  - retrieve a list of devices onboarded onto MDE that have a Risk Level of "High"
+  - Retrieve devices from MDE that registered less than 14 days ago from today
+  - Retrieve a list of MDE endpoints that were last seen less than 1 day ago
+  - Get devices from MDE that have the IoS operating system
