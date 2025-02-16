@@ -1,0 +1,130 @@
+Descriptor:
+  Name: DeviceInformation
+  DisplayName: Custom Plugin Defender Device Info
+  Description: Device information, including OS, IPs, users, and more, powered by Defender XDR, developed by Bi Yue Xu.
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+    
+      - Name: DeviceOSInfo
+        DisplayName: Device OS Information
+        Description: Latest device OS information with the device name as the input.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to retrieve OS information.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+           DeviceInfo
+           | where DeviceName contains '{{devicename}}'
+           | where Timestamp > ago(30d)
+           | summarize arg_max(Timestamp,*) by DeviceName
+           | project Timestamp, DeviceName, OSPlatform, OSVersionInfo, OSBuild, DeviceType, Vendor, JoinType
+ 
+      - Name: DeviceIPInfo
+        DisplayName: Device Current and Past IPs
+        Description: The current and past IPs assigned to this device in the last 10 days.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to retrieve current and past IP addresses. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+           DeviceNetworkInfo
+           | where DeviceName contains '{{devicename}}'
+           | where Timestamp > ago(10d)
+           | mv-expand parsejson(IPAddresses)
+           | extend DeviceIPAddress = tostring(IPAddresses.IPAddress)
+           | summarize arg_max(Timestamp, DeviceIPAddress) by DeviceId, DeviceName, MacAddress
+           | project Timestamp, DeviceName, MacAddress, DeviceIPAddress
+           | sort by Timestamp
+           
+      - Name: DeviceUserInfo
+        DisplayName: Device Users and Login Counts
+        Description: List users logged onto this device and the number of times, within the last 30 days.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to get logged-in users information. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+           DeviceInfo
+           | where DeviceName contains '{{devicename}}'
+           | where Timestamp > ago(30d)
+           | mv-expand parsejson(LoggedOnUsers)
+           | extend UserName = tostring(LoggedOnUsers.UserName)
+           | extend Domain = tostring(LoggedOnUsers.DomainName)
+           | extend Sid = tostring(LoggedOnUsers.Sid)
+           | summarize LoginCount = count() by DeviceName, UserName, Domain, Sid
+           | project DeviceName, UserName, LoginCount, Domain, Sid
+           | sort by LoginCount
+           
+      - Name: DeviceAlertInfo
+        DisplayName: Device Alert Information
+        Description: Alerts observed on this device in the last 30 days.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to get its alert information. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+           AlertInfo
+           | where Timestamp > ago(30d)
+           | join AlertEvidence on AlertId
+           | where DeviceName contains '{{devicename}}'
+           | extend Date = format_datetime(Timestamp, "yyyy-MM-dd")
+           | summarize by Date, Title, Severity, Categories, DetectionSource
+           | sort by Date desc, Categories
+
+      - Name: DeviceAppInfo
+        DisplayName: Device Installed Applications
+        Description: Currently installed applications on this device.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to view its installed applications. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceTvmSoftwareInventory
+            | where DeviceName contains '{{devicename}}'
+            | summarize by DeviceName, SoftwareName, SoftwareVersion, SoftwareVendor, EndOfSupportDate
+            | sort by SoftwareName asc 
+
+      - Name: DeviceVulnerabilityInfo
+        DisplayName: Device Vulnerability Information
+        Description: Vulnerabilities identified on this device.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to view its vulnerabilities. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceTvmSoftwareVulnerabilities
+            | where DeviceName contains '{{devicename}}'
+            | join DeviceTvmSoftwareVulnerabilitiesKB on CveId
+            | project SoftwareName, SoftwareVersion, CveId, VulnerabilitySeverityLevel, CvssScore, IsExploitAvailable
+            | sort by SoftwareName asc, CveId desc 
+
+      - Name: DeviceCriticalVulnerabilities
+        DisplayName: Device Critical Vulnerabilities
+        Description: Vulnerability with CVSS score 7 or higher, or exploit code for vulnerability is publicly available.
+        Inputs:
+          - Name: devicename
+            Description: Please provide the device name, e.g. vnevado-win10b, to view its critical vulnerabilities. 
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceTvmSoftwareVulnerabilities
+            | where DeviceName contains '{{devicename}}'
+            | join kind=inner(DeviceTvmSoftwareVulnerabilitiesKB) on CveId
+            | where IsExploitAvailable == 1 or CvssScore >= 7
+            | project SoftwareName, SoftwareVersion, CveId, VulnerabilitySeverityLevel, CvssScore
+            | sort by SoftwareName asc, CveId desc 

@@ -13,7 +13,7 @@ Share the latest Threat articles published in the last <Lookfarback> in a table 
  ```
 2. Check if there are any CVEs mentioned in the article and their associated technologies
  ```
-If there is any CVEs sighted in these articles , please provide a summary of these CVEs and sight the technologies impacted
+If there is any CVEs sighted in these articles , please provide a summary of these CVEs and cite the technologies impacted
 ```
 3. Summarize the articles in a report format , with action items etc
  ```
