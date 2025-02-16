@@ -20,7 +20,7 @@ This plugin enables users to retrieve a list of devices onboarded into **Microso
 2. Download the Git Hub gist file and move it to your prefered location, ensuring it is reachable by Securty  Copilot 
 
 
-3. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) and enter your Tenant ID, Subscription ID, Workspace name, Resource group that hosts your Sentinel worksapce in the resulting dialog box.  Verify that the plugin is activated.
+3. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) 
 
 ## Example Natural Language Queries
 Use these sample prompts to retrieve relevant data via **Security Copilot**:
