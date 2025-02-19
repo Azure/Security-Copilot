@@ -1,21 +1,53 @@
-# Creating a Security Copilot KQL Plugin to Query Sentinel Watchlists
+# Sentinel Watchlist integration in Security Copilot
 
-## Utilize the information you maintain in Microsoft Sentinel Watchlists in Security Copilot.
+## DESCRIPTION
+This plugin demonstrates the possibility of integrating data from a Microsoft Sentinel Watchlist with Security Copilot. <br>
+The manifest refers to a watchlist containing trusted users (**TrustedUsers**), but it can easily be adapted to different watchlists.
 
-### Pre-requisites
+``` kql
+Template: |-
+            _GetWatchlist('TrustedUsers') | distinct TrustedUsers
+```
+---
 
--   [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
--   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
--   [Microsoft Sentinel Workspace](https://learn.microsoft.com/en-us/azure/sentinel/quickstart-onboard) created.
--   Parameters for KQL Plugin - Microsoft Sentinel Workspace Name, Subscription ID, Resource Group Name and Entra Tenant ID
+## TYPE AND REQUIREMENTS
+**TYPE**: KQL (Sentinel) <br>
+**SOURCE**: any watchlist in Sentinel <br>
+**REQUIREMENTS**: Log Analytics Workspace with Sentinel enabled 
 
-### Instructions
+---
 
-#### Upload the Custom Plugin
+## SKILLS
 
-1.  Obtain the file KQL_Plugin_Watchlist.yaml from this directory.
-2.  Modify the yaml file to specify your specific Entra TentantId, SubscriptionId, ResourceGroupName and WorkspaceName for your Sentinel instance.
-3.  Modify the KQL query to reference the Microsoft Sentinel Watchlist for which you want Security Copilot to access.
-4.  Upload the custom plugin
+<table>
+  <tbody>
+    <tr>
+      <th>SkillName</th>
+      <th align="center">Description</th>
+      <th align="center">Parameters</th>
+    </tr>
+    <tr>
+      <td><b>GetTrustedUsers</b></td>
+      <td align="center">Fetches the list of trusted users that is being maintained as a Microsoft Sentinel watchlist</td>
+      <td>
+        <ul>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+---
+
+## SAMPLE PROMPTS
+
+- `« Fetch the trusted users in Sentinel »`
+---
+
+## SCREENSHOTS
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/Community%20Plugins/WatchlistKQL/TrustedUserWatchlist.png" width="700"> </img>
+</div>
 
 For more information, see: [Creating a Security Copilot KQL Plugin to Query Sentinel Watchlists](https://rodtrent.substack.com/p/creating-a-copilot-for-security-kql)
