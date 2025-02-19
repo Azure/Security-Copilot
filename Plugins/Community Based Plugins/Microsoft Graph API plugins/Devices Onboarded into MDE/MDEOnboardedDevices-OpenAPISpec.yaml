@@ -16,7 +16,7 @@ paths:
   /devices:
     get:
       summary: Get devices
-      description: Retrieve a list of devices onboarded into Microsoft Defender for Endpoint 
+      description: Retrieve a list of devices onboarded into Microsoft Defender for Endpoint
       responses:
         '200':
           description: List of devices

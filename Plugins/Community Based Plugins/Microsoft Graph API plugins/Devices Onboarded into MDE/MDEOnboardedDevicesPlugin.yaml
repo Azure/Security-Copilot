@@ -2,11 +2,12 @@ Descriptor:
   Name: RetriveMDEOnboardedDevices   
   DisplayName: Retrive details for devices onboarded onto Microsoft Defender for Endpoint (MDE)   
   Description: Retrive details for devices onboarded onto Microsoft Defender for Endpoint (MDE)
-  DescriptionForModel: Retrive details about devices or endpoints onboarded onto Microsoft Defender for Endpoint (MDE) including details such as DeviceID, DeviceName, OSPlatform, ComplianceState, LastSeenDateTime, OnboardedDate, Manufacturer, Model, SerialNumber. 
+  DescriptionForModel: Retrieves detailed information about devices onboarded into Microsoft Defender for Endpoint (MDE),including device name, operating system, compliance state, risk level, last seen timestamp,onboarded date, manufacturer, model, serial number, IP address, MAC address, and Azure AD join status.This API enables security analysts to assess device security posture, identify non-compliant or high-risk devices,and correlate endpoint data with ongoing security incidents. Results provide actionable insights for threat detection, response, and asset visibility within enterprise environments, supporting Security Copilot in enhancing situational awareness and proactive threat mitigation.
+   
   Authorization:   
     Type: AADDelegated   
     EntraScopes: https://graph.microsoft.com/.default   
 SkillGroups:   
   - Format: API   
     Settings:   
-      OpenApiSpecUrl: https://raw.githubusercontent.com/inwafula/inwafula/refs/heads/main/MDE%20OnboardedDevices.yaml
+      OpenApiSpecUrl: https://gist.githubusercontent.com/inwafula/88a0e5b5f3a2bdc1840771b97937d8f0/raw/ff2211080321d6e74881ab960d9c2e0f060f3e28/MDEOnboardedDevices-OpenAPISpec.yaml
