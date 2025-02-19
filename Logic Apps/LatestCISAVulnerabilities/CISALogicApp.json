@@ -1,0 +1,339 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "PlaybookName": {
+            "defaultValue": "LatestCISAVulnerabilities",
+            "type": "string"
+        }
+    },
+    "variables": {
+        "SecuritycopilotConnectionName": "[concat('Securitycopilot-', parameters('PlaybookName'))]",
+        "Office365ConnectionName": "[concat('Office365-', parameters('PlaybookName'))]"
+    },
+    "resources": [
+		{
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "ToEmail": {
+                            "defaultValue": "youremail@company.com",
+                            "type": "String"
+                        },
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "Recurrence": {
+                            "recurrence": {
+                                "frequency": "Hour",
+                                "interval": 24
+                            },
+                            "evaluatedRecurrence": {
+                                "frequency": "Hour",
+                                "interval": 24
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "For_each": {
+                            "foreach": "@body('Parse_JSON')?['vulnerabilities']",
+                            "actions": {
+                                "Condition": {
+                                    "actions": {
+                                        "Send_an_email_(V2)": {
+                                            "runAfter": {
+                                                "Submit_a_Copilot_for_Security_prompt_2": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['office365']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "To": "@parameters('ToEmail')",
+                                                    "Subject": "CISA @{items('For_each')?['cveID']}",
+                                                    "Body": "<p class=\"editor-paragraph\"><b><strong class=\"editor-text-bold\">Name of CVE</strong></b>: @{items('For_each')?['cveID']}</p><br><p class=\"editor-paragraph\"><b><strong class=\"editor-text-bold\">CVE Date: </strong></b>@{items('For_each')?['dateAdded']}<br><br><b><strong class=\"editor-text-bold\">Impacted Devices</strong></b>: @{body('Submit_a_Copilot_for_Security_prompt_2')?['EvaluationResultContent']}<br><br><b><strong class=\"editor-text-bold\">Impacted Vendors</strong></b>: @{items('For_each')?['vendorProject']}<br><br><b><strong class=\"editor-text-bold\">Details</strong></b>: @{body('Submit_a_Copilot_for_Security_prompt')?['EvaluationResultContent']}<br><br><b><strong class=\"editor-text-bold\">Exploitation Status</strong></b>: @{items('For_each')?['knownRansomwareCampaignUse']}<br><br><b><strong class=\"editor-text-bold\">Mediation Steps</strong></b>: @{items('For_each')?['requiredAction']}</p>",
+                                                    "Importance": "Normal"
+                                                },
+                                                "path": "/v2/Mail"
+                                            }
+                                        },
+                                        "Submit_a_Copilot_for_Security_prompt": {
+                                            "runAfter": {
+                                                "Parse_JSON_1": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "PromptContent": "Using Defender Threat Intelligence could you write a summary with no headings for @{body('Parse_JSON_1')?['cveID']}, include the CVSS score of @{body('Parse_JSON_1')?['cveID']} and also summarize@{body('Parse_JSON_1')?['shortDescription']} in a short paragraph with no more than 500 words"
+                                                },
+                                                "path": "/process-prompt"
+                                            }
+                                        },
+                                        "Submit_a_Copilot_for_Security_prompt_2": {
+                                            "runAfter": {
+                                                "Submit_a_Copilot_for_Security_prompt": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "PromptContent": "How many devices are effected by @{body('Parse_JSON_1')?['cveID']}",
+                                                    "SessionId": "@body('Submit_a_Copilot_for_Security_prompt')?['sessionId']",
+                                                    "SkillName": "GetCvesByIdsDti"
+                                                },
+                                                "path": "/process-prompt"
+                                            }
+                                        },
+                                        "Parse_JSON_1": {
+                                            "type": "ParseJson",
+                                            "inputs": {
+                                                "content": "@items('For_each')",
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cveID": {
+                                                            "type": "string"
+                                                        },
+                                                        "vendorProject": {
+                                                            "type": "string"
+                                                        },
+                                                        "product": {
+                                                            "type": "string"
+                                                        },
+                                                        "vulnerabilityName": {
+                                                            "type": "string"
+                                                        },
+                                                        "dateAdded": {
+                                                            "type": "string"
+                                                        },
+                                                        "shortDescription": {
+                                                            "type": "string"
+                                                        },
+                                                        "requiredAction": {
+                                                            "type": "string"
+                                                        },
+                                                        "dueDate": {
+                                                            "type": "string"
+                                                        },
+                                                        "knownRansomwareCampaignUse": {
+                                                            "type": "string"
+                                                        },
+                                                        "notes": {
+                                                            "type": "string"
+                                                        },
+                                                        "cwes": {
+                                                            "type": "array"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "else": {
+                                        "actions": {}
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "greater": [
+                                                    "@ticks(items('For_each')?['dateAdded'])",
+                                                    "@ticks(addDays(utcnow(),-1))"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            },
+                            "runAfter": {
+                                "Parse_JSON": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "HTTP": {
+                            "runAfter": {},
+                            "type": "Http",
+                            "inputs": {
+                                "uri": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+                                "method": "GET"
+                            }
+                        },
+                        "Parse_JSON": {
+                            "runAfter": {
+                                "HTTP": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('HTTP')",
+                                "schema": {
+                                    "properties": {
+                                        "catalogVersion": {
+                                            "type": "string"
+                                        },
+                                        "count": {
+                                            "type": "integer"
+                                        },
+                                        "dateReleased": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "vulnerabilities": {
+                                            "items": {
+                                                "properties": {
+                                                    "cveID": {
+                                                        "type": "string"
+                                                    },
+                                                    "cwes": {
+                                                        "type": "array"
+                                                    },
+                                                    "dateAdded": {
+                                                        "type": "string"
+                                                    },
+                                                    "dueDate": {
+                                                        "type": "string"
+                                                    },
+                                                    "knownRansomwareCampaignUse": {
+                                                        "type": "string"
+                                                    },
+                                                    "notes": {
+                                                        "type": "string"
+                                                    },
+                                                    "product": {
+                                                        "type": "string"
+                                                    },
+                                                    "requiredAction": {
+                                                        "type": "string"
+                                                    },
+                                                    "shortDescription": {
+                                                        "type": "string"
+                                                    },
+                                                    "vendorProject": {
+                                                        "type": "string"
+                                                    },
+                                                    "vulnerabilityName": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "cveID",
+                                                    "vendorProject",
+                                                    "product",
+                                                    "vulnerabilityName",
+                                                    "dateAdded",
+                                                    "shortDescription",
+                                                    "requiredAction",
+                                                    "dueDate",
+                                                    "knownRansomwareCampaignUse",
+                                                    "notes",
+                                                    "cwes"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "securitycopilot": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+                                "connectionName": "[variables('SecuritycopilotConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            },
+                            "office365": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName": "[variables('Office365ConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('PlaybookName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Created By": "Jamil Mirza",
+                "CreatedDate": "8/8/2024 10:52:27 PM"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+            ]
+        },
+		{
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('SecuritycopilotConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('SecuritycopilotConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                }
+            }
+        }
+        
+    ]
+}
