@@ -99,3 +99,62 @@ SkillGroups:
             | where SenderFromAddress == "{{SenderAddress}}"
             | where TimeGenerated >= ago(7d)
             | project TimeGenerated, SenderFromAddress, RecipientEmailAddress, Subject, NetworkMessageId, AttachmentCount
+
+      - Name: NetworkMessageIdEmailSearch
+        DisplayName: Search Emails by NetworkMessageId
+        DescriptionForModel: |-
+          Performs a KQL query on the `EmailEvents` table to locate emails by their `NetworkMessageId`. Returns detailed information for each email, including:
+          - `TimeGenerated`: Timestamp of when the email was sent or received.
+          - `Sender`: Email address of the sender.
+          - `Recipient`: Email address of the recipient.
+          - `Subject`: Subject line of the email.
+          - `AttachmentCount`: Number of attachments in the email.
+          This skill helps security analysts pinpoint specific email messages in investigations, enabling focused threat analysis and remediation.
+        Description: Search for emails in the `EmailEvents` table by a specified `NetworkMessageId`. Provides key email details, including time, sender, recipient, and subject.
+        Inputs:
+          - Name: NetworkMessageId
+            Description: The unique `NetworkMessageId` to search for in the `EmailEvents` table.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            EmailEvents
+            | where NetworkMessageId == "{{NetworkMessageId}}"
+            | join kind=leftouter (
+                EmailAttachmentInfo
+                | project NetworkMessageId, FileName
+            ) on NetworkMessageId
+            | project-rename AttachmentName=FileName
+            | project TimeGenerated, SenderFromAddress, RecipientEmailAddress, Subject, NetworkMessageId, AttachmentName
+
+      - Name: QuarantineRequestInsights
+        DisplayName: Quarantine Request Insights
+        DescriptionForModel: |-
+          Performs a KQL query to correlate quarantine request actions with their approvals. Provides details such as request and action times, email sender information, and user activity to facilitate email security investigations.
+        Description: Analyze email quarantine requests and their approvals to understand user actions and email security patterns. Retrieves key details for thorough investigation.
+        Settings:
+          Target: Defender
+          Template: |-
+            let DeniedLookupTime = ago(30d);
+            let RequestedLookupTime = ago(30d);
+            let EmailEventLookupTime = ago(30d);
+            CloudAppEvents
+            | where Timestamp >= DeniedLookupTime
+            | where ActionType == "QuarantineDenyReleaseMessage"
+            | extend NetworkMessageId = tostring(parse_json(RawEventData)["NetworkMessageId"])
+            | project-rename DeniedTime=Timestamp
+            | join (CloudAppEvents
+            | where Timestamp >= RequestedLookupTime
+            | where ActionType == "QuarantineRequestReleaseMessage"
+            | extend NetworkMessageId = tostring(parse_json(RawEventData)["NetworkMessageId"])
+            | extend RecipientEmailAddress = tostring(parse_json(RawEventData)["UserId"])
+            | project-rename RequestTime=Timestamp) on NetworkMessageId
+            | project AccountDisplayName, NetworkMessageId, RequestTime, RecipientEmailAddress, DeniedTime
+            | join EmailEvents on NetworkMessageId
+            | where Timestamp >= EmailEventLookupTime
+            | where RecipientEmailAddress == RecipientEmailAddress1
+            | project-rename EmailTime=Timestamp
+            | project-rename RequestedBy=RecipientEmailAddress
+            | project-rename DeniedBy=AccountDisplayName
+            | project EmailTime, SenderFromAddress, SenderDisplayName, Subject, RequestedBy, RecipientEmailAddress1, DeniedBy, DeniedTime, RequestTime,NetworkMessageId,NetworkMessageId1
+            | sort by DeniedTime

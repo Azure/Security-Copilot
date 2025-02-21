@@ -327,23 +327,24 @@ SkillGroups:
 
       - Name: UserRiskDetections
         DisplayName: Entra User Risk Detections
-        Description: Analyze and prioritize medium and high-risk detections for a specific user over the past 7 days. Provides insights into risk events, including types, details, timing, and locations, to support quick, prioritized investigations and actions.
+        Description: "Analyze risk events for a specific user by joining user risk detections with security alerts to provide enriched insights. This query identifies and correlates risk activities with security alerts, highlighting types, details, timing, and severity. It supports detailed investigations by surfacing connected risks and alerts for prioritization and actionable response."
         DescriptionForModel: |-
-          Performs a KQL query on the `AADUserRiskEvents` table to analyze medium and high-risk detections for a specified user within the last 7 days. Key features include:
+          Performs a KQL query on the AADUserRiskEvents table, filtering for a specified user's principal name (UserPrincipalName) and joining with the SecurityAlert table to correlate user risk events with associated security alerts. Key features include:
 
-          - **Risk Analysis**:
-            - Focuses on `RiskLevel` values: medium and high.
-            - Provides details such as `RiskEventType`, `RiskDetail`, and `DetectedDateTime` to understand potential attack vectors and event specifics.
+          - **Risk and Alert Correlation**:
+            - Links risk events (Id) with related security alerts (VendorOriginalId) for enhanced context.
+            - Provides detailed information on RiskLevel, RiskDetail, and RiskState alongside alert-specific data like AlertName, AlertSeverity, and CompromisedEntity.
 
-          - **Anomaly Detection**:
-            - Uses `IpAddress` and `Location` fields to analyze physical locations and detect anomalies like atypical travel or VPN usage.
-            - Highlights `DetectionTimingType` to differentiate real-time threats from delayed detections, ensuring timely response to active risks.
+          - **User-Focused Insights**:
+            - Focuses on a single user's activity, helping analysts investigate incidents involving that user.
+            - Highlights the date and time of events (ActivityDateTime and StartTime) for timeline reconstruction.
 
-          - **Insights and Prioritization**:
-            - Surfaces patterns in risk detections to evaluate whether incidents indicate sustained or escalating threats.
-            - Supports security analysts in taking swift action, such as enforcing MFA, resetting passwords, or further investigation.
+          - **Enhanced Investigation**:
+            - Surfaces patterns in risk and alert data, aiding in anomaly detection and prioritization.
+            - Supports actions like user-specific remediations and incident containment.
 
-          This skill helps monitor and respond to unresolved or ongoing user risks, prioritizing high-severity incidents for effective threat mitigation.
+          This skill enables efficient monitoring and investigation of user-specific risks and alerts, helping prioritize and mitigate potential threats effectively.
+
         Inputs:
           - Name: upn
             Description: The UPN to search for. For example, mscott@dunder.com
@@ -353,8 +354,8 @@ SkillGroups:
           Template: |-
             AADUserRiskEvents
             | where TimeGenerated > ago(7d)
-            | where RiskLevel == "medium" or RiskLevel == "high"
             | where UserPrincipalName == "{{upn}}"
+            | join kind=inner (SecurityAlert) on $left.Id == $right.VendorOriginalId
 
       - Name: HighRiskUserDetection
         DisplayName: High-Risk User Detection
@@ -468,3 +469,39 @@ SkillGroups:
             | where UserPrincipalName == "{{upn}}"
             | project UserPrincipalName, TimeGenerated, PreviousTime, IPAddress, PreviousIPAddress, DistanceMiles, TimeDifferenceHours, VelocityMph, Country, PreviousCountry
 
+      - Name: SuspiciousMailboxActivities
+        DisplayName: Suspicious Mailbox Activities
+        Description: |-
+          - Investigate any recent Mailbox Permission for this User
+          - Are there any rules created or modified that could redirect or filter emails in a suspicious manner?
+          - Focus on identifying any newly created rules that may redirect incoming emails to unusual folders or external addresses, as this could indicate an attempt to manipulate email flow for malicious purposes
+          - If no anomalies are found, confirm the user's activity is consistent.
+        Inputs:
+          - Name: upn
+            Description: User principle name. i.e., mscott@test.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Mailbox Investigation of suspicious users. To detect potential suspicious activities, we filter Exchange Online action types that could be used for exfiltration and BEC. This allows us to investigate whether the targeted end-user is involved in any suspicious actions.
+            // Examine activities of a user from Suspicious Mailbox actions and UPN risk in Entra Id and Defender          
+            let UPN = "{{upn}}"; // Replace with the specific users email
+            let TimeFrame = ago(30d);
+            // Identify the most frequently used IP address for the user.
+            CloudAppEvents
+             | where TimeGenerated > TimeFrame
+              | extend parsed = parse_json(RawEventData)
+              | where ActionType in ("Add-MailboxPermission", "New-ManagementRoleAssignment", "Add-MailboxFolderPermission", "New-InboxRule", "Set-InboxRule", "Set-Mailbox", "New-TransportRule", "Set-TransportRule")
+              | where isnotempty(RawEventData.UserId)
+              | where isnotempty(RawEventData.ObjectId)
+              | extend parsed = parse_json(RawEventData)
+              | extend UPN = tostring(parsed.UserId)
+              | where UPN =~ UPN        
+              | extend Parameters = parsed.Parameters
+              | mv-expand Parameters
+              | extend Name = tostring(Parameters.Name)
+              | extend Value = tostring(Parameters.Value)
+              | extend packed = pack(Name, Value)
+              | where Parameters has_any("DeleteMessage") or (Parameters has_any("MoveToFolder") and Parameters has_any("Conversation History"))
+              | summarize PackedInfo = make_bag(packed), ActionType=any(ActionType) by UPN, AccountObjectId, IPAddress, ISP, ReportId, TimeGenerated
+              | evaluate bag_unpack(PackedInfo)

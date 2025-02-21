@@ -28,3 +28,19 @@ Example Prompt: List CVEs for some-host-name with severity level High.
 Retrieve a list of devices affected by a specified CVE identifier. Provides insights into the impact of the vulnerability on each device, highlights critical risks, and assesses the overall security posture to support remediation efforts across the network.
 
 Example Prompt: Find all devices affected by CVE-2023-12345.
+
+### DeviceDefenderSensorHealthReport
+Analyzes Microsoft Defender sensor health and configuration status across Windows, macOS, and Linux devices. Evaluates critical security features, including tamper protection, real-time protection, cloud protection, and behavior monitoring. Assesses Defender operational states (Active, Passive, EDR Blocked) and compliance status.
+
+Example Prompt: Retrieve Defender sensor health status for device01.
+
+### DefenderAvSignatureHealthReport
+Evaluates Microsoft Defender antivirus signature currency and real-time protection status across Windows, macOS, and Linux devices. Identifies outdated signature versions, monitors the latest available signatures, and detects devices with inactive real-time protection.
+
+Example Prompt: Get Defender AV signature health report for all devices.
+
+### WindowsCriticalVulnerabilitiesReport
+Assesses critical vulnerabilities on Windows 10 and 11 devices. Identifies high-risk devices with the most critical vulnerabilities, tracks exploitable CVEs, and evaluates zero-day vulnerabilities. Helps prioritize remediation efforts based on severity and exploitability.
+
+Example Prompt: List top 10 Windows devices with critical vulnerabilities.
+

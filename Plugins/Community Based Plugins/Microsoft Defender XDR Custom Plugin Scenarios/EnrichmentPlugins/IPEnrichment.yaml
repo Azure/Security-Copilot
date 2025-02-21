@@ -1,0 +1,36 @@
+Descriptor:
+  Name: IP Enrichment Skills
+  DisplayName: IP Enrichment Skills
+  DescriptionForModel: |
+    A set of skills designed to analyze and enrich IP-related data to identify suspicious activities, such as failed login attempts, brute force attacks, and password spray attempts. These skills help in detecting and responding to potential threats originating from specific IP addresses.
+  Description: |
+    IP Enrichment Skills provide tools to analyze IP activity, focusing on identifying potential malicious behavior such as repeated failed login attempts across multiple accounts. This is useful for detecting brute force attacks, password spray attempts, or logins targeting disabled accounts. It enhances investigation efficiency by pinpointing problematic IP addresses.
+  SupportedAuthTypes: 
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: IdentifyFailedLoginIPs
+        DisplayName: Identify IPs with Suspicious Failed Login Activity
+        DescriptionForModel: |-
+          This skill identifies IP addresses with repeated failed login attempts across multiple accounts. It highlights IPs with suspicious activity patterns, such as brute force or password spray attacks, and provides key metrics like the number of failed attempts and distinct accounts targeted.
+        Description: |-
+          Use this query to identify IP addresses exhibiting suspicious behavior, such as multiple failed logins across different accounts. The skill helps detect brute force attacks, password spray attempts, and other login anomalies, making it easier to respond to potential security threats.
+        Settings:
+          Target: Defender
+          Template: |-
+            let FailedLoginThreshold = 10; // Define the threshold for failed logins
+            let TimeRange = 1d; // Specify the time range for analysis
+            // Find failed logins
+            SigninLogs
+            | where TimeGenerated >= ago(TimeRange)
+            // Focus on failed login activities
+            | where ResultType in ("50074", "50053", "50126", "120014", "500571") // Adjust these ResultType codes for failed logins
+            | extend FailureReason = Status.failureReason, UserPrincipalName, IPAddress, TimeGenerated
+            // Group failed login attempts by IP and user
+            | summarize FailedAttempts = count(), DistinctAccounts = dcount(UserPrincipalName), FailedUsers = make_set(UserPrincipalName) by IPAddress, bin(TimeGenerated, 1h)
+            // Filter for significant activity
+            | where FailedAttempts >= FailedLoginThreshold
+            | project TimeGenerated, IPAddress, FailedAttempts, DistinctAccounts, FailedUsers
+            | order by FailedAttempts desc

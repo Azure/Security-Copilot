@@ -1,8 +1,8 @@
 # Enrichment Plugin Suite
 **Author: Craig Freyman**
 
-## UserEnrichment Plugin
-This suite of enrichment skills is designed to enhance security investigations by providing detailed insights into user activities, such as login behavior, password changes, MFA modifications, and location analysis. By leveraging these tools, security teams can identify potential threats, monitor user risks, and respond to suspicious behavior effectively.
+## User Enrichment Plugin
+This suite of enrichment skills is designed to enhance security investigations by providing detailed insights into user activities, such as login behavior, password changes, MFA modifications, location analysis, and mailbox activities. By leveraging these tools, security teams can identify potential threats, monitor user risks, and respond to suspicious behavior effectively.
 
 ### UnusualSigninActivity
 Identify unusual sign-in patterns for a specific user based on anomalies such as high-risk locations, login failures, and sudden changes in device, application, or IP address usage. Highlights deviations from normal behavior and provides recommendations for security actions.
@@ -48,3 +48,12 @@ Example Prompt: Identify high-risk user activity for mscott@paper.com in the pas
 Detect impossible travel by analyzing login patterns and identifying logins from geographically distant locations within an unrealistically short time frame.
 
 Example Prompt: Detect impossible travel events for mscott@paper.com in the past 7 days.
+
+### SuspiciousMailboxActivities
+Investigate recent mailbox activities to detect potential security threats, such as:
+- Newly created or modified rules that redirect or filter emails suspiciously.
+- Mailbox permissions changes that might indicate unauthorized access.
+Focus on identifying anomalies that could lead to exfiltration or business email compromise (BEC) attempts.
+
+Example Prompt: Investigate suspicious mailbox activities for mscott@test.com in the last 30 days.
+

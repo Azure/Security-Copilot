@@ -13,23 +13,30 @@ Descriptor:
     - None
 
   Settings:
+    - Name: TenantId 
+      Label: TenantId
+      Description: Your Azure TenantId
+      HintText: TenantId
+      SettingType: String
+      Required: true
+
     - Name: SubscriptionName
       Label: SubscriptionName
-      Description: This is the subscription name that security copilot will use for sentinel.
+      Description: This is the subscription name that security copilot will use for Sentinel.
       HintText: yoursubscriptionname
       SettingType: String
       Required: true
       
     - Name: WorkspaceName
       Label: WorkspaceName
-      Description: This is the workspace name that security copilot will use for sentinel.
+      Description: This is the workspace name that security copilot will use for Sentinel.
       HintText: yourworkspace
       SettingType: String
       Required: true
 
     - Name: ResourceGroupName
       Label: ResourceGroupName
-      Description: This is the resource group name that security copilot will use for sentinel.
+      Description: This is the resource group name that security copilot will use for Sentinel.
       HintText: yourresourcegroup
       SettingType: String
       Required: true
@@ -56,6 +63,7 @@ SkillGroups:
             Required: false
         Settings:
           Target: Sentinel
+          TenantId: "{{TenantId}}"
           SubscriptionName: "{{SubscriptionName}}"
           ResourceGroupName: "{{ResourceGroupName}}"
           WorkspaceName: "{{WorkspaceName}}"
@@ -95,6 +103,7 @@ SkillGroups:
             Required: true
         Settings:
           Target: Sentinel
+          TenantId: "{{TenantId}}"
           SubscriptionName: "{{SubscriptionName}}"
           ResourceGroupName: "{{ResourceGroupName}}"
           WorkspaceName: "{{WorkspaceName}}"

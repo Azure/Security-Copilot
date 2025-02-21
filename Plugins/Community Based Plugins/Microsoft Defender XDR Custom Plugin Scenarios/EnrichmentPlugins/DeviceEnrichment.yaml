@@ -15,6 +15,13 @@ Descriptor:
 
   Settings:
 
+    - Name: TenantId
+      Label: TenantId
+      Description: Azure TenantId.
+      HintText: TenantId
+      SettingType: String
+      Required: true
+
     - Name: SubscriptionName
       Label: SubscriptionName
       Description: This is the subscription name that security copilot will use for sentinel.
@@ -122,6 +129,7 @@ SkillGroups:
             Required: false
         Settings:
           Target: Sentinel
+          TenantId: "{{TenantId}}"
           SubscriptionName: "{{SubscriptionName}}"
           ResourceGroupName: "{{ResourceGroupName}}"
           WorkspaceName: "{{WorkspaceName}}"
@@ -168,7 +176,7 @@ SkillGroups:
       - Name: DeviceCVESearch
         DisplayName: Device CVE Search
         DescriptionForModel: |-
-          Performs a KQL query to identify software vulnerabilities (CVEs) affecting a specified device based on the selected severity level. For each vulnerability, it:
+          Identify specific CVEs affecting a specified device based on the selected severity level. For each vulnerability, it:
             1. **Analyzes Software Vendors**: Evaluates the type of software the vendor produces and the potential risks associated with the vulnerability, considering the software's role in the system and possible exploitation impacts.
             2. **Summarizes Device Security State**: Assesses the device's security posture by reviewing the number and severity of CVEs and identifying critical areas requiring immediate attention.
           This skill provides actionable security insights, enabling security analysts to prioritize remediation and address vulnerabilities effectively.
@@ -187,11 +195,19 @@ SkillGroups:
             DeviceTvmSoftwareVulnerabilities
             | where DeviceName == "{{device_name}}"
             | where VulnerabilitySeverityLevel contains "{{severity_level}}"
-            // For each vulnerability:
-            // 1. Analyze the software vendors to determine what type of software they produce and explain why the vulnerability could be problematic.
-            // 2. Summarize the device's security state based on the number of CVEs, their severity levels, and any other relevant information.
-            // Use this information to provide security insights and prioritize remediation efforts.
             | project DeviceName, SoftwareVendor, SoftwareName, CveId
+            | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
+            | project 
+                DeviceName,
+                SoftwareVendor, 
+                SoftwareName,
+                CveId,
+                CvssScore,
+                EpssScore,
+                CvssVector,
+                IsExploitAvailable
+            | order by EpssScore desc, CvssScore desc
+
 
       - Name: CVEHostSearch
         DisplayName: CVE Host Search
@@ -216,3 +232,267 @@ SkillGroups:
             // 1. Analyze the impact of the vulnerability on the device, considering the type of software and why the vulnerability could be problematic.
             // 2. Summarize the device's security posture based on the number of devices impacted and their importance.
             // Use this information to provide security insights and prioritize remediation efforts.
+
+      - Name: DeviceDefenderSensorHealthReport
+        DisplayName: Microsoft Defender Sensor Health Report
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceTvmSecureConfigurationAssessment to evaluate Microsoft Defender sensor health status and configurations across Windows, macOS, and Linux devices. This skill:
+            1. **Evaluates Defender Components**: Assesses critical security features including real-time protection, tamper protection, cloud protection, PUA protection, and behavior monitoring.
+            2. **Tracks Protection Status**: Monitors Defender operational states (Active/Passive/EDR Blocked) and compliance status (GOOD/BAD).
+            3. **Monitors Version Currency**: Tracks antivirus signature versions, product versions, and engine versions to ensure up-to-date protection.
+          This skill enables security teams to identify misconfigurations, outdated signatures, and disabled protections that could impact endpoint security.
+        Description: |-
+          Analyzes Microsoft Defender health and configuration status using DeviceTvmSecureConfigurationAssessment data. Evaluates multiple security components:
+          
+          - Protection Features: Real-time protection, cloud protection, email scanning, PUA protection, and behavior monitoring
+          - Operational Status: 
+            • GOOD: Configuration meets security requirements
+            • BAD: Configuration fails compliance checks, requires attention
+            • Active: Defender is primary antivirus with full protection
+            • Passive: Defender is in passive mode (another antivirus is primary)
+            • EDR Blocked: Defender is blocked by endpoint detection and response policy
+            • Unknown: Status cannot be determined
+          
+          Tracks version information for signatures, product, and engine to ensure current protection levels. Results help prioritize security gaps and maintain strong endpoint protection across Windows, macOS, and Linux systems.
+        Inputs:
+          - Name: device_name
+            Description: Name of the device to evaluate (e.g., "Device01")
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceTvmSecureConfigurationAssessment
+            | where isnotempty('{{device_name}}') and DeviceName =~ '{{device_name}}'    // Only filter if device_name is provided
+                or isempty('{{device_name}}')                                            // Otherwise return all devices
+            | where ConfigurationId in ('scid-90', 'scid-91', 'scid-2003', 'scid-2010', 'scid-2011', 'scid-2012', 'scid-2013', 'scid-2016', 'scid-5095', 'scid-6095', 
+                                      'scid-5090', 'scid-6090', 'scid-5091', 'scid-6091', 'scid-5094', 'scid-6094')
+            | extend Test = case(
+                ConfigurationId == 'scid-2003' and OSPlatform startswith 'Windows', 'TamperProtection',
+                ConfigurationId == 'scid-2010' and OSPlatform startswith 'Windows', 'DefenderMode',
+                ConfigurationId == 'scid-90'   and OSPlatform startswith 'Windows', 'EmailScanning', 
+                ConfigurationId == 'scid-2011' and OSPlatform startswith 'Windows', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-5095' and OSPlatform == 'macOS', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-6095' and OSPlatform == 'Linux', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-2012' and OSPlatform startswith 'Windows','RealtimeProtection',
+                ConfigurationId == 'scid-5090' and OSPlatform == 'macOS', 'RealtimeProtection',
+                ConfigurationId == 'scid-6090' and OSPlatform == 'Linux', 'RealtimeProtection',
+                ConfigurationId == 'scid-2013' and OSPlatform startswith 'Windows', 'PUAProtection',
+                ConfigurationId == 'scid-5091' and OSPlatform == 'macOS', 'PUAProtection',
+                ConfigurationId == 'scid-6091' and OSPlatform == 'Linux', 'PUAProtection',
+                ConfigurationId == 'scid-2016' and OSPlatform startswith 'Windows', 'CloudProtection',
+                ConfigurationId == 'scid-5094' and OSPlatform == 'macOS', 'CloudProtection',
+                ConfigurationId == 'scid-6094' and OSPlatform == 'Linux', 'CloudProtection',
+                ConfigurationId == 'scid-91' and OSPlatform startswith 'Windows', 'BehaviourMonitoring',
+                'NA')
+            | extend Result = case(
+                ConfigurationId == 'scid-2010', case(
+                    parse_json(Context)[0][0] == '0', 'Active',
+                    parse_json(Context)[0][0] == '1', 'Passive',
+                    parse_json(Context)[0][0] == '4', 'EDR Blocked',
+                    'Unknown'
+                ),
+                IsCompliant == 1, 'GOOD',
+                'BAD'
+            )
+            | extend SignVer = case(
+                ConfigurationId == 'scid-2011' and OSPlatform startswith 'Windows', parse_json(Context)[0], 
+                ConfigurationId == 'scid-5095' and OSPlatform == 'macOS', parse_json(Context)[0], 
+                ConfigurationId == 'scid-6095' and OSPlatform == 'Linux', parse_json(Context)[0], 
+                '')
+            | extend DeviceName = toupper(tostring(split(DeviceName, '.')[0]))
+            | extend packed = pack(Test, Result)
+            | summarize Tests = make_bag(packed),
+                SignatureData = max(SignVer), 
+                DeviceName = any(DeviceName), 
+                OSPlatform = any(OSPlatform) 
+                by DeviceId
+            // Create a default record if no data exists
+            | union (print 
+                DeviceId = "",
+                Tests = pack(
+                    "TamperProtection", "N/A",
+                    "DefenderMode", "N/A",
+                    "EmailScanning", "N/A",
+                    "AntivirusSignatureVersion", "N/A",
+                    "RealtimeProtection", "N/A",
+                    "PUAProtection", "N/A",
+                    "CloudProtection", "N/A",
+                    "BehaviourMonitoring", "N/A"
+                ),
+                SignatureData = "",
+                DeviceName = "",
+                OSPlatform = ""
+            )
+            | evaluate bag_unpack(Tests)
+            | extend AVSignatureVersion = tostring(parse_json(SignatureData)[0]),
+                Date = todatetime(parse_json(SignatureData)[2]), 
+                ProductVersion = tostring(parse_json(SignatureData)[3]), 
+                EngineVersion = tostring(parse_json(SignatureData)[1])
+            | join kind=leftouter (DeviceInfo
+                | distinct DeviceId, MachineGroup, OnboardingStatus) 
+                on DeviceId
+            | where OnboardingStatus == "Onboarded" or isempty(DeviceId)
+            | project DeviceName, OSPlatform, MachineGroup, 
+                TamperProtection, DefenderMode, EmailScanning, 
+                AntivirusSignatureVersion, RealtimeProtection, 
+                PUAProtection, CloudProtection, BehaviourMonitoring,
+                AVSignatureVersion, Date, ProductVersion, EngineVersion
+
+      - Name: DefenderAvSignatureHealthReport
+        DisplayName: Microsoft Defender AV Signature Health Report
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceTvmSecureConfigurationAssessment to evaluate Microsoft Defender antivirus signature status and real-time protection health across Windows, macOS, and Linux devices. This skill:
+            1. **Tracks Signature Currency**: Compares current device signatures against latest available signatures per platform
+            2. **Monitors Protection Status**: Identifies devices with inactive real-time protection
+            3. **Cross-Platform Coverage**: Evaluates protection across Windows, macOS, and Linux endpoints
+          This skill enables security teams to quickly identify devices with outdated signatures or disabled real-time protection that require immediate attention.
+        Description: |-
+          Analyzes Microsoft Defender antivirus signature status and real-time protection health using DeviceTvmSecureConfigurationAssessment data. Evaluates critical security components:
+          
+          - Signature Status:
+            • Current device signature version
+            • Latest available signature version for the platform
+            • Last update timestamp
+          - Protection Status:
+            • GOOD: Real-time protection is active and functioning
+            • BAD: Real-time protection is inactive or malfunctioning
+          
+          Results are filtered to show only devices requiring attention (outdated signatures or inactive protection), helping teams prioritize updates and fixes across Windows, macOS, and Linux systems.
+        Settings:
+          Target: Defender
+          Template: |-
+            // Find the latest signature version for each OS platform
+            let LatestSignatures = 
+                DeviceTvmSecureConfigurationAssessment
+                | where ConfigurationId in ('scid-2011', 'scid-5095', 'scid-6095')  // AV signature configs for Windows, macOS, Linux
+                | where IsCompliant == 1  // Only look at devices with good signatures
+                | extend OSPlatform = case(
+                    OSPlatform startswith 'Windows', 'Windows',
+                    OSPlatform == 'macOS', 'macOS',
+                    OSPlatform == 'Linux', 'Linux',
+                    'Other'
+                )
+                | extend SignVer = parse_json(Context)[0]
+                | extend SignatureVersion = tostring(SignVer)
+                | summarize arg_max(todatetime(parse_json(Context)[2]), SignatureVersion) by OSPlatform;
+            // Main query for devices with AV issues
+            DeviceTvmSecureConfigurationAssessment
+            | where ConfigurationId in ('scid-90', 'scid-91', 'scid-2003', 'scid-2010', 'scid-2011', 'scid-2012', 'scid-2013', 'scid-2016', 'scid-5095', 'scid-6095', 
+                                      'scid-5090', 'scid-6090', 'scid-5091', 'scid-6091', 'scid-5094', 'scid-6094')
+            | extend Test = case(
+                ConfigurationId == 'scid-2011' and OSPlatform startswith 'Windows', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-5095' and OSPlatform == 'macOS', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-6095' and OSPlatform == 'Linux', 'AntivirusSignatureVersion',
+                ConfigurationId == 'scid-2012' and OSPlatform startswith 'Windows','RealtimeProtection',
+                ConfigurationId == 'scid-5090' and OSPlatform == 'macOS', 'RealtimeProtection',
+                ConfigurationId == 'scid-6090' and OSPlatform == 'Linux', 'RealtimeProtection',
+                'NA')
+            | where Test in ('AntivirusSignatureVersion', 'RealtimeProtection')
+            | extend Result = case(
+                IsCompliant == 1, 'GOOD',
+                'BAD'
+            )
+            | extend SignVer = case(
+                ConfigurationId in ('scid-2011', 'scid-5095', 'scid-6095'), parse_json(Context)[0],
+                '')
+            | extend DeviceName = toupper(tostring(split(DeviceName, '.')[0]))
+            | extend OSType = case(
+                OSPlatform startswith 'Windows', 'Windows',
+                OSPlatform == 'macOS', 'macOS',
+                OSPlatform == 'Linux', 'Linux',
+                'Other'
+            )
+            | extend packed = pack(Test, Result)
+            | summarize Tests = make_bag(packed),
+                SignatureData = max(SignVer), 
+                DeviceName = any(DeviceName), 
+                OSPlatform = any(OSPlatform),
+                OSType = any(OSType)
+                by DeviceId
+            | evaluate bag_unpack(Tests)
+            | extend AVSignatureVersion = tostring(parse_json(SignatureData)[0]),
+                Date = todatetime(parse_json(SignatureData)[2])
+            | join kind=leftouter (DeviceInfo
+                | distinct DeviceId, MachineGroup, OnboardingStatus) 
+                on DeviceId
+            | join kind=leftouter LatestSignatures on $left.OSType == $right.OSPlatform
+            | where OnboardingStatus == "Onboarded"
+            // Filter to show only devices with AV issues
+            | where AntivirusSignatureVersion == "BAD" or RealtimeProtection == "BAD"
+            | project 
+                DeviceName,
+                OSPlatform,
+                MachineGroup,
+                ['AV Status'] = RealtimeProtection,
+                ['Current Signature'] = AVSignatureVersion,
+                ['Latest Available Signature'] = SignatureVersion,
+                ['Last Update'] = Date
+            | sort by DeviceName asc
+            | take 15
+
+      - Name: WindowsCriticalVulnerabilitiesReport
+        DisplayName: Windows Critical Vulnerabilities Health Report
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceTvmSoftwareVulnerabilities and DeviceTvmSoftwareVulnerabilitiesKB to evaluate critical vulnerabilities across Windows 10 and 11 devices. This skill:
+            1. **Identifies High-Risk Devices**: Finds top 10 devices with most critical vulnerabilities
+            2. **Tracks Exploit Status**: Monitors exploitable vulnerabilities and CVSS scores
+            3. **Evaluates Zero-Day Impact**: Identifies devices affected by zero-day vulnerabilities
+          This skill enables security teams to quickly identify and prioritize the most vulnerable Windows devices requiring immediate attention.
+        Description: |-
+          Analyzes critical vulnerabilities on Windows 10 and 11 devices using DeviceTvmSoftwareVulnerabilities and DeviceTvmSoftwareVulnerabilitiesKB data. Evaluates critical security metrics:
+          
+          - Vulnerability Status:
+            • Total critical vulnerabilities per device
+            • Zero-day vulnerability count
+            • Number of exploitable vulnerabilities
+          - Risk Assessment:
+            • Maximum CVSS score
+            • Maximum EPSS score
+            • CVSS vector patterns
+          - System Details:
+            • OS Platform and Version
+            • Architecture
+            • CVE count
+          
+          Results are ordered by critical vulnerability count and CVSS scores, helping teams prioritize remediation efforts across Windows devices.
+        Settings:
+          Target: Defender
+          Template: |-
+            let TopDevices = 
+                DeviceTvmSoftwareVulnerabilities
+                | where OSPlatform in ("Windows10", "Windows11")
+                | where VulnerabilitySeverityLevel == "Critical"
+                | summarize VulnCount=count() by DeviceId, DeviceName
+                | top 10 by VulnCount desc;
+            let DeviceVulns = DeviceTvmSoftwareVulnerabilities
+                | where OSPlatform in ("Windows10", "Windows11")
+                | where VulnerabilitySeverityLevel == "Critical"
+                | where DeviceId in (TopDevices);
+            DeviceVulns
+            | summarize 
+                ['Critical Vulnerabilities'] = count(),
+                ['Zero Days'] = countif(CveTags has "ZeroDay")
+                by DeviceId, DeviceName, OSPlatform, OSVersion, OSArchitecture, CveId
+            | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
+            | summarize 
+                ['Critical Vulnerabilities'] = max(['Critical Vulnerabilities']),
+                ['Zero Days'] = max(['Zero Days']),
+                ['Max CVSS Score'] = max(CvssScore),
+                ['Exploitable CVEs'] = countif(IsExploitAvailable == true),
+                ['Max EPSS Score'] = max(EpssScore),
+                ['CVSS Vectors'] = make_set(CvssVector),
+                ['CVE Count'] = dcount(CveId)
+                by DeviceId, DeviceName, OSPlatform, OSVersion, OSArchitecture
+            | project 
+                DeviceName,
+                OSPlatform,
+                OSVersion,
+                OSArchitecture,
+                ['Critical Vulnerabilities'],
+                ['Zero Days'],
+                ['Exploitable CVEs'],
+                ['Max CVSS Score'],
+                ['Max EPSS Score'],
+                ['CVE Count'],
+                ['CVSS Vectors']
+            | order by ['Critical Vulnerabilities'] desc, ['Max CVSS Score'] desc
