@@ -217,6 +217,94 @@ paths:
                     description: OK
                     content:
                         application/json:
+    
+    /ediscoveryCases/{ediscoveryCaseId}/custodians/updateIndex:
+        post:
+            operationId: Add a new indexOperation object
+            description: Add the process of indexing data sources, including custodians and noncustodial data sources in Purview for all custodians attached to a case
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                ids:
+                                    type: string
+                                    description: The IDs of custodians to index. Optional. Maximum number of IDs that can be provided is 1000, supplied by the user
+            responses:
+            "202":
+                description: If successful, this action returns a 202 Accepted response code, Indexing operation initiated successfully.
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                status:
+                                    type: string
+                                    description: The status of the operation.
+                                message:
+                                    type: string
+                                    description: Additional information about the operation.
+            "400":
+                description: Bad Request - Invalid input or missing required parameters.
+            "404":
+                description: Not Found - The specified eDiscovery case does not exist.
+            "500":
+                description: Internal Server Error - A problem occurred on the server while processing the request.
+
+    /ediscoveryCases/{ediscoveryCaseId}/custodians/{custodianId}/updateIndex:
+        post:
+            operationId: Add a new indexOperation object for a specific custodian
+            description: Add the process of indexing data sources, including custodians and noncustodial data sources in Purview for specific custodian
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: custodianId
+                  schema:
+                      type: string
+                  required: true
+                  description: custodianId in eDiscovery
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                ids:
+                                    type: string
+                                    description: The ID of a specific custodian to index. Optional. Maximum number of IDs that can be provided is 1000, supplied by the user
+            responses:
+            "202":
+                description: If successful, this action returns a 202 Accepted response code, Indexing operation initiated successfully for the specified custodian.
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                status:
+                                    type: string
+                                    description: The status of the operation.
+                                message:
+                                    type: string
+                                    description: Additional information about the operation.
+            "400":
+                description: Bad Request - Invalid input or missing required parameters.
+            "404":
+                description: Not Found - The specified eDiscovery case or custodian does not exist.
 
     /ediscoveryCases/{ediscoveryCaseId}/searches/{ediscoverySearchId}/estimateStatistics: 
         post:
@@ -355,7 +443,58 @@ paths:
                         example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoverySearchId}')"
                 content:
                     application/json:
-                
 
+    /ediscoveryCases/{ediscoveryCaseId}/searches/{ediscoverySearchId}/exportResult:
+        post:
+            operationId: Run the export from eDiscovery search
+            description: Run the export from the eDiscovery search
+            parameters:
+                - in: path
+                  name: ediscoveryCaseId
+                  schema:
+                      type: string
+                  required: true
+                  description: caseId in eDiscovery
+                - in: path
+                  name: ediscoverySearchId
+                  schema:
+                      type: string
+                  required: true
+                  description: eDiscoverySearchId in eDiscovery
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                displayName:
+                                    type: string
+                                    description: The display name of the export result. Required
+                                exportCriteria:
+                                    type: string
+                                    description: The portion of the estimate results to be exported. The possible values are, searchHits, partiallyIndexed, unknownFutureValue. Required.
+                                additionalOptions:
+                                    type: string
+                                    description: The additional options for the export. The possible values are, none, teamsAndYammerConversations, cloudAttachments, allDocumentVersions, subfolderContents, listAttachments, unknownFutureValue, htmlTranscripts, advancedIndexing, allItemsInFolder, includeFolderAndPath, condensePaths, friendlyName, splitSource, optimizedPartitionSize, includeReport. Use the Prefer, include-unknown-enum-members request header to get the following values from this evolvable enum, htmlTranscripts, advancedIndexing, allItemsInFolder, includeFolderAndPath, condensePaths, friendlyName, splitSource, optimizedPartitionSize, includeReport. The advancedIndexing value is only available if exportCriteria includes partiallyIndexed. Optional
+                                exportFormat:
+                                    type: string
+                                    description: The desired format of the exported emails. The possible values are, pst, msg, eml, unknownFutureValue. Required.
+                    required:
+                        - displayName
+                        - exportCriteria
+                        - exportFormat                     
+            responses:
+                "200":
+                    description: OK
+                headers:
+                    location:
+                        description: The response contains also a Location header, which contains the location of the Export operation that was created to handle the export.
+                        schema:
+                            type: string
+                        example: "https://graph.microsoft.com/v1.0/security/cases/ediscoverycases('{ediscoveryCaseId}')/operations('{ediscoverySearchId}')"
+                content:
+                    application/json:
+                
 
 

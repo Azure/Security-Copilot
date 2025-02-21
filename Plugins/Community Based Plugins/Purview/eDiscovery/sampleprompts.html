@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eDiscovery Skills & Prompts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #333;
+        }
+        .prompt {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-left: 5px solid #0078D4;
+            background: #eef5ff;
+            border-radius: 5px;
+        }
+        .prompt h3 {
+            margin: 0;
+            color: #005A9E;
+        }
+        .prompt p {
+            margin: 10px 0;
+        }
+        .inputs {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>eDiscovery Skills & Prompts</h2>
+
+        <div class="prompt">
+            <h3>1. Create eDiscovery Case</h3>
+            <p><strong>Example Prompt:</strong> Create an eDiscovery case in Purview with the Case name "Test-123", response should be a bulleted list.</p>
+            <p class="inputs">Inputs: [Case name]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>2. Add Custodian to eDiscovery Case</h3>
+            <p><strong>Example Prompt:</strong> Add a custodian to the eDiscovery case in Purview, use the Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0" and add this email "test@test123.com".</p>
+            <p class="inputs">Inputs: [Email], [Case ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>3. Apply Hold on eDiscovery Custodian</h3>
+            <p><strong>Example Prompt:</strong> Apply hold on eDiscovery custodian using the Custodian ID "2xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx6".</p>
+            <p class="inputs">Inputs: [Custodian ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>4. Add New userSource Objects to Custodians</h3>
+            <p><strong>Example Prompt:</strong> Add new userSource object associated with Custodian ID "2xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx6", include custodian email "test@test123.com" and specify sources as Mailbox, Site.</p>
+            <p class="inputs">Inputs: [Custodian ID], [Email]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>5. Add New eDiscovery Search Object to the Case</h3>
+            <p><strong>Example Prompt:</strong> Add a new eDiscovery Search object with Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0" with the display name "Test-123-search", and add dataSourceScopes to allTenantMailboxes, allTenantSites, allCaseCustodians.</p>
+            <p class="inputs">Inputs: [Case ID], [Display Name]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>6. Run an Estimate on eDiscovery Case</h3>
+            <p><strong>Example Prompt:</strong> Run an estimate of the number of emails and documents in eDiscovery with Search ID "2xxxxxxx-xxx4-xxxd-4xxx-5xxxxxxxxxxx".</p>
+            <p class="inputs">Inputs: [Search ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>7. Create New eDiscovery ReviewSet</h3>
+            <p><strong>Example Prompt:</strong> Create a new eDiscovery ReviewSet for Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0" with Display Name "Test-123-reviewset".</p>
+            <p class="inputs">Inputs: [Case ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>8. Initiate an Export in eDiscovery</h3>
+            <p><strong>Example Prompt:</strong> Use Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0" and ReviewSet ID "dxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" to initiate an export.</p>
+            <p class="inputs">Inputs: [Case ID], [Review Set ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>9. Initiate an Export in eDiscovery Search</h3>
+            <p><strong>Example Prompt:</strong> Initiate an export from the Search with Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0" and Search ID "dxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx". Additional parameters: displayName="Export 1 - simple PST-V2", exportCriteria="searchHits", additionalOptions="none", exportFormat="pst".</p>
+            <p class="inputs">Inputs: [Case ID], [Search ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>10. Update Index on Custodian/s</h3>
+            <p><strong>Example Prompt:</strong> Use the Case ID from above or use this Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0", and update index on Custodian.</p>
+            <p class="inputs">Inputs: [Case ID]</p>
+        </div>
+
+        <div class="prompt">
+            <h3>11. Get a List of Case Operations in eDiscovery</h3>
+            <p><strong>Example Prompt:</strong> Use the Case ID from above or use this Case ID "1xxxx234-XXXX-XXXX-a1cd-fxxxxxxxxxx0", get a list of the caseOperation objects and their properties.</p>
+            <p class="inputs">Inputs: [Case ID]</p>
+        </div>
+    </div>
+</body>
+</html>
