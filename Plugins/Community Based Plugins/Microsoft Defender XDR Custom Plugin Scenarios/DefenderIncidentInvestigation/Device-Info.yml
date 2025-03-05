@@ -17,11 +17,11 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceInfo
-           | where DeviceName contains '{{devicename}}'
-           | where Timestamp > ago(30d)
-           | summarize arg_max(Timestamp,*) by DeviceName
-           | project Timestamp, DeviceName, OSPlatform, OSVersionInfo, OSBuild, DeviceType, Vendor, JoinType
+            DeviceInfo
+            | where DeviceName contains '{{devicename}}'
+            | where Timestamp > ago(30d)
+            | summarize arg_max(Timestamp,*) by DeviceName
+            | project Timestamp, DeviceName, OSPlatform, OSVersionInfo, OSBuild, DeviceType, Vendor, JoinType
  
       - Name: DeviceIPInfo
         DisplayName: Device Current and Past IPs
@@ -33,14 +33,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceNetworkInfo
-           | where DeviceName contains '{{devicename}}'
-           | where Timestamp > ago(10d)
-           | mv-expand parsejson(IPAddresses)
-           | extend DeviceIPAddress = tostring(IPAddresses.IPAddress)
-           | summarize arg_max(Timestamp, DeviceIPAddress) by DeviceId, DeviceName, MacAddress
-           | project Timestamp, DeviceName, MacAddress, DeviceIPAddress
-           | sort by Timestamp
+            DeviceNetworkInfo
+            | where DeviceName contains '{{devicename}}'
+            | where Timestamp > ago(10d)
+            | mv-expand parsejson(IPAddresses)
+            | extend DeviceIPAddress = tostring(IPAddresses.IPAddress)
+            | summarize arg_max(Timestamp, DeviceIPAddress) by DeviceId, DeviceName, MacAddress
+            | project Timestamp, DeviceName, MacAddress, DeviceIPAddress
+            | sort by Timestamp
            
       - Name: DeviceUserInfo
         DisplayName: Device Users and Login Counts
@@ -52,16 +52,16 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceInfo
-           | where DeviceName contains '{{devicename}}'
-           | where Timestamp > ago(30d)
-           | mv-expand parsejson(LoggedOnUsers)
-           | extend UserName = tostring(LoggedOnUsers.UserName)
-           | extend Domain = tostring(LoggedOnUsers.DomainName)
-           | extend Sid = tostring(LoggedOnUsers.Sid)
-           | summarize LoginCount = count() by DeviceName, UserName, Domain, Sid
-           | project DeviceName, UserName, LoginCount, Domain, Sid
-           | sort by LoginCount
+            DeviceInfo
+            | where DeviceName contains '{{devicename}}'
+            | where Timestamp > ago(30d)
+            | mv-expand parsejson(LoggedOnUsers)
+            | extend UserName = tostring(LoggedOnUsers.UserName)
+            | extend Domain = tostring(LoggedOnUsers.DomainName)
+            | extend Sid = tostring(LoggedOnUsers.Sid)
+            | summarize LoginCount = count() by DeviceName, UserName, Domain, Sid
+            | project DeviceName, UserName, LoginCount, Domain, Sid
+            | sort by LoginCount
            
       - Name: DeviceAlertInfo
         DisplayName: Device Alert Information
@@ -73,13 +73,13 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           AlertInfo
-           | where Timestamp > ago(30d)
-           | join AlertEvidence on AlertId
-           | where DeviceName contains '{{devicename}}'
-           | extend Date = format_datetime(Timestamp, "yyyy-MM-dd")
-           | summarize by Date, Title, Severity, Categories, DetectionSource
-           | sort by Date desc, Categories
+            AlertInfo
+            | where Timestamp > ago(30d)
+            | join AlertEvidence on AlertId
+            | where DeviceName contains '{{devicename}}'
+            | extend Date = format_datetime(Timestamp, "yyyy-MM-dd")
+            | summarize by Date, Title, Severity, Categories, DetectionSource
+            | sort by Date desc, Categories
 
       - Name: DeviceAppInfo
         DisplayName: Device Installed Applications

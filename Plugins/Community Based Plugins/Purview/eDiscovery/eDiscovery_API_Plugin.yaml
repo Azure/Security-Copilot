@@ -5,7 +5,7 @@ info:
     description: Skills that use this plugin to create eDiscovery cases and orchestrate additional workflows in Purview via Microsoft Graph API.
     version: "v1"
 servers:
-  - url: https://graph.microsoft.com/v1.0/security/cases
+    - url: https://graph.microsoft.com/v1.0/security/cases
    
 paths:
     /ediscoveryCases:

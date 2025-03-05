@@ -9,7 +9,7 @@ Descriptor:
       Required: true
 
 SkillGroups:
- - Format: API
-   Settings:
-     OpenApiSpecURL: https://example.com/openapi.json
-     EndpointUrlSettingName: InstanceURL
+  - Format: API
+    Settings:
+      OpenApiSpecURL: https://example.com/openapi.json
+      EndpointUrlSettingName: InstanceURL

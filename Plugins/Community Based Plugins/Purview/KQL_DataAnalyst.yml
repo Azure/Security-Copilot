@@ -144,8 +144,8 @@ SkillGroups:
           Target: Defender
           Template: |-
             let policyvar = '{{policy}}';
-             let workload = '';
-                        let EndPointAction = datatable(ActionName: string, Action: int) [
+            let workload = '';
+            let EndPointAction = datatable(ActionName: string, Action: int) [
                 'None', '0',
                 'Audit', '1',
                 'Warn', '2',
@@ -406,7 +406,7 @@ SkillGroups:
               | where path.Filename has document
               | extend DirectoryPath = tostring(path.DirectoryPath)
               | summarize by DirectoryPath );
-             let officedata = (
+              let officedata = (
               CloudAppEvents
               | where RawEventData.Operation == "SecureLinkUsed" or RawEventData.Operation == "AddedToSecureLink"
               | extend ObjectId_ = tostring(RawEventData.ObjectId)
@@ -997,7 +997,7 @@ SkillGroups:
           Template: |-
             let site = '{{site}}';
             let sitvar = '{{sitname}}';
-             let document = '{{document}}';
+            let document = '{{document}}';
             CloudAppEvents 
             | where RawEventData.Workload has 'EndPoint'
             | where RawEventData.TargetDomain has site
@@ -1089,7 +1089,7 @@ SkillGroups:
             let user = '{{user}}';
             let document = '{{document}}';
             let AlertEvidence = (AlertEvidence
-                    | where Timestamp > ago(31d)
+            | where Timestamp > ago(31d)
             //| where ProcessCommandLine ==''
             | extend upnsuffix = todynamic (AdditionalFields).UPNSuffix
             | extend upn1 = iff(isempty(todynamic (AdditionalFields).Recipient),todynamic (AdditionalFields).Upn,todynamic (AdditionalFields).Recipient)
@@ -1136,7 +1136,7 @@ SkillGroups:
             | extend UserId = tolower(RawEventData.UserId)
             | extend sit_SensitiveInfoTypeName = tostring(sit.SensitiveInformationTypeName)
             | where url_decode(ObjectName) has document
-                                  | join kind=inner
+            | join kind=inner
             (CloudAppEvents
                 | where ActionType !has 'DLPRuleMatch'
                 | where ISP has ispvar
@@ -1367,12 +1367,12 @@ SkillGroups:
         DisplayName: Show Sensitive document operations across based on Sensitive Information Type, department and location
         Description: Fetches the sensitive document operations across based on Sensitive Information Type, department and location
         Inputs:
-         - Name: department 
-           Description: Specify the department for which the sensitive document operations are to be fetched
-           Required: false
-         - Name: sitname 
-           Description: Specify the sensitive information type for which the sensitive document operations are to be fetched
-           Required: false
+          - Name: department 
+            Description: Specify the department for which the sensitive document operations are to be fetched
+            Required: false
+          - Name: sitname 
+            Description: Specify the sensitive information type for which the sensitive document operations are to be fetched
+            Required: false
         Settings:
           Target: Defender
           Template: |-
@@ -1495,33 +1495,33 @@ SkillGroups:
           Template: |-
             let ispvar = '{{ISP}}';
             let iptagvar = '{{IPTag}}';
-               CloudAppEvents
-                  | where Timestamp > ago(14d)
-                  | where RawEventData.MDATPDeviceId != ''
-                  | where ISP has ispvar
-                  | extend IPTags = tostring(IPTags)
-                  | where IPTags has iptagvar
-                  | where ActionType in ('FileCopiedToClipboard', 'FileCopiedToNetworkShare', 'FileCopiedToRemoteDesktopSession', 'FileCopiedToRemovableMedia', 'FilePrinted', 'FileSensitivityLabelApplied', 'FileUploadedToCloud','FileUploaded','SharingSet', 'FileRead','FileRenamed', 'MipLabel', 'SensitivityLabelApplied', 'SensitivityLabeledFileOpened', 'SensitivityLabelRemoved', 'SensitivityLabelUpdated', 'ArchiveCreated', 'FileAccessedByUnallowedApp', 'FileArchived','FileAccessed', 'FileCreatedOnNetworkShare', 'FileCreatedOnRemovableMedia', 'FileModified', 'RemoveProtection','FileTransferredByBluetooth', 'WebpagePrinted', 'WebpageCopiedToClipboard', 'WebpageSavedToLocal', 'PastedToBrowser','FileSensitivityLabelChanged','FileDownloaded','SensitivityLabelPolicyMatched','SharingLinkCreated','SharingLinkUsed')
-                  | where Application <> 'Microsoft Exchange Online'
-                  | extend ObjectId_ = tostring(RawEventData.ObjectId)
-                  | where ObjectId_ !has 'AppData'
-                  | where ActivityType <> 'Send'
-                  | extend LabelGUID1 = parse_json(tostring(RawEventData.SensitivityLabelEventData)).SensitivityLabelId
-                  | extend LabelGUID2 = iff(isempty(tostring(RawEventData.LabelId)), LabelGUID1, tostring(RawEventData.LabelId)) 
-                  | extend LabelGUID3 = iff(isempty(tostring(RawEventData.SensitivityLabelId)), LabelGUID2, tostring(RawEventData.SensitivityLabelId)) 
-                  | extend OldSensitivityLabelId = tostring(parse_json(tostring(RawEventData.SensitivityLabelEventData)).OldSensitivityLabelId)
-                  | extend LabelGUID = iff(isempty(tostring(LabelGUID3)),OldSensitivityLabelId, tostring(LabelGUID3))  
-                  | where LabelGUID !=''
-                  | extend userid = tolower(RawEventData.UserId)
-                  | extend DeviceId = tostring(RawEventData.MDATPDeviceId)
-                  | extend AppUsed = tostring(RawEventData.Application)
-            | summarize EventCount=count() by userid,LabelGUID,ISP,tostring(IPTags),AppUsed, bin(Timestamp,30m)
-            | order by Timestamp
-            | summarize EventCount=make_list(EventCount),TimeGenerated=make_list(Timestamp) by userid,ISP,tostring(IPTags),AppUsed
-            | extend outliers=series_decompose_anomalies(EventCount)
-            | mv-expand TimeGenerated, EventCount, outliers
-            | where outliers == 1
-            | summarize aggregate=sum(todecimal(EventCount)) by userid,ISP,tostring(IPTags),AppUsed
+            CloudAppEvents
+              | where Timestamp > ago(14d)
+              | where RawEventData.MDATPDeviceId != ''
+              | where ISP has ispvar
+              | extend IPTags = tostring(IPTags)
+              | where IPTags has iptagvar
+              | where ActionType in ('FileCopiedToClipboard', 'FileCopiedToNetworkShare', 'FileCopiedToRemoteDesktopSession', 'FileCopiedToRemovableMedia', 'FilePrinted', 'FileSensitivityLabelApplied', 'FileUploadedToCloud','FileUploaded','SharingSet', 'FileRead','FileRenamed', 'MipLabel', 'SensitivityLabelApplied', 'SensitivityLabeledFileOpened', 'SensitivityLabelRemoved', 'SensitivityLabelUpdated', 'ArchiveCreated', 'FileAccessedByUnallowedApp', 'FileArchived','FileAccessed', 'FileCreatedOnNetworkShare', 'FileCreatedOnRemovableMedia', 'FileModified', 'RemoveProtection','FileTransferredByBluetooth', 'WebpagePrinted', 'WebpageCopiedToClipboard', 'WebpageSavedToLocal', 'PastedToBrowser','FileSensitivityLabelChanged','FileDownloaded','SensitivityLabelPolicyMatched','SharingLinkCreated','SharingLinkUsed')
+              | where Application <> 'Microsoft Exchange Online'
+              | extend ObjectId_ = tostring(RawEventData.ObjectId)
+              | where ObjectId_ !has 'AppData'
+              | where ActivityType <> 'Send'
+              | extend LabelGUID1 = parse_json(tostring(RawEventData.SensitivityLabelEventData)).SensitivityLabelId
+              | extend LabelGUID2 = iff(isempty(tostring(RawEventData.LabelId)), LabelGUID1, tostring(RawEventData.LabelId)) 
+              | extend LabelGUID3 = iff(isempty(tostring(RawEventData.SensitivityLabelId)), LabelGUID2, tostring(RawEventData.SensitivityLabelId)) 
+              | extend OldSensitivityLabelId = tostring(parse_json(tostring(RawEventData.SensitivityLabelEventData)).OldSensitivityLabelId)
+              | extend LabelGUID = iff(isempty(tostring(LabelGUID3)),OldSensitivityLabelId, tostring(LabelGUID3))  
+              | where LabelGUID !=''
+              | extend userid = tolower(RawEventData.UserId)
+              | extend DeviceId = tostring(RawEventData.MDATPDeviceId)
+              | extend AppUsed = tostring(RawEventData.Application)
+              | summarize EventCount=count() by userid,LabelGUID,ISP,tostring(IPTags),AppUsed, bin(Timestamp,30m)
+              | order by Timestamp
+              | summarize EventCount=make_list(EventCount),TimeGenerated=make_list(Timestamp) by userid,ISP,tostring(IPTags),AppUsed
+              | extend outliers=series_decompose_anomalies(EventCount)
+              | mv-expand TimeGenerated, EventCount, outliers
+              | where outliers == 1
+              | summarize aggregate=sum(todecimal(EventCount)) by userid,ISP,tostring(IPTags),AppUsed
 
       - Name: SensitiveEndpointactivitybyCVEorVendor
         DisplayName: Get the sensitive file activity based on CVE or Vendor
