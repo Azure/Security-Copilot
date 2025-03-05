@@ -1,20 +1,49 @@
-# Security Copilot Plugin: Security Copilot Portal Logins
+# Security Copilot Login Activities
 
-### **This plugin enables you to track how many logins there have been to the Security Copilot standalone experience and who did it.**
+## DESCRIPTION
+This plugin enables you to track how many logins there have been to the Security Copilot standalone experience and who did it. For each identity, the count of logins performed is returned.
 
-### Pre-requisites
+---
 
--   [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
--   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
--   [Microsoft Sentinel Workspace](https://learn.microsoft.com/en-us/azure/sentinel/quickstart-onboard) created.
--   Parameters for KQL Plugin - Microsoft Sentinel Workspace Name, Subscription ID, Resource Group Name and Entra Tenant ID
+## TYPE AND REQUIREMENTS
+**TYPE**: KQL (Sentinel) <br>
+**SOURCE**: _Signinlogs_ table <br>
+**REQUIREMENTS**: Log Analytics Workspace with Sentinel enabled 
 
-### Instructions
+---
 
-#### Upload the Custom Plugin
+## SKILLS
 
-1.  Obtain the file KQL_Plugin_CfSLogins.yaml from this directory.
-2.  Modify the yaml file to specify your specific Entra TentantId, SubscriptionId, ResourceGroupName and WorkspaceName for your Sentinel instance.
-3.  Upload the custom plugin
+<table>
+  <tbody>
+    <tr>
+      <th>SkillName</th>
+      <th align="center">Description</th>
+      <th align="center">Parameters</th>
+    </tr>
+    <tr>
+      <td><b>SecurityCopilotLogins</b></td>
+      <td align="center">Fetches Security Copilot Standalone Portal logins in the last 3 days</td>
+      <td>
+        <ul>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+---
+
+## SAMPLE PROMPTS
+
+- `« Fetches Security Copilot Standalone Portal logins in the last 3 days and detect if there are anomalies in user accesses »`
+---
+
+## SCREENSHOTS
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/Community%20Plugins/SecurityCopilotLogins/LoginsAndAnomalies.png" width="700"> </img>
+</div>
+
 
 For more information, see: [Security Copilot Plugin: Security Copilot Portal Logins](https://rodtrent.substack.com/p/copilot-for-security-plugin-copilot)
