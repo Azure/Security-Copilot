@@ -38,7 +38,7 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
      <img src="https://github.com/pratik-lal/Security-Copilot/blob/SecurityCopilot-Sentinel-Incident-Investigation/Logic%20Apps/SecurityCopilot-Sentinel-Incident-Investigation/images/copilot-for-security-authentication.png"/>
      </br>
 - Assign the role of 'Microsoft Sentinel Responder' to the Managed Identity of the Logic App within the Resource Group that contains the Sentinel's Log Analytics workspace.  
-- Set the values for the Logic App paramters  
+- Set the values for the Logic App parameters  
 <img src="./images/params.png"/>
 - Automate Sentinel incident investigation by adding the Logic App to Microsoft Sentinel automation rule. Alternatively, this logic app can be called on-demand by right-clicking on a Sentinel incident, choose **Run Playbook** option.
 
