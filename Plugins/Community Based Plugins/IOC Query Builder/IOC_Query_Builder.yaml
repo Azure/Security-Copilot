@@ -1,0 +1,40 @@
+Descriptor:
+  Name: IOCQueryBuilder
+  DisplayName: IOC Query Builder
+  Description: Skills for formatting a list of IOCs so they can be used by SOC analysts in KQL queries
+
+SkillGroups:
+  - Format: GPT
+    Skills:
+      - Name: GenerateIOCListForKQL
+        DisplayName: Generate IOC List For KQL
+        Description: Formats a list of IOCs so they can be used by SOC analysts in KQL queries
+        ExamplePrompt:
+        - 'IOC KQL Query'
+        - 'IOC List'
+        - 'Build a KQL query from the following list of IOCs'
+        - 'Format the following list of IOCs'
+        - 'Create a dynamic array from this list of IOCs'
+        - 'Format the following list of IP addresses'
+        - 'Create a dynamic array from this list of IP addresses'
+        - 'Format the following list of domain names'
+        - 'Create a dynamic array from this list of domain names'
+        - 'Format the following list of URLs'
+        - 'Create a dynamic array from this list of URLs'
+        - 'Format the following list of hashes'
+        - 'Create a dynamic array from this list of hashes'
+        Inputs:
+          - Name: iocs
+            Description: The unformatted list of IOCs
+            Required: true
+        Settings:
+          ModelName: gpt-4-32k-v0613
+          Template: |-
+            When a security operations analyst recieves a list of indicators of compromise (IOCs), they will search their SIEM tool to identify if a system may have been infiltrated by a cyber threat. The list of IOCs will need to be formatted in such as way that it can be included in a KQL query.
+
+            Some examples of this formatting in KQL:
+            1. microsoft.com securitycopilot.microsoft.com security.microsoft.com --> ['microsoft.com','securitycopilot.microsoft.com','security.microsoft.com']
+            2. 1.1.1.1 8.8.8.8 --> ['1.1.1.1','8.8.8.8']
+
+            Format any IOCs in the following text and return the new text:
+            {{iocs}}
