@@ -2,8 +2,8 @@
     "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion":  "1.0.0.0",
     "metadata":  {
-        "title":  "",
-        "description":  "",
+        "title":  "SecurityCopilot-Sentinel-Incident-Investigation",
+        "description":  "Logic App automating incident investigation within Microsoft Sentinel using Security Copilot",
         "prerequisites":  "",
         "postDeployment":  [
         ],
@@ -18,13 +18,118 @@
             "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
         },
         "author":  {
-            "name":  "Pratik Lal"
+            "name":  ""
         }
     },
     "parameters":  {
         "PlaybookName":  {
             "defaultValue":  "SecurityCopilot-Sentinel-Incident-Investigation",
             "type":  "string"
+        },
+        "CallScpForIPsWithAbuseIPDB":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the IP addresses on AbuseIPDB. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForIPsWithMDTI":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the IP addresses on MDTI. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForAccounts":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the accounts on MS Entra. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForHosts":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the devices on Intune. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForCommandLines":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the command lines by using its script analysis capability. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForFilehashesWithMDTI":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the file hashes on MDTI. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForUrlsWithMDTI":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the Urls on MDTI. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "CallScpForDomainsWithMDTI":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to investigate the domains on MDTI. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
+        "SkipIPs":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the IPs that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
+        },
+        "SkipAccounts":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the accounts that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
+        },
+        "SkipHosts":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the devices that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
+        },
+        "SkipCommandLines":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the command lines that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": ["cmd.exe","explorer.exe"]
+        },
+        "SkipFilehashes":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the file hashes that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
+        },
+        "SkipUrls":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the urls that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
+        },
+        "SkipDomains":  {
+            "type":  "Array",
+            "metadata":  {
+                "description":  "Enter, as an array of strings, the domains that you do not want Security Copilot to investigate"
+            },
+            "defaultValue": []
         }
     },
     "variables":  {
@@ -35,7 +140,7 @@
         {
             "properties":  {
                 "provisioningState":  "Succeeded",
-                "state":  "Disabled",
+                "state":  "Enabled",
                 "definition":  {
                     "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
                     "contentVersion":  "1.0.0.0",
@@ -44,6 +149,66 @@
                             "defaultValue":  {
                             },
                             "type":  "Object"
+                        },
+                        "CallScpForIPsWithAbuseIPDB":  {
+                            "defaultValue":  "[parameters('CallScpForIPsWithAbuseIPDB')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForIPsWithMDTI":  {
+                            "defaultValue":  "[parameters('CallScpForIPsWithMDTI')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForAccounts":  {
+                            "defaultValue":  "[parameters('CallScpForAccounts')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForHosts":  {
+                            "defaultValue":  "[parameters('CallScpForHosts')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForCommandLines":  {
+                            "defaultValue":  "[parameters('CallScpForCommandLines')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForFilehashesWithMDTI":  {
+                            "defaultValue":  "[parameters('CallScpForFilehashesWithMDTI')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForUrlsWithMDTI":  {
+                            "defaultValue":  "[parameters('CallScpForUrlsWithMDTI')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForDomainsWithMDTI":  {
+                            "defaultValue":  "[parameters('CallScpForDomainsWithMDTI')]",
+                            "type":  "Bool"
+                        },
+                        "SkipIPs":  {
+                            "defaultValue":  "[parameters('SkipIPs')]",
+                            "type":  "Array"
+                        },
+                        "SkipAccounts":  {
+                            "defaultValue":  "[parameters('SkipAccounts')]",
+                            "type":  "Array"
+                        },
+                        "SkipHosts":  {
+                            "defaultValue":  "[parameters('SkipHosts')]",
+                            "type":  "Array"
+                        },
+                        "SkipCommandLines":  {
+                            "defaultValue":  "[parameters('SkipCommandLines')]",
+                            "type":  "Array"
+                        },
+                        "SkipFilehashes":  {
+                            "defaultValue":  "[parameters('SkipFilehashes')]",
+                            "type":  "Array"
+                        },
+                        "SkipUrls":  {
+                            "defaultValue":  "[parameters('SkipUrls')]",
+                            "type":  "Array"
+                        },
+                        "SkipDomains":  {
+                            "defaultValue":  "[parameters('SkipDomains')]",
+                            "type":  "Array"
                         }
                     },
                     "triggers":  {
@@ -75,123 +240,634 @@
                                     "foreach":  "@outputs('Compose_Incident_Entities')",
                                     "actions":  {
                                         "Switch":  {
+                                            "runAfter":  {
+                                                "Reset_variable_CommandLineNormalized":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
                                             "cases":  {
                                                 "Case_-_Ip_Address":  {
                                                     "case":  "Ip",
                                                     "actions":  {
-                                                        "Security_Copilot_prompt_for_AbuseIPDB":  {
-                                                            "type":  "ApiConnection",
-                                                            "inputs":  {
-                                                                "host":  {
-                                                                    "connection":  {
-                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                        "Condition_-_IP":  {
+                                                            "actions":  {
+                                                                "Condition_-_IP_-_Use_AbuseIPDB":  {
+                                                                    "actions":  {
+                                                                        "Security_Copilot_prompt_for_AbuseIPDB":  {
+                                                                            "type":  "ApiConnection",
+                                                                            "inputs":  {
+                                                                                "host":  {
+                                                                                    "connection":  {
+                                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                                                    }
+                                                                                },
+                                                                                "method":  "post",
+                                                                                "body":  {
+                                                                                    "PromptContent":  "I'm curious about any abuseipdb records for the IP address @{items('For_Each_Entity')?['properties']?['address']}. Can you look that up for me for the last 30 days?"
+                                                                                },
+                                                                                "path":  "/process-prompt"
+                                                                            }
+                                                                        },
+                                                                        "Compose_AbuseDBIP_Analysis":  {
+                                                                            "runAfter":  {
+                                                                                "Security_Copilot_prompt_for_AbuseIPDB":  [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type":  "Compose",
+                                                                            "inputs":  "@body('Security_Copilot_prompt_for_AbuseIPDB')?['EvaluationResultContent']"
+                                                                        }
+                                                                    },
+                                                                    "else":  {
+                                                                        "actions":  {
+                                                                        }
+                                                                    },
+                                                                    "expression":  {
+                                                                        "and":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForIPsWithAbuseIPDB')",
+                                                                                    true
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type":  "If"
+                                                                },
+                                                                "Condition_-_IP_-_Use_MDTI":  {
+                                                                    "actions":  {
+                                                                        "Append_IP_to_array_variable_IndicatorsForMDTI":  {
+                                                                            "type":  "AppendToArrayVariable",
+                                                                            "inputs":  {
+                                                                                "name":  "IndicatorsForMDTI",
+                                                                                "value":  "@items('For_Each_Entity')?['properties']?['address']"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "else":  {
+                                                                        "actions":  {
+                                                                        }
+                                                                    },
+                                                                    "expression":  {
+                                                                        "and":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForIPsWithMDTI')",
+                                                                                    true
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type":  "If"
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['address'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForIPsWithAbuseIPDB')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipIPs')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "equals":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "127.0.0.1"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "equals":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "::1"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "10."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "192.168."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.16."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.17."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.18."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.19."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.20."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.21."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.22."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.23."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.24."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.25."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "endsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.26."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.27."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.28."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.29."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.30."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['address']",
+                                                                                "172.31."
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])",
+                                                                                "fd00::"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])",
+                                                                                "fc00::"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])",
+                                                                                "ff00::"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])",
+                                                                                "fe80::"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "startsWith":  [
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['address'])",
+                                                                                "::ffff:"
+                                                                            ]
+                                                                        }
                                                                     }
-                                                                },
-                                                                "method":  "post",
-                                                                "body":  {
-                                                                    "PromptContent":  "I'm curious about any abuseipdb records for the IP address @{items('For_Each_Entity')?['properties']?['address']}. Can you look that up for me for the last 30 days?"
-                                                                },
-                                                                "path":  "/process-prompt"
-                                                            }
-                                                        },
-                                                        "Compose_AbuseDBIP_Analysis":  {
-                                                            "runAfter":  {
-                                                                "Security_Copilot_prompt_for_AbuseIPDB":  [
-                                                                    "Succeeded"
                                                                 ]
                                                             },
-                                                            "type":  "Compose",
-                                                            "inputs":  "@body('Security_Copilot_prompt_for_AbuseIPDB')?['EvaluationResultContent']"
+                                                            "type":  "If"
                                                         }
                                                     }
                                                 },
                                                 "Case_-_Account":  {
                                                     "case":  "Account",
                                                     "actions":  {
-                                                        "Security_Copilot_prompt_for_Account_":  {
-                                                            "type":  "ApiConnection",
-                                                            "inputs":  {
-                                                                "host":  {
-                                                                    "connection":  {
-                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                        "Condition_-_Account":  {
+                                                            "actions":  {
+                                                                "Security_Copilot_prompt_for_Account_":  {
+                                                                    "type":  "ApiConnection",
+                                                                    "inputs":  {
+                                                                        "host":  {
+                                                                            "connection":  {
+                                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                                            }
+                                                                        },
+                                                                        "method":  "post",
+                                                                        "body":  {
+                                                                            "PromptContent":  "Give me all usr details for @{items('For_Each_Entity')?['properties']?['accountName']}. Does @{items('For_Each_Entity')?['properties']?['accountName']}have any registered devices in Microsoft Entra? List the recent risky sign-ins for @{items('For_Each_Entity')?['properties']?['accountName']}. Get Microsoft Entra audit logs for @{items('For_Each_Entity')?['properties']?['accountName']} for the past 72 hours.",
+                                                                            "SkillName":  "GetEntraUserDetailsV1"
+                                                                        },
+                                                                        "path":  "/process-prompt"
                                                                     }
                                                                 },
-                                                                "method":  "post",
-                                                                "body":  {
-                                                                    "PromptContent":  "Give me all usr details for @{items('For_Each_Entity')?['properties']?['accountName']}. Does @{items('For_Each_Entity')?['properties']?['accountName']}have any registered devices in Microsoft Entra? List the recent risky sign-ins for @{items('For_Each_Entity')?['properties']?['accountName']}. Get Microsoft Entra audit logs for @{items('For_Each_Entity')?['properties']?['accountName']} for the past 72 hours.",
-                                                                    "SkillName":  "GetEntraUserDetails"
-                                                                },
-                                                                "path":  "/process-prompt"
-                                                            }
-                                                        },
-                                                        "Compose_Account_Analysis":  {
-                                                            "runAfter":  {
-                                                                "Security_Copilot_prompt_for_Account_":  [
-                                                                    "Succeeded"
+                                                                "Compose_Account_Analysis":  {
+                                                                    "runAfter":  {
+                                                                        "Security_Copilot_prompt_for_Account_":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "type":  "Compose",
+                                                                    "inputs":  "@body('Security_Copilot_prompt_for_Account_')?['EvaluationResultContent']"
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['accountName'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForAccounts')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipAccounts')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['accountName'])"
+                                                                            ]
+                                                                        }
+                                                                    }
                                                                 ]
                                                             },
-                                                            "type":  "Compose",
-                                                            "inputs":  "@body('Security_Copilot_prompt_for_Account_')?['EvaluationResultContent']"
+                                                            "type":  "If"
                                                         }
                                                     }
                                                 },
                                                 "Case_-_Host":  {
                                                     "case":  "Host",
                                                     "actions":  {
-                                                        "Security_Copilot_prompt_for_Device":  {
-                                                            "type":  "ApiConnection",
-                                                            "inputs":  {
-                                                                "host":  {
-                                                                    "connection":  {
-                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                        "Condition_-_Host":  {
+                                                            "actions":  {
+                                                                "Security_Copilot_prompt_for_Device":  {
+                                                                    "type":  "ApiConnection",
+                                                                    "inputs":  {
+                                                                        "host":  {
+                                                                            "connection":  {
+                                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                                            }
+                                                                        },
+                                                                        "method":  "post",
+                                                                        "body":  {
+                                                                            "PromptContent":  "Tell me about device @{items('For_Each_Entity')?['properties']?['hostName']}.",
+                                                                            "SkillName":  "GetIntuneDevices"
+                                                                        },
+                                                                        "path":  "/process-prompt"
                                                                     }
                                                                 },
-                                                                "method":  "post",
-                                                                "body":  {
-                                                                    "PromptContent":  "Tell me about device @{items('For_Each_Entity')?['properties']?['hostName']}.",
-                                                                    "SkillName":  "GetIntuneDevices"
-                                                                },
-                                                                "path":  "/process-prompt"
-                                                            }
-                                                        },
-                                                        "Compose_Device_Analysis":  {
-                                                            "runAfter":  {
-                                                                "Security_Copilot_prompt_for_Device":  [
-                                                                    "Succeeded"
+                                                                "Compose_Device_Analysis":  {
+                                                                    "runAfter":  {
+                                                                        "Security_Copilot_prompt_for_Device":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "type":  "Compose",
+                                                                    "inputs":  "@body('Security_Copilot_prompt_for_Device')?['EvaluationResultContent']"
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['hostName'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForHosts')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipHosts')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['hostName'])"
+                                                                            ]
+                                                                        }
+                                                                    }
                                                                 ]
                                                             },
-                                                            "type":  "Compose",
-                                                            "inputs":  "@body('Security_Copilot_prompt_for_Device')?['EvaluationResultContent']"
+                                                            "type":  "If"
                                                         }
                                                     }
                                                 },
                                                 "Case_-_Process":  {
                                                     "case":  "Process",
                                                     "actions":  {
-                                                        "Security_Copilot_prompt_for_Process":  {
-                                                            "type":  "ApiConnection",
-                                                            "inputs":  {
-                                                                "host":  {
-                                                                    "connection":  {
-                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                        "Condition_-_Command_Line":  {
+                                                            "actions":  {
+                                                                "Set_variable_CommandLineNormalized":  {
+                                                                    "type":  "SetVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "CommandLineNormalized",
+                                                                        "value":  "@tolower(trim(replace(replace(items('For_Each_Entity')?['properties']?['commandLine'],'  ',' '),'net1 ','net ')))"
                                                                     }
                                                                 },
-                                                                "method":  "post",
-                                                                "body":  {
-                                                                    "PromptContent":  "Tell me more about the process command line: @{items('For_Each_Entity')?['properties']?['commandLine']}",
-                                                                    "SkillName":  "ScriptAnalyzer"
-                                                                },
-                                                                "path":  "/process-prompt"
-                                                            }
-                                                        },
-                                                        "Compose_Process_Analysis":  {
-                                                            "runAfter":  {
-                                                                "Security_Copilot_prompt_for_Process":  [
-                                                                    "Succeeded"
+                                                                "Append_to_array_variable_ProcessedCommandLines":  {
+                                                                    "runAfter":  {
+                                                                        "Set_variable_CommandLineNormalized":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "ProcessedCommandLines",
+                                                                        "value":  "@variables('CommandLineNormalized')"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['commandLine'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForCommandLines')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipCommandLines')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['commandLine'])"
+                                                                            ]
+                                                                        }
+                                                                    }
                                                                 ]
                                                             },
-                                                            "type":  "Compose",
-                                                            "inputs":  "@body('Security_Copilot_prompt_for_Process')?['EvaluationResultContent']"
+                                                            "type":  "If"
+                                                        }
+                                                    }
+                                                },
+                                                "Case_-_FileHash":  {
+                                                    "case":  "FileHash",
+                                                    "actions":  {
+                                                        "Condition_-_FileHash":  {
+                                                            "actions":  {
+                                                                "Append_Filehash_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "value":  "@toLower(items('For_Each_Entity')?['properties']?['hashValue'])"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['hashValue'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForFilehashesWithMDTI')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipFilehashes')",
+                                                                                ""
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "type":  "If"
+                                                        }
+                                                    }
+                                                },
+                                                "Case_Url":  {
+                                                    "case":  "Url",
+                                                    "actions":  {
+                                                        "Condition_-_Url":  {
+                                                            "actions":  {
+                                                                "Append_Url_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "value":  "@toLower(split(items('For_Each_Entity')?['properties']?['url'],'?')[0])"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['url'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForUrlsWithMDTI')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipUrls')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['url'])"
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "type":  "If"
+                                                        }
+                                                    }
+                                                },
+                                                "Case_DNS":  {
+                                                    "case":  "DNS",
+                                                    "actions":  {
+                                                        "Condition_-_DNS":  {
+                                                            "actions":  {
+                                                                "Append_Domain_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "value":  "@toLower(items('For_Each_Entity')?['properties']?['domainName'])"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "else":  {
+                                                                "actions":  {
+                                                                }
+                                                            },
+                                                            "expression":  {
+                                                                "and":  [
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['domainName'])",
+                                                                            false
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "equals":  [
+                                                                            "@parameters('CallScpForDomainsWithMDTI')",
+                                                                            true
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "contains":  [
+                                                                                "@parameters('SkipDomains')",
+                                                                                "@toLower(items('For_Each_Entity')?['properties']?['domainName'])"
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "type":  "If"
                                                         }
                                                     }
                                                 }
@@ -202,13 +878,215 @@
                                             },
                                             "expression":  "@items('For_Each_Entity')?['kind']",
                                             "type":  "Switch"
+                                        },
+                                        "Reset_variable_CommandLineNormalized":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "CommandLineNormalized",
+                                                "value":  "\"\""
+                                            }
                                         }
                                     },
                                     "type":  "Foreach"
+                                },
+                                "Condition_Call_SCP_for_Command_Lines":  {
+                                    "actions":  {
+                                        "Security_Copilot_prompt_for_Unique_Processes":  {
+                                            "runAfter":  {
+                                                "Set_variable_UniqueCommandLines":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "PromptContent":  "Tell me more about the follwing process command lines: @{join(variables('UniqueCommandLines'),'\n')}",
+                                                    "SkillName":  "ScriptAnalyzer"
+                                                },
+                                                "path":  "/process-prompt"
+                                            }
+                                        },
+                                        "Compose_Process_Analysis":  {
+                                            "runAfter":  {
+                                                "Security_Copilot_prompt_for_Unique_Processes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@body('Security_Copilot_prompt_for_Unique_Processes')?['EvaluationResultContent']"
+                                        },
+                                        "Set_variable_UniqueCommandLines":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "UniqueCommandLines",
+                                                "value":  "@sort(union(variables('ProcessedCommandLines'),variables('ProcessedCommandLines')))"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@parameters('CallScpForCommandLines')",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_Call_SCP_for_MDTI_indicators":  {
+                                    "actions":  {
+                                        "Until":  {
+                                            "actions":  {
+                                                "Set_variable_SubarrayIndicatorsForMDTI":  {
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "SubarrayIndicatorsForMDTI",
+                                                        "value":  "@take(skip(variables('IndicatorsForMDTI'),variables('CounterIndicatorsForMDTI')),10)"
+                                                    }
+                                                },
+                                                "Set_variable_CsvIndicatorsForMDTI":  {
+                                                    "runAfter":  {
+                                                        "Set_variable_SubarrayIndicatorsForMDTI":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "CsvIndicatorsForMDTI",
+                                                        "value":  "@join(variables('SubarrayIndicatorsForMDTI'),',')"
+                                                    }
+                                                },
+                                                "Security_Copilot_prompt_for_IoC_to_MDTI":  {
+                                                    "runAfter":  {
+                                                        "Set_variable_CsvIndicatorsForMDTI":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "PromptContent":  "By looking at MDTI, tell me the reputation of these indicators: @{variables('CsvIndicatorsForMDTI')} ",
+                                                            "SkillName":  "GetReputationsForIndicators"
+                                                        },
+                                                        "path":  "/process-prompt"
+                                                    }
+                                                },
+                                                "Compose_IoC_from_MDTI":  {
+                                                    "runAfter":  {
+                                                        "Security_Copilot_prompt_for_IoC_to_MDTI":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "Compose",
+                                                    "inputs":  "@body('Security_Copilot_prompt_for_IoC_to_MDTI')?['EvaluationResultContent']"
+                                                },
+                                                "Append_to_array_variable_ResponsesFromMDTI":  {
+                                                    "runAfter":  {
+                                                        "Compose_IoC_from_MDTI":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "AppendToArrayVariable",
+                                                    "inputs":  {
+                                                        "name":  "ResponsesFromMDTI",
+                                                        "value":  "@outputs('Compose_IoC_from_MDTI')"
+                                                    }
+                                                },
+                                                "Compose_New_Counter_Value":  {
+                                                    "runAfter":  {
+                                                        "Append_to_array_variable_ResponsesFromMDTI":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "Compose",
+                                                    "inputs":  "@add(variables('CounterIndicatorsForMDTI'),10)"
+                                                },
+                                                "Set_variable_Counter":  {
+                                                    "runAfter":  {
+                                                        "Compose_New_Counter_Value":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "CounterIndicatorsForMDTI",
+                                                        "value":  "@outputs('Compose_New_Counter_Value')"
+                                                    }
+                                                }
+                                            },
+                                            "expression":  "@equals(greaterOrEquals(length(variables('IndicatorsForMDTI')),variables('CounterIndicatorsForMDTI')),false)",
+                                            "limit":  {
+                                                "count":  60,
+                                                "timeout":  "PT1H"
+                                            },
+                                            "type":  "Until"
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "or":  [
+                                            {
+                                                "equals":  [
+                                                    "@parameters('CallScpForIPsWithMDTI')",
+                                                    true
+                                                ]
+                                            },
+                                            {
+                                                "equals":  [
+                                                    "@parameters('CallScpForFilehashesWithMDTI')",
+                                                    true
+                                                ]
+                                            },
+                                            {
+                                                "equals":  [
+                                                    "@parameters('CallScpForUrlsWithMDTI')",
+                                                    true
+                                                ]
+                                            },
+                                            {
+                                                "equals":  [
+                                                    "@parameters('CallScpForDomainsWithMDTI')",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
                                 }
                             },
                             "runAfter":  {
-                                "Compose_Incident_Entities":  [
+                                "Initialize_variable_ResponsesFromMDTI":  [
                                     "Succeeded"
                                 ]
                             },
@@ -234,6 +1112,124 @@
                             },
                             "type":  "If"
                         },
+                        "Condition_-_Incident_Investigation":  {
+                            "actions":  {
+                                "Security_Copilot_perform_incident_investigation":  {
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "PromptContent":  "Here is the security incident detail: @{outputs('Compose_-_Normalized_Incident_Data')}\n\nPerform investigation on security incident in following order. Incident Overview, Incident Description, Analysis on Ip Address, Account, Host and Process, Possible mitigation steps and Conclusion. ",
+                                            "SkillName":  "SummarizeData"
+                                        },
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Compose_-_Incident_Investigation":  {
+                                    "runAfter":  {
+                                        "Security_Copilot_perform_incident_investigation":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Compose",
+                                    "inputs":  "@body('Security_Copilot_perform_incident_investigation')?['EvaluationResultContent']"
+                                },
+                                "Add_Investigation_Notes_to_Incident":  {
+                                    "runAfter":  {
+                                        "Compose_-_Incident_Investigation":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                            "message":  "\u003cbr\u003e@{outputs('Compose_-_Incident_Investigation')}\u003cbr\u003e"
+                                        },
+                                        "path":  "/Incidents/Comment"
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Compose_-_Normalized_Incident_Data":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else":  {
+                                "actions":  {
+                                    "Terminate_-_No_investigation":  {
+                                        "type":  "Terminate",
+                                        "inputs":  {
+                                            "runStatus":  "Succeeded"
+                                        }
+                                    }
+                                }
+                            },
+                            "expression":  {
+                                "or":  [
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForIPsWithAbuseIPDB')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForAccounts')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForHosts')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForCommandLines')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForIPsWithMDTI')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForFilehashesWithMDTI')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForUrlsWithMDTI')",
+                                            true
+                                        ]
+                                    },
+                                    {
+                                        "equals":  [
+                                            "@parameters('CallScpForDomainsWithMDTI')",
+                                            true
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type":  "If"
+                        },
                         "Compose_-_Incident_Data":  {
                             "runAfter":  {
                                 "Condition_-_Validate_Entities":  [
@@ -241,57 +1237,144 @@
                                 ]
                             },
                             "type":  "Compose",
-                            "inputs":  "Incident Ttile: @{triggerBody()?['object']?['properties']?['title']},\nIncident Description: @{triggerBody()?['object']?['properties']?['description']},\nIncident Severity: @{triggerBody()?['object']?['properties']?['severity']},\nIncident Tactics: @{triggerBody()?['object']?['properties']?['additionalData']?['tactics']},\nIp Address Analysis: @{outputs('Compose_AbuseDBIP_Analysis')},\nAccount Analysis: @{outputs('Compose_Account_Analysis')},\nDevice Analysis: @{outputs('Compose_Device_Analysis')},\nProcess Analysis: @{outputs('Compose_Process_Analysis')}"
+                            "inputs":  "Incident Ttile: @{triggerBody()?['object']?['properties']?['title']},\nIncident Description: @{triggerBody()?['object']?['properties']?['description']},\nIncident Severity: @{triggerBody()?['object']?['properties']?['severity']},\nIncident Tactics: @{triggerBody()?['object']?['properties']?['additionalData']?['tactics']},\nIp Address Analysis: @{if(parameters('CallScpForIPsWithAbuseIPDB'),outputs('Compose_AbuseDBIP_Analysis'),'skipped...')},\nAccount Analysis: @{if(parameters('CallScpForAccounts'),outputs('Compose_Account_Analysis'),'skipped...')},\nDevice Analysis: @{if(parameters('CallScpForHosts'),outputs('Compose_Device_Analysis'),'skipped...')},\nProcess Analysis: @{if(parameters('CallScpForCommandLines'),outputs('Compose_Process_Analysis'),'skipped...')}\nEvidences from MDTI: @{if(or(parameters('CallScpForIPsWithMDTI'),parameters('CallScpForFilehashesWithMDTI'),parameters('CallScpForUrlsWithMDTI'),parameters('CallScpForDomainsWithMDTI')),join(variables('ResponsesFromMDTI'),' ____ '),'skipped...')}"
                         },
-                        "Security_Copilot_perform_incident_investigation":  {
+                        "Initialize_variable_CommandLineNormalized":  {
+                            "runAfter":  {
+                                "Compose_Incident_Entities":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "CommandLineNormalized",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_UniqueCommandLines":  {
+                            "runAfter":  {
+                                "Initialize_variable_ProcessedCommandLines":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "UniqueCommandLines",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Compose_-_Normalized_Incident_Data":  {
                             "runAfter":  {
                                 "Compose_-_Incident_Data":  [
                                     "Succeeded"
                                 ]
                             },
-                            "type":  "ApiConnection",
+                            "type":  "Compose",
+                            "inputs":  "@replace(replace(outputs('Compose_-_Incident_Data'),',null',''),'[null,','')"
+                        },
+                        "Initialize_variable_ProcessedCommandLines":  {
+                            "runAfter":  {
+                                "Initialize_variable_CommandLineNormalized":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
                             "inputs":  {
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                "variables":  [
+                                    {
+                                        "name":  "ProcessedCommandLines",
+                                        "type":  "array"
                                     }
-                                },
-                                "method":  "post",
-                                "body":  {
-                                    "PromptContent":  "Here is the security incident detail: @{outputs('Compose_-_Incident_Data')}\n\nPerform investigation on security incident in following order. Incident Overview, Incident Description, Analysis on Ip Address, Account, Host and Process, Possible mitigation steps and Conclusion. ",
-                                    "SkillName":  "SummarizeData"
-                                },
-                                "path":  "/process-prompt"
+                                ]
                             }
                         },
-                        "Compose_-_Incident_Investigation":  {
+                        "Initialize_variable_IndicatorsForMDTI":  {
                             "runAfter":  {
-                                "Security_Copilot_perform_incident_investigation":  [
+                                "Initialize_variable_UniqueCommandLines":  [
                                     "Succeeded"
                                 ]
                             },
-                            "type":  "Compose",
-                            "inputs":  "@body('Security_Copilot_perform_incident_investigation')?['EvaluationResultContent']"
-                        },
-                        "Add_Investigation_Notes_to_Incident":  {
-                            "runAfter":  {
-                                "Compose_-_Incident_Investigation":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "ApiConnection",
+                            "type":  "InitializeVariable",
                             "inputs":  {
-                                "host":  {
-                                    "connection":  {
-                                        "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                "variables":  [
+                                    {
+                                        "name":  "IndicatorsForMDTI",
+                                        "type":  "array"
                                     }
-                                },
-                                "method":  "post",
-                                "body":  {
-                                    "incidentArmId":  "@triggerBody()?['object']?['id']",
-                                    "message":  "\u003cbr\u003e@{outputs('Compose_-_Incident_Investigation')}\u003cbr\u003e"
-                                },
-                                "path":  "/Incidents/Comment"
+                                ]
+                            }
+                        },
+                        "Initialize_variable_CounterIndicatorsForMDTI":  {
+                            "runAfter":  {
+                                "Initialize_variable_IndicatorsForMDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "CounterIndicatorsForMDTI",
+                                        "type":  "integer",
+                                        "value":  0
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_SubarrayIndicatorsForMDTI":  {
+                            "runAfter":  {
+                                "Initialize_variable_CounterIndicatorsForMDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SubarrayIndicatorsForMDTI",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_CsvIndicatorsForMDTI":  {
+                            "runAfter":  {
+                                "Initialize_variable_SubarrayIndicatorsForMDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "CsvIndicatorsForMDTI",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_ResponsesFromMDTI":  {
+                            "runAfter":  {
+                                "Initialize_variable_CsvIndicatorsForMDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ResponsesFromMDTI",
+                                        "type":  "array"
+                                    }
+                                ]
                             }
                         }
                     },
