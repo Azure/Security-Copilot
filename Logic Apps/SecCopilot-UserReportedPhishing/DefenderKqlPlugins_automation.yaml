@@ -13,8 +13,8 @@ SkillGroups:
             Description: The subject of the email
             Required: true
         Settings:
-           Target: Defender
-           Template: |-
+          Target: Defender
+          Template: |-
             EmailEvents
             | where Subject == '{{subject}}'
       - Name: GetUrlClicksBySubjectAndSenderEmail
@@ -28,8 +28,8 @@ SkillGroups:
             Description: The sender of the email
             Required: true
         Settings:
-           Target: Defender
-           Template: |-
+          Target: Defender
+          Template: |-
             let email = EmailEvents
             | where Subject == '{{subject}}' and SenderFromAddress == '{{senderEmail}}'
             | project NetworkMessageId;
