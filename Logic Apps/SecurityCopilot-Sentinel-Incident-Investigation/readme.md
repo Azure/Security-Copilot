@@ -8,7 +8,8 @@ This Logic App automates incident investigation within Microsoft Sentinel using 
 - Process and normalize the entities.
 - Submit prompts to Security Copilot to analyze each entity type.
 - Summarize the outputs in a predefined format.
-- Update the Microsoft Sentinel incident comments for the incident investigator to review.
+- Update the Microsoft Sentinel incident comments for the incident investigator to review (writing to the Sentinel incident can be disabled for facilitating the initial testing).
+- Optionally send the result of the investigation by email.
 
 By leveraging this Logic App, Security Operations Center (SOC) and incident response teams can significantly reduce investigation time, gain consistent analysis outputs, and enhance their incident response process.
 
@@ -17,8 +18,8 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
 - Microsoft Security Copilot should be enabled on the Azure tenant.
 - The user should have access to Microsoft Security Copilot to submit prompts by authenticating to Microsoft Security Copilot connector within the logic app.
 - Microsoft Sentinel workspace should be set up.
-- Get AbuseIPDB API key to perform IP address reputation check. [Learn more.](https://learn.microsoft.com/en-us/copilot/security/plugin-abuseipdb)
-- Enable ProcessAnalyzer, GetEntraUserDetails, GetIntuneDevices and AbuseIPDB skills from copilot settings.
+- Optionally get AbuseIPDB API key to perform IP address reputation check. [Learn more.](https://learn.microsoft.com/en-us/copilot/security/plugin-abuseipdb)
+- Enable Defender, Sentinel, Entra, Intune, MDTI and AbuseIPDB plugins from copilot settings for the user account configured on the API connection of the Logic App to Security Copilot.
 
 
 ## Deployment
@@ -37,6 +38,8 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
      <br>
      <img src="https://github.com/pratik-lal/Security-Copilot/blob/SecurityCopilot-Sentinel-Incident-Investigation/Logic%20Apps/SecurityCopilot-Sentinel-Incident-Investigation/images/copilot-for-security-authentication.png"/>
      </br>
+- Important: the account selected for the authentication to Security Copilot must have the Contributor role on Security Copilot and reader privileges on Defender, Sentinel, Entra and Intune.
+- Similarly, authenticate the API connection to Exchange Online (the correct setup of connection is needed even if the Logic App is configured to not send emails)  
 - Assign the role of 'Microsoft Sentinel Responder' to the Managed Identity of the Logic App within the Resource Group that contains the Sentinel's Log Analytics workspace.  
 - Set the values for the Logic App parameters  
 <img src="./images/params.png"/>
@@ -49,6 +52,7 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
 | --------------- | -------------------------- |
 | Process name / commandline | ProcessAnalyzer |
 | Account name | GetEntraUserDetails |
+| Account names | GetEntraRiskyUsers | 
 | Device name | GetIntuneDevices |
 | IP address | AbuseIPDB |
 | Indicator of Compromise (IoC) | GetReputationsForIndicators |
@@ -56,11 +60,15 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
 
 ## Incident Investigation Template
 - Automated incident investigation summary is structured in following order. Modify the prompt to re-order or change the investigation template.
-    - Incident overview:
-    - Incident description:
-    - Analysis on incident entities:
-    - Possible mitigation steps:
-    - Conclusion
+    - Incident Overview, 
+    - Incident Description, 
+    - Ip Addresses Analysis, 
+    - Account Analysis, 
+    - Users Risk Analysis, 
+    - Devices Analysis, 
+    - Processes Analysis, 
+    - Indicators Analysis from MDTI, 
+    - Possible mitigation steps and Conclusion
 <br>
 <img src="https://github.com/pratik-lal/Security-Copilot/blob/SecurityCopilot-Sentinel-Incident-Investigation/Logic%20Apps/SecurityCopilot-Sentinel-Incident-Investigation/images/copilot-for-security-investigation-prompt.png"/>
 </br>
