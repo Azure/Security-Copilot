@@ -1,0 +1,44 @@
+openapi: 3.0.0
+
+info:
+    title: CISO Incidents Summary 
+    description: Helper skills used to get specific summary info on the incidents in Defender
+    version: "0.0.1"
+
+servers:
+  - url: <BASE_PATH>
+
+paths:
+    /workflows/<WORKFLOW_ID>/triggers/AnalyzeUPNsCall/paths/invoke:    
+        post:
+            operationId: CisoGetUsersStatus
+            summary: Get the status of a list of users in terms of enablement and risk level in Entra.
+            parameters:
+                - name: api-version
+                  in: query
+                  default: 2016-10-01
+                  schema:
+                    type: string
+                - name: sp
+                  in: query
+                  default: /triggers/AnalyzeUPNsCall/run
+                  schema:
+                    type: string
+                - name: sv
+                  in: query  
+                  default: 1.0
+                  schema:
+                    type: string
+            requestBody:
+              description: Comma separated list of the User Principal Names (UPNs) of the user to be analyzed
+              required: true
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      users_upn:
+                        type: string
+            responses:
+                "200":
+                  description: Status of the users

@@ -1,0 +1,282 @@
+Descriptor:
+  Name: CisoIncidentsSummary
+  DisplayName: CISO Incidents Summary
+  Description: Skills to get a summary view on the status of the incidents in Defender   
+
+  SupportedAuthTypes:
+    - ApiKey
+
+  Authorization:
+    Type: APIKey
+    Key: sig
+    Location: QueryParams
+    AuthScheme: '' 
+
+SkillGroups:
+
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: <YOUR-REPO-URL>/ciso-incidents-summary-api-spec.yaml
+
+  - Format: KQL
+    Skills:
+      - Name: CisoIncidentsStatusSummary
+        DisplayName: CISO - Incidents Status Summary
+        Description: Get a summary of the incidents status in Defender
+        DescriptionForModel : Get a summary of the incidents status in Defender. 
+          If severities are specified in the prompt (e.g. High and Medium), concatenate them as a comma separated list of double-quoted strings with the first letter in uppercase (like "High","Medium").
+          If start date and end date are not specified, consider the last 7 days.
+          If the top number of results is not specified, consider 5 incidents titles.
+          If csv_of_severities is not specified, consider only "High".
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+          - Name: top_results_number
+            Description: The number of top incidents to be considered
+            Required: true
+          - Name: csv_of_severities
+            Description: Comma separated list of severities. E.g. "High","Medium"
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let top_incs_number = int({{top_results_number}});
+            let severities = dynamic([{{csv_of_severities}}]);
+            let top_incidents = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where Severity in (severities) and CreatedTime between (start_time .. end_time)
+            | extend SecInc = strcat("[",Severity,"] ",Title)
+            | summarize TotalCount = count() by SecInc
+            | top top_incs_number by TotalCount;
+            let closed_incidents = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where Severity in (severities) and not(isnull(ClosedTime)) and CreatedTime between (start_time .. end_time) 
+            | extend SecInc = strcat("[",Severity,"] ",Title)
+            | summarize ClosedCount = count() by SecInc;
+            let classified_incidents = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where Severity in (severities) and CreatedTime between (start_time .. end_time)
+            | extend SecInc = strcat("[",Severity,"] ",Title)
+            | summarize BenignPositiveCount = countif(Classification == "BenignPositive"),
+                        FalsePositiveCount = countif(Classification == "FalsePositive"),
+                        TruePositiveCount = countif(Classification == "TruePositive"),
+                        UndeterminedCount = countif(Classification == "Undetermined") by SecInc;
+            top_incidents
+            | join kind=leftouter (closed_incidents) on SecInc
+            | join kind=leftouter (classified_incidents) on SecInc
+            | project SecInc, TotalCount, ClosedCount, BenignPositiveCount, FalsePositiveCount, TruePositiveCount, UndeterminedCount
+            | order by TotalCount desc, ClosedCount desc, TruePositiveCount desc        
+
+
+      - Name: CisoTruePositiveIncidentsTTAnalysis
+        DisplayName: CISO - True Positive Incidents Tactics and Techniques Analysis
+        Description: Get a summary of the tactics and techniques used in the incidents that were classified as true positives
+        DescriptionForModel : Get a summary of the tactics and techniques used in the incidents that were classified as true positives
+          If severities are specified in the prompt (e.g. High and Medium), concatenate them as a comma separated list of double-quoted strings with the first letter in uppercase (like "High","Medium").
+          If start date and end date are not specified, consider the last 7 days.
+          If severities is not specified, consider only "High".
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+          - Name: csv_of_severities
+            Description: Comma separated list of severities. E.g. "High","Medium"
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let severities = dynamic([{{csv_of_severities}}]);
+            SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )            
+            | where Severity in (severities) and CreatedTime between (start_time .. end_time)
+            | where Classification == "TruePositive"
+            | extend SecInc = strcat("[",Severity,"] ",Title)
+            | extend AdditionalDataParsed = parse_json(AdditionalData)
+            | summarize Occurrences=count(), Tactics=make_set(AdditionalDataParsed.tactics), Techniques=make_set(AdditionalDataParsed.techniques) by SecInc
+            | order by Occurrences desc 
+
+
+      - Name: CisoMTTR
+        DisplayName: CISO - Get Mean Time To Resolve (MTTR) 
+        Description: Calculate the Mean Time To Resolve (MTTR), in minutes, of the incidents closed in the specified period and compare it to its value in the previous month
+        DescriptionForModel : 
+          Calculate the Mean Time To Resolve (MTTR), in minutes, for incidents closed within the specified period and compare it to the MTTR from the entire previous month. 
+          The MTTR is defined as the average time between the creation and closure of incidents, for the incidents closed within the specified time window.
+          If the start and / or end dates are not specified, consider as time window the last 7 days.
+          The response is a table that includes the MTTR in the specified time window, the MTTR in the previous month, the percentage variation between the two MTTR values, 
+          the first day of the specified time window, the last day of the specified time window, the first day of the previous month, and the last day of the previous month.
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let lastMonthStart = startofmonth(datetime_add('month', -1, now()));
+            let lastMonthEnd = endofmonth(datetime_add('month', -1, now()));
+            let timeWindowMTTR = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where ClosedTime between (start_time .. end_time)
+            | extend ResolveTime = datetime_diff('minute', ClosedTime, CreatedTime)
+            | summarize MTTR = round(avg(ResolveTime),0)
+            | extend j = "forcedjoin"
+            | project timeWindowMTTR = MTTR, j;
+            let lastMonthMTTR = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where CreatedTime between (lastMonthStart .. lastMonthEnd)
+            | extend ResolveTime = datetime_diff('minute', ClosedTime, CreatedTime)
+            | summarize MTTR = round(avg(ResolveTime),0)
+            | extend j = "forcedjoin"
+            | project lastMonthMTTR = MTTR, j;
+            timeWindowMTTR
+            | join lastMonthMTTR on j
+            | extend PercentageChange = round(((timeWindowMTTR - lastMonthMTTR) * 100.0 / lastMonthMTTR), 0)
+            | project timeWindowMTTR, lastMonthMTTR, PercentageChange, start_time, end_time, lastMonthStart, lastMonthEnd
+
+
+
+      - Name: CisoMTTA
+        DisplayName: CISO - Get Mean Time To Acknowledge (MTTA)
+        Description: Calculate the Mean Time To Acknowledge (MTTA), in minutes, of the incidents created in the specified period and compare it to its value in the previous month
+        DescriptionForModel :           
+          Calculate the Mean Time To Acknowledge (MTTA), in minutes, for incidents created in the specified period and compare it to the MTTA from the entire previous month. 
+          The MTTA is defined as the average time between the creation and first modification of incidents, for the incidents created within the specified time window.
+          If the start and / or end dates are not specified, consider as time window the last 7 days.
+          The response is a table that includes the MTTA in the specified time window, the MTTA in the previous month, the percentage variation between the two MTTA values, 
+          the first day of the specified time window, the last day of the specified time window, the first day of the previous month, and the last day of the previous month.
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let lastMonthStart = startofmonth(datetime_add('month', -1, now()));
+            let lastMonthEnd = endofmonth(datetime_add('month', -1, now()));
+            let timeWindowMTTA = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where CreatedTime between (start_time .. end_time)
+            | extend AcknowledgmentTime = datetime_diff('minute', FirstModifiedTime, CreatedTime)
+            | where isnotnull(AcknowledgmentTime)
+            | summarize MTTA = round(avg(AcknowledgmentTime), 0)
+            | extend j = "forcedjoin"
+            | project timeWindowMTTA = MTTA, j;
+            let lastMonthMTTA = SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where CreatedTime between (lastMonthStart .. lastMonthEnd)
+            | extend AcknowledgmentTime = datetime_diff('minute', FirstModifiedTime, CreatedTime)
+            | where isnotnull(AcknowledgmentTime)
+            | summarize MTTA = round(avg(AcknowledgmentTime), 0)
+            | extend j = "forcedjoin"
+            | project lastMonthMTTA = MTTA, j;
+            timeWindowMTTA
+            | join lastMonthMTTA on j
+            | extend PercentageChange = round(((timeWindowMTTA - lastMonthMTTA) * 100.0 / lastMonthMTTA), 0)
+            | project timeWindowMTTA, lastMonthMTTA, PercentageChange, start_time, end_time, lastMonthStart, lastMonthEnd
+
+
+
+      - Name: CisoIncidentsOwners
+        DisplayName: CISO - Get Top Incident Owners
+        Description: Get the list of top owners for the incidents created in the specified period
+        DescriptionForModel :           
+          Get the list of top owners for the incidents created in the specified period.
+          If the start and / or end dates are not specified, consider as time window the last 7 days.
+          If the number of top owners is not specified, consider the top 10 owners. 
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+          - Name: top_owners_number
+            Description: The number of top owners to be considered
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let top_owners_number = int({{top_owners_number}});
+            SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where CreatedTime between (start_time .. end_time)
+            | where isnotempty(Owner)
+            | extend OwnerUPN = tostring(parse_json(Owner).userPrincipalName)
+            | where isnotempty(OwnerUPN)
+            | summarize IncidentCount = count() by OwnerUPN
+            | top top_owners_number by IncidentCount
+            | project OwnerUPN, IncidentCount
+            | order by IncidentCount desc
+
+
+
+      - Name: CisoMostImpactedUsers
+        DisplayName: CISO - Get Most Impacted Users
+        Description: Get the list of the users impacted by the biggest number of alerts related to incidents created in the specified period and not closed as 'false positive'
+        DescriptionForModel :           
+          Get the list of the users impacted by the biggest number of alerts related to incidents created in the specified period and not closed as 'false positive'.
+          If the start and / or end dates are not specified, consider as time window the last 7 days.
+          If the number of top impacted users is not specified, consider the top 10 impacted users. 
+        Inputs:
+          - Name: start_date
+            Description: The first date of the considered time window
+            Required: true
+          - Name: end_date
+            Description: The end date of the considered time window
+            Required: true
+          - Name: top_impacted_users_number
+            Description: The number of top impacted users to be considered
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let start_time = datetime({{start_date}}); 
+            let end_time = datetime({{end_date}}); 
+            let top_owners_number = int({{top_impacted_users_number}});
+            SecurityIncident
+            | summarize arg_max(TimeGenerated, *) by IncidentName
+            | where Status <> "Closed" or not(Status == "Closed" and Classification == "Undetermined" and ModifiedBy == "Microsoft XDR" )
+            | where CreatedTime between (start_time .. end_time) and Classification <> "FalsePositive"
+            | mv-expand AlertIds
+            | extend aid = tostring(AlertIds)
+            | join kind=inner SecurityAlert on $left.aid == $right.SystemAlertId
+            | project aid, Entities
+            | extend Entities = parse_json(Entities)
+            | mv-expand Entities
+            | where not(isempty(Entities.UserPrincipalName))
+            | distinct aid, UserPrincipalName = tostring(Entities.UserPrincipalName)
+            | summarize AlertNumber = count() by UserPrincipalName
+            | order by AlertNumber desc, UserPrincipalName
+            | top {{top_impacted_users_number}} by AlertNumber

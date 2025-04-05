@@ -1,12 +1,13 @@
 # Welcome to Microsoft Copilot for Security Labs!
 
-![Security CoPilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
 ## Introduction
 
 This workshop is designed to help you get up to speed with Microsoft Security Copilot. It offers hands-on experience in using Markdown, which can significantly enhance how our Large Language Models (LLMs) reason through data and format the results you receive.
 
 ## Recommendations
+
 It's highly recommended that you review the following two pages prior to starting these modules.
  - [Prompting in Microsoft Security Copilot](https://learn.microsoft.com/en-us/copilot/security/prompting-security-copilot)
  - [Create effective prompts](https://learn.microsoft.com/en-us/copilot/security/prompting-tips)
@@ -29,4 +30,4 @@ Using Markdown provides:
 ## Workshop Modules
 
 - [**Module 1 – Using Markdown for formatting**](./Module%201%20-%20Formatting%20with%20markdown)
-
+- [**Module 2 – Enhancing reasoning and formatting with markdown**](./Module%202%20-%20Enhancing%20reasoning%20and%20formatting%20with%20markdown)

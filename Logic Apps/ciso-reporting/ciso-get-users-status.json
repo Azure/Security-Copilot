@@ -1,0 +1,344 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "Get the status of a set of users in MS Entra",
+        "description":  "This Logic App return the status, in Microsoft Entra, of the users specified in input as comma separated values of User Principal Names (UPNs). For each user it returns if the user is Enabled or Disabled and the level of risk High, Medium or Low or Unknown",
+        "prerequisites":  "",
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  "Stefano Pescosolido (https://www.linkedin.com/in/stefanopescosolido/)"
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "CfS-CisoGetUserStatus",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "AnalyzeUPNsCall":  {
+                            "type":  "Request",
+                            "kind":  "Http",
+                            "inputs":  {
+                                "method":  "POST",
+                                "schema":  {
+                                    "type":  "object",
+                                    "properties":  {
+                                        "users_upn":  {
+                                            "type":  "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "conditions":  [
+                            ]
+                        }
+                    },
+                    "actions":  {
+                        "For_each_-_UPN":  {
+                            "foreach":  "@variables('UPNs')",
+                            "actions":  {
+                                "Submit_a_Security_Copilot_prompt_-_Enablement":  {
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "PromptContent":  "User UPN: @{trim(items('For_each_-_UPN'))}. Respond with only 1 word: \"Enabled\" or \"Disabled\", depending on the current value of the \"Account enabled\" attribute, or \"Unknown\" if you can't read the value of this attribute",
+                                            "SkillName":  "GetEntraUserDetailsV1"
+                                        },
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Condition_-_evaluationResultType_-_Enablement":  {
+                                    "actions":  {
+                                        "Append_to_array_variable_-_Enablement_-_Success":  {
+                                            "type":  "AppendToArrayVariable",
+                                            "inputs":  {
+                                                "name":  "ResponseArray",
+                                                "value":  {
+                                                    "UPN":  "@{trim(items('For_each_-_UPN'))}",
+                                                    "Enablement Status":  "@{trim(body('Submit_a_Security_Copilot_prompt_-_Enablement')?['EvaluationResultContent'])}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Submit_a_Security_Copilot_prompt_-_Enablement":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                            "Append_to_array_variable_-_Enablement_-_Error":  {
+                                                "type":  "AppendToArrayVariable",
+                                                "inputs":  {
+                                                    "name":  "ResponseArray",
+                                                    "value":  {
+                                                        "UPN":  "@{trim(items('For_each_-_UPN'))}",
+                                                        "Enablement Status":  "Error"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@body('Submit_a_Security_Copilot_prompt_-_Enablement')?['evaluationResultType']",
+                                                    "Success"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Submit_a_Security_Copilot_prompt_-_Entra_Risk":  {
+                                    "runAfter":  {
+                                        "Condition_-_evaluationResultType_-_Enablement":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "PromptContent":  "Check if the user @{trim(items('For_each_-_UPN'))} has a Risk Level associated. Respond with only 1 of these possible 5 word: \"High\", \"Medium\", \"Low\", according to the Risk Level of the user account, \"None\" if no risk level is assigned to the user account or \"Unknown\" if it was not possible to read the risk level for the user account.",
+                                            "SkillName":  "GetEntraRiskyUsers"
+                                        },
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Condition_-_evaluationResultType_-_Entra_Risk":  {
+                                    "actions":  {
+                                        "Append_to_array_variable_-_Risk_-_Success":  {
+                                            "type":  "AppendToArrayVariable",
+                                            "inputs":  {
+                                                "name":  "ResponseArray",
+                                                "value":  {
+                                                    "UPN":  "@{trim(items('For_each_-_UPN'))}",
+                                                    "Risk Status":  "@{trim(body('Submit_a_Security_Copilot_prompt_-_Entra_Risk')?['EvaluationResultContent'])}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Submit_a_Security_Copilot_prompt_-_Entra_Risk":  [
+                                            "Succeeded",
+                                            "TimedOut",
+                                            "Failed"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                            "Append_to_array_variable_-_Risk_-_Error":  {
+                                                "type":  "AppendToArrayVariable",
+                                                "inputs":  {
+                                                    "name":  "ResponseArray",
+                                                    "value":  {
+                                                        "UPN":  "@{trim(items('For_each_-_UPN'))}",
+                                                        "Risk Status":  "Error"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@body('Submit_a_Security_Copilot_prompt_-_Entra_Risk')?['evaluationResultType']",
+                                                    "Success"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                }
+                            },
+                            "runAfter":  {
+                                "Initialize_variable_-_ResponseArray":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Foreach",
+                            "runtimeConfiguration":  {
+                                "concurrency":  {
+                                    "repetitions":  20
+                                }
+                            }
+                        },
+                        "Initialize_variable_-_UPNs":  {
+                            "runAfter":  {
+                                "Initialize_variable_-_SessionID_-_Use_it_in_Copilot_calls_if_needed":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "UPNs",
+                                        "type":  "array",
+                                        "value":  "@split(triggerBody()?['users_upn'],',')"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_-_CallResponse":  {
+                            "runAfter":  {
+                                "Initialize_variable_-_UPNs":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "CallResponse",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_-_SessionID_-_Use_it_in_Copilot_calls_if_needed":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SessionID",
+                                        "type":  "string",
+                                        "value":  "@triggerOutputs()?['headers']?['x-securitycopilot-sessionid']"
+                                    }
+                                ]
+                            }
+                        },
+                        "Response_-_Return_the_users_status_to_the_caller":  {
+                            "runAfter":  {
+                                "Set_variable_-_Call_Response":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Response",
+                            "kind":  "Http",
+                            "inputs":  {
+                                "statusCode":  200,
+                                "body":  "@variables('CallResponse')"
+                            }
+                        },
+                        "Initialize_variable_-_ResponseArray":  {
+                            "runAfter":  {
+                                "Initialize_variable_-_CallResponse":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ResponseArray",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Set_variable_-_Call_Response":  {
+                            "runAfter":  {
+                                "For_each_-_UPN":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "SetVariable",
+                            "inputs":  {
+                                "name":  "CallResponse",
+                                "value":  "@concat('[',join(variables('ResponseArray'),','),']')"
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "securitycopilot":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+                                "connectionName":  "[variables('SecuritycopilotConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "CfS-CisoGetUserStatus",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('SecuritycopilotConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('SecuritycopilotConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                }
+            }
+        }
+    ]
+}

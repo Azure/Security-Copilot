@@ -16,4 +16,4 @@ SkillGroups:
           ResourceGroupName: <your_RG_name>
           WorkspaceName: <your_WS_name>
           Template: |-
-           union withsource=BadTable * | where TimeGenerated > ago(3d) | summarize Entries = count(), last_log = datetime_diff("second",now(), max(TimeGenerated)), estimate  = sumif(_BilledSize, _IsBillable==true)  by BadTable | where last_log >= 259200 | project BadTable
+            union withsource=BadTable * | where TimeGenerated > ago(3d) | summarize Entries = count(), last_log = datetime_diff("second",now(), max(TimeGenerated)), estimate  = sumif(_BilledSize, _IsBillable==true)  by BadTable | where last_log >= 259200 | project BadTable

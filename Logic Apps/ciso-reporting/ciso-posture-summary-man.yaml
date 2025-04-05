@@ -1,0 +1,44 @@
+Descriptor:
+  Name: CisoPostureSummary
+  DisplayName: CISO Posture Summary
+  Description: Skills to get a summary view on the status of the posture in Defender for Cloud and Exposure Management   
+ 
+
+SkillGroups:
+
+  - Format: KQL
+    Skills:
+      - Name: CisoRecommendationsBySeverity
+        DisplayName: CISO - Recommendations by Severity
+        Description: Get the list of the active recommendations by Severity (work in progress)
+        DescriptionForModel : Get the list of the active recommendations by Severity
+          If severities are specified in the prompt (e.g. High and Medium), concatenate them as a comma separated list of double-quoted strings with the first letter in uppercase (like "High","Medium").
+        Inputs:
+          - Name: days_back
+            Description: The number of days to be considered in the past, starting from today
+            Required: true
+          - Name: top_results_number
+            Description: The number of top recommendations to be considered in terms of number of occurrences 
+            Required: true
+          - Name: csv_of_severities
+            Description: Comma separated list of severities. E.g. "High","Medium"
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let today = now();
+            let days_back = {{days_back}};
+            let top_results_number = int({{top_results_number}});
+            let severities = dynamic([{{csv_of_severities}}]); 
+            let isInt = not(isnull(isnan(toreal(days_back))));      
+            let pastDays = toint(   
+                iif(isInt and (days_back!=0),toint(days_back),1)
+            );
+            let dateStart = datetime_add('day',-pastDays,today);  
+            SecurityRecommendation
+            | where not(RecommendationState == "Healthy") 
+            | where RecommendationSeverity in (severities) and TimeGenerated between (dateStart .. today) 
+            | extend SevName = strcat("[", RecommendationSeverity, "] ", RecommendationDisplayName)
+            | summarize Occurrences = count() by SevName            
+            | order by Occurrences desc 
+            | top top_results_number by Occurrences

@@ -16,12 +16,12 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceFileEvents
-           | where DeviceName contains '{{devicename}}'
-           | where Timestamp > ago(15d)
-           | where isnotempty(FileOriginUrl) and ActionType == "FileCreated"
-           | project Timestamp, DeviceName, ActionType, FileName, FolderPath, FileOriginUrl, InitiatingProcessFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine
-           | sort by Timestamp desc 
+            DeviceFileEvents
+            | where DeviceName contains '{{devicename}}'
+            | where Timestamp > ago(15d)
+            | where isnotempty(FileOriginUrl) and ActionType == "FileCreated"
+            | project Timestamp, DeviceName, ActionType, FileName, FolderPath, FileOriginUrl, InitiatingProcessFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine
+            | sort by Timestamp desc 
  
       - Name: ListFilesDownloaded
         DisplayName: File - Files Downloaded
@@ -39,14 +39,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceFileEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where isnotempty(FileOriginUrl) and ActionType == "FileCreated"
-           | project Timestamp, DeviceName, ActionType, FileName, FolderPath, FileOriginUrl, InitiatingProcessFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine
-           | sort by Timestamp desc 
+            DeviceFileEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where isnotempty(FileOriginUrl) and ActionType == "FileCreated"
+            | project Timestamp, DeviceName, ActionType, FileName, FolderPath, FileOriginUrl, InitiatingProcessFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine
+            | sort by Timestamp desc 
 
       - Name: FileInDeviceEvents
         DisplayName: File - Any Device Events Related To This File
@@ -64,11 +64,11 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           union DeviceProcessEvents, DeviceFileEvents, DeviceNetworkEvents, DeviceRegistryEvents, DeviceEvents, DeviceLogonEvents, DeviceImageLoadEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | search '{{filename}}'
+            union DeviceProcessEvents, DeviceFileEvents, DeviceNetworkEvents, DeviceRegistryEvents, DeviceEvents, DeviceLogonEvents, DeviceImageLoadEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | search '{{filename}}'
 
       - Name: SensitiveFilesEvents
         DisplayName: File - Sensitive Files Events
@@ -80,12 +80,12 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceFileEvents
-           | where DeviceName contains '{{devicename}}'
-           | where Timestamp > ago(10d)
-           | where IsAzureInfoProtectionApplied == "1" or isnotempty(SensitivityLabel)
-           | project Timestamp, ActionType, FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName, SHA256, IsAzureInfoProtectionApplied, SensitivityLabel, SensitivitySubLabel
-           | sort by Timestamp desc  
+            DeviceFileEvents
+            | where DeviceName contains '{{devicename}}'
+            | where Timestamp > ago(10d)
+            | where IsAzureInfoProtectionApplied == "1" or isnotempty(SensitivityLabel)
+            | project Timestamp, ActionType, FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName, SHA256, IsAzureInfoProtectionApplied, SensitivityLabel, SensitivitySubLabel
+            | sort by Timestamp desc  
 
       - Name: FileOrigin
         DisplayName: File - File Origin
@@ -97,11 +97,11 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceFileEvents
-           | where FileName contains '{{filename}}'
-           | where Timestamp > ago(30d)
-           | project Timestamp, DeviceName, FileName, FileOriginUrl, FileOriginReferrerUrl
-           | sort by Timestamp desc
+            DeviceFileEvents
+            | where FileName contains '{{filename}}'
+            | where Timestamp > ago(30d)
+            | project Timestamp, DeviceName, FileName, FileOriginUrl, FileOriginReferrerUrl
+            | sort by Timestamp desc
            
       - Name: ProcessExecutionSummary
         DisplayName: Process - Process Executions Summary
@@ -119,14 +119,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceProcessEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | extend ProcessName = FileName, ProcessPath = FolderPath
-           | summarize Count = count() by ProcessName, ProcessPath, AccountName
-           | sort by ProcessName asc 
+            DeviceProcessEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | extend ProcessName = FileName, ProcessPath = FolderPath
+            | summarize Count = count() by ProcessName, ProcessPath, AccountName
+            | sort by ProcessName asc 
 
       - Name: ProcessExecutionDetails
         DisplayName: Process - Detailed Process Executions
@@ -144,14 +144,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceProcessEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | extend ProcessName = FileName, ProcessPath = FolderPath
-           | project Timestamp, DeviceName, ProcessName, ProcessPath, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
-           | sort by Timestamp desc 
+            DeviceProcessEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | extend ProcessName = FileName, ProcessPath = FolderPath
+            | project Timestamp, DeviceName, ProcessName, ProcessPath, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
+            | sort by Timestamp desc 
             
       - Name: ProcessDetailedExecution
         DisplayName: Process - Detailed Process Events
@@ -172,14 +172,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceProcessEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where FileName contains '{{processname}}' or InitiatingProcessFileName contains '{{processname}}'
-           | project Timestamp, DeviceName, AccountName, ActionType, ProcessName = FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
-           | sort by Timestamp asc
+            DeviceProcessEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where FileName contains '{{processname}}' or InitiatingProcessFileName contains '{{processname}}'
+            | project Timestamp, DeviceName, AccountName, ActionType, ProcessName = FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
+            | sort by Timestamp asc
               
       - Name: RDPConnectionToThisDevice
         DisplayName: Lateral Movement - RDP To Device
@@ -260,14 +260,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceLogonEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | extend DestinationDevice = DeviceName, SourceDevice = RemoteDeviceName, SourceIP = RemoteIP, SourceIPType = RemoteIPType
-           | project Timestamp, SourceDevice, SourceIP, SourceIPType, DestinationDevice, ActionType, LogonType, AccountName, Protocol, IsLocalAdmin
-           | sort by Timestamp desc 
+            DeviceLogonEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | extend DestinationDevice = DeviceName, SourceDevice = RemoteDeviceName, SourceIP = RemoteIP, SourceIPType = RemoteIPType
+            | project Timestamp, SourceDevice, SourceIP, SourceIPType, DestinationDevice, ActionType, LogonType, AccountName, Protocol, IsLocalAdmin
+            | sort by Timestamp desc 
 
       - Name: DeviceOutboundNetworkEvents
         DisplayName: Network - Outbound Network Events
@@ -285,13 +285,13 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceNetworkEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType has_any ("ConnectionSuccess", "ConnectionAttempt", "ConnectionFailed", "ConnectionRequest")
-           | summarize NetworkConnectionCount = count() by InitiatingProcessFileName, InitiatingProcessFolderPath, RemoteIP, RemoteUrl, RemotePort, Protocol 
+            DeviceNetworkEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType has_any ("ConnectionSuccess", "ConnectionAttempt", "ConnectionFailed", "ConnectionRequest")
+            | summarize NetworkConnectionCount = count() by InitiatingProcessFileName, InitiatingProcessFolderPath, RemoteIP, RemoteUrl, RemotePort, Protocol 
 
       - Name: DeviceInboundNetworkEvents
         DisplayName: Network - Inbound Network Events
@@ -309,14 +309,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceNetworkEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType has_any ("InboundConnectionAccepted", "InboundConnectionAcknowledged", "InboundConnectionAttempt")
-           | summarize count() by ActionType, RemoteIP, RemotePort, LocalIP, LocalPort, Protocol          
- 
+            DeviceNetworkEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType has_any ("InboundConnectionAccepted", "InboundConnectionAcknowledged", "InboundConnectionAttempt")
+            | summarize count() by ActionType, RemoteIP, RemotePort, LocalIP, LocalPort, Protocol          
+  
       - Name: DevicelisteningPorts
         DisplayName: Network - Device Listening Ports
         Description: Displays device listening ports in specific timeframe, in the past 30 days.
@@ -333,15 +333,15 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceNetworkEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType == "ListeningConnectionCreated"
-           | where LocalPort < 49151
-           | project Timestamp, InitiatingProcessFileName, InitiatingProcessCommandLine, LocalPort
-           | sort by LocalPort asc
+            DeviceNetworkEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType == "ListeningConnectionCreated"
+            | where LocalPort < 49151
+            | project Timestamp, InitiatingProcessFileName, InitiatingProcessCommandLine, LocalPort
+            | sort by LocalPort asc
 
       - Name: DeviceScheduledTask
         DisplayName: Device Events - Scheduled Task Events
@@ -359,14 +359,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType has_any ("ScheduledTaskCreated", "ScheduledTaskDeleted", "ScheduledTaskUpdated")
-           | project Timestamp, ActionType, InitiatingProcessAccountName, AdditionalFields, IsInitiatingProcessRemoteSession, IsProcessRemoteSession
-           | sort by Timestamp desc 
+            DeviceEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType has_any ("ScheduledTaskCreated", "ScheduledTaskDeleted", "ScheduledTaskUpdated")
+            | project Timestamp, ActionType, InitiatingProcessAccountName, AdditionalFields, IsInitiatingProcessRemoteSession, IsProcessRemoteSession
+            | sort by Timestamp desc 
 
       - Name: DeviceUserAccount
         DisplayName: Device Events - User Account Events
@@ -384,14 +384,14 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType has_any ("UserAccountCreated", "UserAccountDeleted", "UserAccountModified")
-           | project Timestamp, ActionType, AccountName, AccountDomain, InitiatingProcessAccountName, AdditionalFields, IsInitiatingProcessRemoteSession, IsProcessRemoteSession
-           | sort by Timestamp desc 
+            DeviceEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType has_any ("UserAccountCreated", "UserAccountDeleted", "UserAccountModified")
+            | project Timestamp, ActionType, AccountName, AccountDomain, InitiatingProcessAccountName, AdditionalFields, IsInitiatingProcessRemoteSession, IsProcessRemoteSession
+            | sort by Timestamp desc 
 
       - Name: DeviceUserAccountAddedOrRemovedFromLocalGroup
         DisplayName: Device Events - User Account Added Or Removed From Local Group
@@ -409,16 +409,16 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           DeviceEvents
-           | extend StartTime = datetime('{{starttime}}')
-           | extend EndTime = datetime('{{endtime}}')
-           | where Timestamp between (StartTime .. EndTime)
-           | where DeviceName contains '{{devicename}}'
-           | where ActionType has_any ("UserAccountAddedToLocalGroup", "UserAccountRemovedFromLocalGroup")
-           | extend GroupInfo = parse_json(AdditionalFields)
-           | extend GroupName = GroupInfo.GroupName, GroupDomainName= GroupInfo.GroupDomainName
-           | project Timestamp, ActionType, AccountSid, GroupName, GroupDomainName, InitiatingProcessAccountName, InitiatingProcessAccountDomain
-           | sort by Timestamp desc 
+            DeviceEvents
+            | extend StartTime = datetime('{{starttime}}')
+            | extend EndTime = datetime('{{endtime}}')
+            | where Timestamp between (StartTime .. EndTime)
+            | where DeviceName contains '{{devicename}}'
+            | where ActionType has_any ("UserAccountAddedToLocalGroup", "UserAccountRemovedFromLocalGroup")
+            | extend GroupInfo = parse_json(AdditionalFields)
+            | extend GroupName = GroupInfo.GroupName, GroupDomainName= GroupInfo.GroupDomainName
+            | project Timestamp, ActionType, AccountSid, GroupName, GroupDomainName, InitiatingProcessAccountName, InitiatingProcessAccountDomain
+            | sort by Timestamp desc 
 
       - Name: DeviceASRRules
         DisplayName: Suspicious Activities - ASR Rules Triggered

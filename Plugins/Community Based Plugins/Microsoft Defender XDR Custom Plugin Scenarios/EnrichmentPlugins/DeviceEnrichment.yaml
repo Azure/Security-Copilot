@@ -177,6 +177,7 @@ SkillGroups:
         DisplayName: Device CVE Search
         DescriptionForModel: |-
           Identify specific CVEs affecting a specified device based on the selected severity level. For each vulnerability, it:
+          Identify specific CVEs affecting a specified device based on the selected severity level. For each vulnerability, it:
             1. **Analyzes Software Vendors**: Evaluates the type of software the vendor produces and the potential risks associated with the vulnerability, considering the software's role in the system and possible exploitation impacts.
             2. **Summarizes Device Security State**: Assesses the device's security posture by reviewing the number and severity of CVEs and identifying critical areas requiring immediate attention.
           This skill provides actionable security insights, enabling security analysts to prioritize remediation and address vulnerabilities effectively.
@@ -196,6 +197,18 @@ SkillGroups:
             | where DeviceName == "{{device_name}}"
             | where VulnerabilitySeverityLevel contains "{{severity_level}}"
             | project DeviceName, SoftwareVendor, SoftwareName, CveId
+            | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
+            | project 
+                DeviceName,
+                SoftwareVendor, 
+                SoftwareName,
+                CveId,
+                CvssScore,
+                EpssScore,
+                CvssVector,
+                IsExploitAvailable
+            | order by EpssScore desc, CvssScore desc
+
             | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
             | project 
                 DeviceName,
@@ -496,3 +509,654 @@ SkillGroups:
                 ['CVE Count'],
                 ['CVSS Vectors']
             | order by ['Critical Vulnerabilities'] desc, ['Max CVSS Score'] desc
+
+      - Name: ASRRuleTriggerCount
+        DisplayName: ASR Rule Trigger Frequency
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to determine how often each Attack Surface Reduction (ASR) rule has been triggered. This skill:
+            1. **Identifies High-Frequency Rules**: Counts occurrences of each ASR rule
+            2. **Prioritizes Impact**: Ranks rules based on trigger frequency
+            3. **Prepares for Enforcement**: Helps security teams assess the potential disruption before enabling ASR rules
+          This skill is useful for determining which ASR rules are triggering frequently and require careful evaluation before enforcement.
+        Description: |-
+          Analyzes the frequency of ASR rule triggers across devices using DeviceEvents data. Evaluates key security insights:
+          
+          - **ASR Rule Analysis**:
+            • Count of ASR rule triggers
+            • ASR rule names
+            • Ordered by most frequently triggered rules
+          
+          - **Risk & Enforcement Considerations**:
+            • Identifies high-frequency ASR rules that may impact business processes
+            • Helps prioritize which ASR rules should be tested first
+            
+          Results provide security teams with data to understand potential operational impact before enforcing ASR rules in block mode.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by RuleName, ActionType, FileName, FolderPath
+            | where TriggerCount > 10
+            | extend ExclusionPath = iff(isnotempty(FolderPath) and isnotempty(FileName), strcat(FolderPath, "\\", FileName), "")
+            | order by TriggerCount desc
+            | project RuleName, ActionType, FileName, FolderPath, ExclusionPath, TriggerCount
+
+      - Name: ASRBusinessHoursImpact
+        DisplayName: ASR Rule Business Hours Impact Analysis
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to analyze ASR rule impact during business hours vs. non-business hours. This skill:
+            1. **Compares Working vs. Non-Working Hours**: Analyzes when ASR rules are triggered
+            2. **Identifies Business-Critical Rules**: Highlights rules with high business hours impact
+            3. **Supports Risk Assessment**: Helps evaluate potential productivity impact
+          This skill helps security teams understand the potential impact on business operations when enforcing ASR rules.
+        Description: |-
+          Analyzes when ASR rules are triggered to assess business operational impact. Key insights include:
+          
+          - **Temporal Impact Analysis**:
+            • Business hours vs. non-business hours trigger comparison
+            • Business impact ratio calculation
+            
+          - **Operational Risk Assessment**:
+            • Identifies rules with highest impact during working hours
+            • Helps prioritize rules based on potential productivity disruption
+            
+          Results help security teams understand when ASR rules are most likely to impact business operations.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | extend HourOfDay = toint(datetime_part("hour", TimeGenerated))
+            | extend DayOfWeek = toint(dayofweek(TimeGenerated))
+            | extend IsBusinessHours = HourOfDay >= 9 and HourOfDay <= 17 and DayOfWeek >= 1 and DayOfWeek <= 5
+            | summarize BusinessHoursTriggers = countif(IsBusinessHours == true), 
+                      NonBusinessHoursTriggers = countif(IsBusinessHours == false) 
+                      by RuleName, ActionType
+            | extend TotalTriggers = BusinessHoursTriggers + NonBusinessHoursTriggers
+            | where TotalTriggers > 0
+            | extend BusinessImpactRatio = round((1.0 * BusinessHoursTriggers) / TotalTriggers, 2)
+            | order by BusinessImpactRatio desc, BusinessHoursTriggers desc
+
+      - Name: ASRImplementationPlan
+        DisplayName: ASR Implementation Phasing Plan
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to create a phased implementation plan for ASR rules. This skill:
+            1. **Calculates Impact Scores**: Combines trigger count, device count, and user count
+            2. **Creates Phased Approach**: Groups rules into low, medium, and high impact phases
+            3. **Supports Gradual Rollout**: Helps security teams implement ASR rules in a controlled manner
+          This skill is essential for planning a staged approach to ASR rule enforcement.
+        Description: |-
+          Creates a phased implementation plan for ASR rules based on impact assessment. Key insights include:
+          
+          - **Impact Assessment**:
+            • Combined impact score calculation
+            • Rule categorization by impact level
+            
+          - **Implementation Strategy**:
+            • Three-phase implementation approach
+            • Start with low-impact rules and gradually enforce higher-impact rules
+            
+          Results provide security teams with a structured approach to implementing ASR rules in enforcement mode.
+        Settings:
+          Target: Defender
+          Template: |-
+            // Get rule trigger counts
+            let ruleTriggers = DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by RuleName, ActionType;
+            // Get device counts per rule
+            let deviceCounts = DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | summarize DeviceCount = dcount(DeviceName) by ActionType;
+            // Get user counts per rule
+            let userCounts = DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | summarize UserCount = dcount(AccountName) by ActionType;
+            // Get max values for normalization
+            let maxTriggerCount = toscalar(ruleTriggers | summarize max(TriggerCount));
+            let maxDeviceCount = toscalar(deviceCounts | summarize max(DeviceCount));
+            let maxUserCount = toscalar(userCounts | summarize max(UserCount));
+            let ruleCount = toscalar(ruleTriggers | summarize count());
+            // Join the data and calculate normalized impact scores
+            ruleTriggers
+            | join kind=leftouter deviceCounts on ActionType
+            | join kind=leftouter userCounts on ActionType
+            // Normalize each metric to a 0-1 scale
+            | extend NormalizedTriggers = 1.0 * TriggerCount / maxTriggerCount
+            | extend NormalizedDevices = 1.0 * DeviceCount / maxDeviceCount
+            | extend NormalizedUsers = 1.0 * UserCount / maxUserCount
+            // Apply weights to each factor (can be adjusted based on organizational priorities)
+            | extend NormalizedImpactScore = (0.4 * NormalizedTriggers) + (0.3 * NormalizedDevices) + (0.3 * NormalizedUsers)
+            | sort by NormalizedImpactScore asc
+            | extend RowNum = row_number()
+            | extend ImplementationPhase = case(
+                RowNum <= (ruleCount / 3), "Phase 1 (Low Impact)",
+                RowNum <= (ruleCount * 2 / 3), "Phase 2 (Medium Impact)",
+                "Phase 3 (High Impact)"
+            )
+            | project RuleName, ActionType, TriggerCount, DeviceCount, UserCount, NormalizedImpactScore, ImplementationPhase
+            | sort by NormalizedImpactScore asc
+
+      - Name: ASRPlatformCompatibility
+        DisplayName: ASR Rule Platform Compatibility Analysis
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to analyze ASR rule compatibility with different Windows platforms. This skill:
+            1. **Maps Platform Compatibility**: Shows which ASR rules are supported on which platforms
+            2. **Identifies Platform-Specific Issues**: Highlights rules that may not be compatible with certain platforms
+            3. **Enables Targeted Deployment**: Helps plan ASR rule enforcement based on platform distribution
+          This skill is valuable for organizations with mixed Windows environments to understand compatibility constraints.
+        Description: |-
+          Analyzes ASR rule compatibility with different Windows platforms. Key insights include:
+          
+          - **Platform Compatibility Matrix**:
+            • Shows which ASR rules are supported on which platforms
+            • Identifies platform-specific compatibility issues
+            
+          - **Deployment Planning**:
+            • Helps create platform-specific ASR policies
+            • Prevents attempted enforcement of unsupported rules
+            
+          Results enable security teams to plan appropriate ASR policies for their specific Windows environment mix.
+        Settings:
+          Target: Defender
+          Template: |-
+            let actionTypeToRuleName = datatable(ActionTypePattern:string, RuleName:string) [
+                // Standard rule names
+                "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                // Additional patterns for actual event log formats
+                "AsrPsexecWmiChildProcessBlocked", "Block process creations originating from PSExec and WMI commands",
+                "AsrPsexecWmiChildProcessAudited", "Block process creations originating from PSExec and WMI commands",
+                "AsrLsassCredentialTheftBlocked", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                "AsrLsassCredentialTheftAudited", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                "AsrOfficeChildProcessBlocked", "Block all Office applications from creating child processes",
+                "AsrOfficeChildProcessAudited", "Block all Office applications from creating child processes",
+                "AsrOfficeProcessInjectionBlocked", "Block Office applications from injecting code into other processes",
+                "AsrOfficeProcessInjectionAudited", "Block Office applications from injecting code into other processes",
+                "AsrOfficeMacroWin32ApiCallsBlocked", "Block Win32 API calls from Office macros",
+                "AsrOfficeMacroWin32ApiCallsAudited", "Block Win32 API calls from Office macros",
+                "AsrScriptObfuscatedMshtmlContentBlocked", "Block execution of potentially obfuscated scripts",
+                "AsrScriptObfuscatedMshtmlContentAudited", "Block execution of potentially obfuscated scripts",
+                "AsrOfficeExecutableContentCreationBlocked", "Block Office applications from creating executable content",
+                "AsrOfficeExecutableContentCreationAudited", "Block Office applications from creating executable content",
+                "AsrPersistenceThroughWmiEventSubscriptionAudited", "Block persistence through WMI event subscription",
+                "AsrPersistenceThroughWmiEventSubscriptionBlocked", "Block persistence through WMI event subscription",
+                "AsrOfficeCommunicationChildProcessBlocked", "Block Office communication application from creating child processes",
+                "AsrOfficeCommunicationChildProcessAudited", "Block Office communication application from creating child processes",
+                "AsrAdobeReaderChildProcessBlocked", "Block Adobe Reader from creating child processes",
+                "AsrAdobeReaderChildProcessAudited", "Block Adobe Reader from creating child processes",
+                "AsrRansomwareBlocked", "Use advanced protection against ransomware",
+                "AsrRansomwareAudited", "Use advanced protection against ransomware",
+                "AsrUntrustedExecutableBlocked", "Block untrusted and unsigned processes that run from USB",
+                "AsrUntrustedExecutableAudited", "Block untrusted and unsigned processes that run from USB",
+                "AsrJsVbsLaunchExecutableContentBlocked", "Block JavaScript or VBScript from launching downloaded executable content",
+                "AsrJsVbsLaunchExecutableContentAudited", "Block JavaScript or VBScript from launching downloaded executable content",
+                "AsrEmailContentExecutionBlocked", "Block executable content from email client and webmail",
+                "AsrEmailContentExecutionAudited", "Block executable content from email client and webmail",
+                "AsrExecutableFilesDroppedFromEmailBlocked", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                "AsrExecutableFilesDroppedFromEmailAudited", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                "AsrVulnerableSignedDriverBlocked", "Block abuse of exploited vulnerable signed drivers",
+                "AsrVulnerableSignedDriverAudited", "Block abuse of exploited vulnerable signed drivers",
+                "AsrImitationSystemToolsBlocked", "Block use of copied or impersonated system tools (preview)",
+                "AsrImitationSystemToolsAudited", "Block use of copied or impersonated system tools (preview)",
+                "AsrWebShellCreationBlocked", "Block Webshell creation for Servers",
+                "AsrWebShellCreationAudited", "Block Webshell creation for Servers",
+                "AsrSafeModeRebootBlocked", "Block rebooting machine in Safe Mode (preview)",
+                "AsrSafeModeRebootAudited", "Block rebooting machine in Safe Mode (preview)"
+            ];
+            // Create the platform compatibility reference table
+            let rulePlatformCompatibility = datatable(RuleName:string, Win10_11:bool, ServerPost1803:bool, Server2016:bool) [
+                "Block abuse of exploited vulnerable signed drivers", true, true, true,
+                "Block Adobe Reader from creating child processes", true, true, true,
+                "Block all Office applications from creating child processes", true, true, true,
+                "Block credential stealing from the Windows local security authority subsystem (lsass.exe)", true, true, true,
+                "Block executable content from email client and webmail", true, true, true,
+                "Block executable files from running unless they meet a prevalence, age, or trusted list criterion", true, true, true,
+                "Block execution of potentially obfuscated scripts", true, true, true,
+                "Block JavaScript or VBScript from launching downloaded executable content", true, true, false,
+                "Block Office applications from creating executable content", true, true, true,
+                "Block Office applications from injecting code into other processes", true, true, true,
+                "Block Office communication application from creating child processes", true, true, true,
+                "Block persistence through WMI event subscription", true, true, false,
+                "Block process creations originating from PSExec and WMI commands", true, true, true,
+                "Block rebooting machine in Safe Mode (preview)", true, true, true,
+                "Block untrusted and unsigned processes that run from USB", true, true, true,
+                "Block use of copied or impersonated system tools (preview)", true, true, true,
+                "Block Webshell creation for Servers", false, true, true,
+                "Block Win32 API calls from Office macros", true, false, false,
+                "Use advanced protection against ransomware", true, true, true
+            ];
+            // Get rule trigger counts with improved pattern matching
+            let deviceTriggers = DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend MatchedPattern = ActionType
+            | join kind=leftouter actionTypeToRuleName on $left.ActionType == $right.ActionTypePattern
+            | extend RuleName = iif(isnotempty(RuleName), RuleName, strcat("Unknown Rule: ", ActionType))
+            | summarize TriggerCount = count() by RuleName, MatchedPattern;
+            // Join rule triggers with platform compatibility information
+            deviceTriggers
+            | join kind=leftouter rulePlatformCompatibility on RuleName
+            | project 
+                RuleName,
+                MatchedPattern,
+                TriggerCount,
+                Windows10_11_Compatible = iff(isnotempty(Win10_11) and Win10_11, "Supported", "Not Supported"),
+                ServerPost1803_Compatible = iff(isnotempty(ServerPost1803) and ServerPost1803, "Supported", "Not Supported"),
+                Server2016_Compatible = iff(isnotempty(Server2016) and Server2016, "Supported", "Not Supported")
+            | order by RuleName asc
+
+      - Name: ASRImpactByDevice
+        DisplayName: ASR Rule Impact Analysis by Device
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to analyze ASR rule impact by device. This skill:
+            1. **Identifies Affected Devices**: Counts ASR rule triggers per device
+            2. **Highlights High-Impact Endpoints**: Finds devices triggering ASR rules frequently
+            3. **Enables Targeted Testing**: Helps security teams isolate test groups before full ASR enforcement
+          This skill is useful for prioritizing devices that need evaluation before ASR rules are enforced.
+        Description: |-
+          Analyzes ASR rule triggers per device to determine operational impact. Key insights include:
+          
+          - **Device-Level ASR Analysis**:
+            • Number of ASR rule triggers per device
+            • Most frequently triggered ASR rules
+          
+          - **Risk & Readiness Considerations**:
+            • Identifies endpoints at risk of breaking functionality
+            • Helps security teams plan phased ASR rule enforcement
+            
+          Results allow teams to pinpoint which devices should be monitored closely when enabling ASR rules.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by DeviceName, RuleName, ActionType
+            | order by TriggerCount desc
+
+
+      - Name: ASRRuleTrends
+        DisplayName: ASR Rule Trends Over Time
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to track ASR rule triggers over time. This skill:
+            1. **Monitors ASR Rule Trends**: Aggregates ASR rule triggers per day
+            2. **Identifies Changes in Attack Patterns**: Helps detect increasing or decreasing ASR activity
+            3. **Supports Security Policy Decisions**: Provides data to guide ASR rule enforcement strategies
+          This skill helps security teams analyze ASR rule activity over time to fine-tune security policies.
+        Description: |-
+          Tracks how ASR rules are triggered over time. Evaluates:
+          
+          - **Trend Analysis**:
+            • Daily ASR rule trigger counts
+            • Breakdown by ASR rule type
+            
+          - **Security Policy Insights**:
+            • Helps assess whether ASR rules are becoming more or less impactful
+            • Supports data-driven enforcement decisions
+            
+          Results enable security teams to monitor and adjust ASR rule implementations based on observed trends.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by bin(TimeGenerated, 1d), RuleName
+            | order by TimeGenerated desc
+
+      - Name: ASRRuleApplicationMapping
+        DisplayName: ASR Rule to Application Mapping
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to map ASR rules to specific applications. This skill:
+            1. **Maps Rules to Applications**: Identifies which applications trigger specific ASR rules
+            2. **Assesses Business Impact**: Helps identify critical business applications affected by ASR rules
+            3. **Supports Exclusion Planning**: Provides data for creating targeted exclusions
+          This skill is essential for understanding which business applications might be affected when enforcing ASR rules.
+        Description: |-
+          Maps ASR rules to specific applications to understand business impact. Key insights include:
+          
+          - **Application Impact Analysis**:
+            • Which applications trigger specific ASR rules
+            • Frequency of triggers per application
+            
+          - **Business Continuity Planning**:
+            • Identifies critical applications that may require exclusions
+            • Helps prioritize testing before enforcement
+            
+          Results allow security teams to develop targeted exclusion strategies for business-critical applications.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by RuleName, InitiatingProcessFileName, InitiatingProcessFolderPath
+            | order by RuleName, TriggerCount desc
+
+      - Name: ASRUserImpactAnalysis
+        DisplayName: ASR Rule Impact Analysis by User
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to analyze ASR rule impact by user. This skill:
+            1. **Identifies Affected Users**: Counts ASR rule triggers per user account
+            2. **Highlights High-Impact Users/Departments**: Finds users triggering ASR rules frequently
+            3. **Enables User-Centric Planning**: Helps security teams plan user communication and training
+          This skill is useful for identifying which users or departments will be most affected by ASR enforcement.
+        Description: |-
+          Analyzes ASR rule triggers by user to determine operational impact. Key insights include:
+          
+          - **User-Level ASR Analysis**:
+            • Number of ASR rule triggers per user
+            • User distribution across rules
+            
+          - **Organizational Impact Considerations**:
+            • Identifies departments at risk of workflow disruption
+            • Helps plan targeted user communication before enforcement
+            
+          Results allow teams to identify key stakeholders who should be involved in ASR testing and rollout.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by AccountName, AccountDomain, RuleName
+            | order by TriggerCount desc
+
+      - Name: ASRExclusionCandidates
+        DisplayName: ASR Rule Exclusion Candidates
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to identify potential candidates for ASR rule exclusions. This skill:
+            1. **Identifies Common Triggers**: Finds files and paths frequently triggering ASR rules
+            2. **Formulates Exclusion Paths**: Creates ready-to-use exclusion path formats
+            3. **Prioritizes Exclusions**: Ranks exclusion candidates by frequency
+          This skill helps security teams create targeted exclusions to minimize business disruption when enforcing ASR rules.
+        Description: |-
+          Identifies potential candidates for ASR rule exclusions based on trigger frequency. Insights include:
+          
+          - **Exclusion Planning**:
+            • Files and paths frequently triggering ASR rules
+            • Ready-to-use exclusion path formats
+            
+          - **Business Continuity Support**:
+            • Helps create targeted exclusions for legitimate business applications
+            • Minimizes disruption when moving to enforcement mode
+            
+          Results allow security teams to proactively plan exclusions before enforcing ASR rules.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize TriggerCount = count() by RuleName, ActionType, FileName, FolderPath
+            | where TriggerCount > 10
+            | extend ExclusionPath = iff(isnotempty(FolderPath) and isnotempty(FileName), strcat(FolderPath, "\\", FileName), "")
+            | order by TriggerCount desc
+
+      - Name: ASRProcessAnalysis
+        DisplayName: ASR Rule Process Trigger Analysis
+        DescriptionForModel: |-
+          Executes a KQL query against DeviceEvents to analyze which processes are triggering ASR rules. This skill:
+            1. **Identifies Specific Processes**: Examines initiating process details for each ASR rule
+            2. **Quantifies Process Impact**: Shows how many devices and users are affected by each process
+            3. **Tracks Timing Patterns**: Monitors when processes first began triggering rules and their recurrence
+          This skill helps security teams determine if ASR triggers are from legitimate or suspicious processes.
+        Description: |-
+          Analyzes which specific processes are triggering ASR rules to determine if exclusions are needed. Key insights include:
+          
+          - **Process-Level Analysis**:
+            • Detailed information on process paths, file names, and command lines
+            • Frequency analysis of process triggers per ASR rule
+            
+          - **Context for Decision-Making**:
+            • Timeline data showing first and last occurrences
+            • Device and user scope for each process trigger pattern
+            
+          Results help security teams distinguish between legitimate software needing exclusions and potentially malicious activity.
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where tolower(ActionType) startswith "asr"
+            | where TimeGenerated > ago(30d)
+            | extend RuleName = case(
+                ActionType == "AsrRuleBlockOfficeChildProcessCreation", "Block all Office applications from creating child processes",
+                ActionType == "AsrRuleBlockOfficeExeContentExecution", "Block Office applications from creating executable content",
+                ActionType == "AsrRuleBlockOfficeMacroChildProcesses", "Block Office applications from injecting code into other processes",
+                ActionType == "AsrRuleBlockPersistenceThroughWmiEventSubscription", "Block persistence through WMI event subscription",
+                ActionType == "AsrRuleBlockAdobeReaderChildProcess", "Block Adobe Reader from creating child processes",
+                ActionType == "AsrRuleBlockObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleBlockOfficeCommsChildProcess", "Block Office communication application from creating child processes",
+                ActionType == "AsrRuleBlockWin32ApiCallsFromOfficeMacros", "Block Win32 API calls from Office macros",
+                ActionType == "AsrRuleBlockCredentialStealingFromWindowsLocalSecurityAuthoritySubsystem", "Block credential stealing from the Windows local security authority subsystem (lsass.exe)",
+                ActionType == "AsrRuleBlockUntrustedUnsignedProcessThatRunFromUsb", "Block untrusted and unsigned processes that run from USB",
+                ActionType == "AsrRuleBlockExecutableContentFromEmailClientAndWebmail", "Block executable content from email client and webmail",
+                ActionType == "AsrRuleBlockExecutableFilesRunningUnlessMeetCriteria", "Block executable files from running unless they meet a prevalence, age, or trusted list criterion",
+                ActionType == "AsrRuleBlockJavaScriptOrVBScriptFromLaunchingDownloadedExecutableContent", "Block JavaScript or VBScript from launching downloaded executable content",
+                ActionType == "AsrRuleBlockExecutionOfPotentiallyObfuscatedScripts", "Block execution of potentially obfuscated scripts",
+                ActionType == "AsrRuleUseAdvancedProtectionAgainstRansomware", "Use advanced protection against ransomware",
+                ActionType == "AsrRuleBlockProcessCreationsFromPsexecAndWmiCommands", "Block process creations originating from PSExec and WMI commands",
+                ActionType == "AsrRuleBlockRebootingMachineInSafeMode", "Block rebooting machine in Safe Mode (preview)",
+                ActionType == "AsrRuleBlockAbuseOfExploitedVulnerableSignedDrivers", "Block abuse of exploited vulnerable signed drivers",
+                ActionType == "AsrRuleBlockUseOfCopiedOrImpersonatedSystemTools", "Block use of copied or impersonated system tools (preview)",
+                ActionType == "AsrRuleBlockWebshellCreationForServers", "Block Webshell creation for Servers",
+                ActionType
+            )
+            | summarize 
+                TriggerCount = count(), 
+                FirstSeen = min(TimeGenerated),
+                LastSeen = max(TimeGenerated),
+                DeviceCount = dcount(DeviceName),
+                UserCount = dcount(AccountName),
+                DeviceList = make_set(DeviceName, 5),
+                UserList = make_set(AccountName, 5)
+                by RuleName, ActionType, InitiatingProcessFileName, InitiatingProcessFolderPath, InitiatingProcessCommandLine
+            | order by RuleName asc, TriggerCount desc

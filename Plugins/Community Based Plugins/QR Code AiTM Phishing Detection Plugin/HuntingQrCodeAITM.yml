@@ -176,7 +176,7 @@ SkillGroups:
         Settings:
           Target: Defender
           Template: |-
-           let suspiciousClusters = EmailEvents
+            let suspiciousClusters = EmailEvents
             | where Timestamp > ago(7d)
             | where EmailDirection == "Inbound"
             | where NetworkMessageId in ("<List of suspicious Network Message Ids from Alerts>")

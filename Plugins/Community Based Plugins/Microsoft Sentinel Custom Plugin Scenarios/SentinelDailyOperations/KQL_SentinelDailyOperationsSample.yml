@@ -42,14 +42,14 @@ SkillGroups:
         Inputs:
           - Name: region
             Description: provide any specific location you want to consider 
-            Required: true      
+            Required: true
         Settings: 
           Target: Sentinel
           TenantId: "{{TenantId}}"
           SubscriptionId: "{{SubscriptionId}}"
           ResourceGroupName: "{{ResourceGroupName}}"
           WorkspaceName: "{{WorkspaceName}}"
-          Template: |-                    	          
+          Template: |-
             AzureNetworkAnalyticsIPDetails_CL
             | where isnotempty(ThreatType_s)   
             | where ThreatType_s != '[]'
@@ -57,5 +57,5 @@ SkillGroups:
             | where Location_s == '{{region}}'
             | project ThreatType_s,ThreatDescription_s,PublicIPDetails_s,Location_s,FlowIntervalStartTime_t,FlowIntervalEndTime_t
             |order by FlowIntervalStartTime_t
-            
+
  

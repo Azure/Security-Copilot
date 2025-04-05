@@ -1,18 +1,52 @@
-# Security Copilot Plugin: Rdact PII
+# Redact Personally Identifiable Information 
 
-### **This plugin will redcat PII content from a session or a prompt ouput. It will also redact Entra ID object IDs theat may also be sensistive, for example GUIDs for an identity**
+## DESCRIPTION
+This plugin will redcat PII content from a session or a prompt ouput. It will also redact Entra ID object IDs theat may also be sensistive, for example GUIDs for an identity
 
-### Pre-requisites
+---
 
--   [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
--   [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
--   [Microsoft Defencer XDR](https://learn.microsoft.com/en-us/defender-xdr/microsoft-365-defender) 
+## TYPE AND REQUIREMENTS
+**TYPE**: GPT <br>
+**SOURCE**: None <br>
+**REQUIREMENTS**: None 
 
--   Plugin uses permissions of the user setting it up 
+---
 
-### Instructions
+## SKILLS
 
-#### Upload the Custom Plugin
+<table>
+  <tbody>
+    <tr>
+      <th>SkillName</th>
+      <th align="center">Description</th>
+      <th align="center">Parameters</th>
+    </tr>
+    <tr>
+      <td><b>RedactPII</b></td>
+      <td align="center">Redacts Personally Identifiable Information (PII) from the provided text</td>
+      <td>
+        <ul>
+          <li>
+            <i>text</i>
+          </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-1.  Obtain the file RedactPII.yaml from this directory.
+
+---
+
+## SAMPLE PROMPTS
+
+- `« Redacts Personally Identifiable Information (PII) from the provided text: <YOUR-TEXT> »`
+
+---
+
+## SCREENSHOTS
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/Community%20Plugins/RedactPII/RedactPIIPrompt.png" width="700"> </img>
+</div>
+
 

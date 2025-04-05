@@ -1,0 +1,24 @@
+Descriptor:
+  Name: SecurityCopilotLoginsStandalone
+  DisplayName: Security Copilot Portal Logins
+  Description: Identifies Security Copilot Portal logins in the last 3 days
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: SecurityCopilotLogins
+        DisplayName: Security Copilot Portal Logins
+        Description: Fetches Security Copilot Standalone Portal logins in the last 3 days - for each identity, the count of logins performed is returned
+        Settings:
+          Target: Sentinel
+          TenantId: <your_tenant_ID>
+          SubscriptionId: <your_subscription_ID>
+          ResourceGroupName: <your_RG_name>
+          WorkspaceName: <your_WS_name>
+          Template: |-
+            SigninLogs
+            | where TimeGenerated >= ago(3d)
+            | where AppDisplayName == "Security Copilot"
+            | project TimeGenerated, Identity, UserPrincipalName, OperationName
+            | summarize count() by Identity
+            | order by count_
