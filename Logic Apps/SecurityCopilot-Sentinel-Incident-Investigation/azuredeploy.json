@@ -47,6 +47,13 @@
             },
             "defaultValue": true
         },
+        "CallScpForUserRisk":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave 'true' if you want Security Copilot to check the risk level of the users on MS Entra. Set 'false' otherwise."
+            },
+            "defaultValue": true
+        },
         "CallScpForHosts":  {
             "type":  "Bool",
             "metadata":  {
@@ -130,11 +137,54 @@
                 "description":  "Enter, as an array of strings, the domains that you do not want Security Copilot to investigate"
             },
             "defaultValue": []
+        },
+        "MaxMdtiOutputLenghtForPreSummarization":  {
+            "type":  "Int",
+            "metadata":  {
+                "description":  "When the overall length of the aggregated MDTI results report is greater than the number specified here, an additional call is made to Security Copilot to pre-summarize this specific report. This pre-summarization reduces the risk that the final summarization gets an error because the overall input text is too long. "
+            },
+            "defaultValue": 2000
+        },
+        "WriteUnsummarizedResultsToIncident":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave true if you want that the raw results are saved as comment to the Sentinel incident. The raw results are the results before the final summarization. Set false otherwise. "
+            },
+            "defaultValue": true
+        },
+        "WriteFinalSummaryToIncident":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave true if you want that the summarized results are saved as comment to the Sentinel incident. Set false otherwise. "
+            },
+            "defaultValue": true
+        },
+        "RecipientEmail":  {
+            "type":  "String",
+            "metadata":  {
+                "description":  "Enter the email addrees of the recipient for the emails sent by this automation."
+            },
+            "defaultValue": ""
+        },
+        "SendUnsummarizedResultsByEmail":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave true if you want that the raw results are sent by email to the specified recipient. The raw results are the results before the final summarization. Set false otherwise. "
+            },
+            "defaultValue": true
+        },
+        "SendFinalSummaryByEmail":  {
+            "type":  "Bool",
+            "metadata":  {
+                "description":  "Leave true if you want that the summarized results are sent by email to the specified recipient. Set false otherwise. "
+            },
+            "defaultValue": true
         }
     },
     "variables":  {
         "MicrosoftSentinelConnectionName":  "[concat('MicrosoftSentinel-', parameters('PlaybookName'))]",
-        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]"
+        "SecuritycopilotConnectionName":  "[concat('Securitycopilot-', parameters('PlaybookName'))]",
+        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]"
     },
     "resources":  [
         {
@@ -160,6 +210,10 @@
                         },
                         "CallScpForAccounts":  {
                             "defaultValue":  "[parameters('CallScpForAccounts')]",
+                            "type":  "Bool"
+                        },
+                        "CallScpForUserRisk":  {
+                            "defaultValue":  "[parameters('CallScpForUserRisk')]",
                             "type":  "Bool"
                         },
                         "CallScpForHosts":  {
@@ -209,6 +263,30 @@
                         "SkipDomains":  {
                             "defaultValue":  "[parameters('SkipDomains')]",
                             "type":  "Array"
+                        },
+                        "MaxMdtiOutputLenghtForPreSummarization":  {
+                            "defaultValue":  "[parameters('MaxMdtiOutputLenghtForPreSummarization')]",
+                            "type":  "Int"
+                        },
+                        "WriteUnsummarizedResultsToIncident":  {
+                            "defaultValue":  "[parameters('WriteUnsummarizedResultsToIncident')]",
+                            "type":  "Bool"
+                        },
+                        "WriteFinalSummaryToIncident":  {
+                            "defaultValue":  "[parameters('WriteFinalSummaryToIncident')]",
+                            "type":  "Bool"
+                        },
+                        "RecipientEmail":  {
+                            "defaultValue":  "[parameters('RecipientEmail')]",
+                            "type":  "String"
+                        },
+                        "SendUnsummarizedResultsByEmail":  {
+                            "defaultValue":  "[parameters('SendUnsummarizedResultsByEmail')]",
+                            "type":  "Bool"
+                        },
+                        "SendFinalSummaryByEmail":  {
+                            "defaultValue":  "[parameters('SendFinalSummaryByEmail')]",
+                            "type":  "Bool"
                         }
                     },
                     "triggers":  {
@@ -241,7 +319,7 @@
                                     "actions":  {
                                         "Switch":  {
                                             "runAfter":  {
-                                                "Reset_variable_CommandLineNormalized":  [
+                                                "Show_item_for_debug_purposes":  [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -253,30 +331,18 @@
                                                             "actions":  {
                                                                 "Condition_-_IP_-_Use_AbuseIPDB":  {
                                                                     "actions":  {
-                                                                        "Security_Copilot_prompt_for_AbuseIPDB":  {
-                                                                            "type":  "ApiConnection",
+                                                                        "Append_to_array_forScp-IPs":  {
+                                                                            "type":  "AppendToArrayVariable",
                                                                             "inputs":  {
-                                                                                "host":  {
-                                                                                    "connection":  {
-                                                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                                                                    }
-                                                                                },
-                                                                                "method":  "post",
-                                                                                "body":  {
-                                                                                    "PromptContent":  "I'm curious about any abuseipdb records for the IP address @{items('For_Each_Entity')?['properties']?['address']}. Can you look that up for me for the last 30 days?"
-                                                                                },
-                                                                                "path":  "/process-prompt"
+                                                                                "name":  "forScp-IPs",
+                                                                                "value":  "@items('For_Each_Entity')?['properties']?['address']"
                                                                             }
-                                                                        },
-                                                                        "Compose_AbuseDBIP_Analysis":  {
-                                                                            "runAfter":  {
-                                                                                "Security_Copilot_prompt_for_AbuseIPDB":  [
-                                                                                    "Succeeded"
-                                                                                ]
-                                                                            },
-                                                                            "type":  "Compose",
-                                                                            "inputs":  "@body('Security_Copilot_prompt_for_AbuseIPDB')?['EvaluationResultContent']"
                                                                         }
+                                                                    },
+                                                                    "runAfter":  {
+                                                                        "Append_IP_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
                                                                     },
                                                                     "else":  {
                                                                         "actions":  {
@@ -299,10 +365,15 @@
                                                                         "Append_IP_to_array_variable_IndicatorsForMDTI":  {
                                                                             "type":  "AppendToArrayVariable",
                                                                             "inputs":  {
-                                                                                "name":  "IndicatorsForMDTI",
+                                                                                "name":  "forScp-Indicators",
                                                                                 "value":  "@items('For_Each_Entity')?['properties']?['address']"
                                                                             }
                                                                         }
+                                                                    },
+                                                                    "runAfter":  {
+                                                                        "Append_IP_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
                                                                     },
                                                                     "else":  {
                                                                         "actions":  {
@@ -319,6 +390,13 @@
                                                                         ]
                                                                     },
                                                                     "type":  "If"
+                                                                },
+                                                                "Append_IP_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('IP:',trim(toLower(items('For_Each_Entity')?['properties']?['address'])))"
+                                                                    }
                                                                 }
                                                             },
                                                             "else":  {
@@ -328,15 +406,25 @@
                                                             "expression":  {
                                                                 "and":  [
                                                                     {
-                                                                        "equals":  [
-                                                                            "@empty(items('For_Each_Entity')?['properties']?['address'])",
-                                                                            false
+                                                                        "or":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForIPsWithAbuseIPDB')",
+                                                                                    "ture"
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForIPsWithMDTI')",
+                                                                                    true
+                                                                                ]
+                                                                            }
                                                                         ]
                                                                     },
                                                                     {
                                                                         "equals":  [
-                                                                            "@parameters('CallScpForIPsWithAbuseIPDB')",
-                                                                            true
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['address'])",
+                                                                            false
                                                                         ]
                                                                     },
                                                                     {
@@ -558,30 +646,74 @@
                                                     "actions":  {
                                                         "Condition_-_Account":  {
                                                             "actions":  {
-                                                                "Security_Copilot_prompt_for_Account_":  {
-                                                                    "type":  "ApiConnection",
+                                                                "Append_User_Upn_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "host":  {
-                                                                            "connection":  {
-                                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                                                            }
-                                                                        },
-                                                                        "method":  "post",
-                                                                        "body":  {
-                                                                            "PromptContent":  "Give me all usr details for @{items('For_Each_Entity')?['properties']?['accountName']}. Does @{items('For_Each_Entity')?['properties']?['accountName']}have any registered devices in Microsoft Entra? List the recent risky sign-ins for @{items('For_Each_Entity')?['properties']?['accountName']}. Get Microsoft Entra audit logs for @{items('For_Each_Entity')?['properties']?['accountName']} for the past 72 hours.",
-                                                                            "SkillName":  "GetEntraUserDetailsV1"
-                                                                        },
-                                                                        "path":  "/process-prompt"
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('Account:',trim(toLower(items('For_Each_Entity')?['properties']?['additionalData']?['UserPrincipalName'])))"
                                                                     }
                                                                 },
-                                                                "Compose_Account_Analysis":  {
+                                                                "old_Condition_-_Account_-_Get_User_Details":  {
+                                                                    "actions":  {
+                                                                        "Append_to_array_forScp-UserForDetails":  {
+                                                                            "type":  "AppendToArrayVariable",
+                                                                            "inputs":  {
+                                                                                "name":  "forScp-UsersForDetails",
+                                                                                "value":  "@items('For_Each_Entity')?['properties']?['additionalData']?['UserPrincipalName']"
+                                                                            }
+                                                                        }
+                                                                    },
                                                                     "runAfter":  {
-                                                                        "Security_Copilot_prompt_for_Account_":  [
+                                                                        "Append_User_Upn_to_ProcessedItems":  [
                                                                             "Succeeded"
                                                                         ]
                                                                     },
-                                                                    "type":  "Compose",
-                                                                    "inputs":  "@body('Security_Copilot_prompt_for_Account_')?['EvaluationResultContent']"
+                                                                    "else":  {
+                                                                        "actions":  {
+                                                                        }
+                                                                    },
+                                                                    "expression":  {
+                                                                        "and":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForAccounts')",
+                                                                                    true
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type":  "If"
+                                                                },
+                                                                "Condition_-_Account_-_Get_User_Risk":  {
+                                                                    "actions":  {
+                                                                        "Append_UPN_to_array_variable_forScp-UsersForRiskAnalysis":  {
+                                                                            "type":  "AppendToArrayVariable",
+                                                                            "inputs":  {
+                                                                                "name":  "forScp-UsersForRiskAnalysis",
+                                                                                "value":  "@items('For_Each_Entity')?['properties']?['additionalData']?['UserPrincipalName']"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "runAfter":  {
+                                                                        "Append_User_Upn_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "else":  {
+                                                                        "actions":  {
+                                                                        }
+                                                                    },
+                                                                    "expression":  {
+                                                                        "and":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForUserRisk')",
+                                                                                    true
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type":  "If"
                                                                 }
                                                             },
                                                             "else":  {
@@ -591,6 +723,22 @@
                                                             "expression":  {
                                                                 "and":  [
                                                                     {
+                                                                        "or":  [
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForAccounts')",
+                                                                                    true
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "equals":  [
+                                                                                    "@parameters('CallScpForUserRisk')",
+                                                                                    true
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
                                                                         "equals":  [
                                                                             "@empty(items('For_Each_Entity')?['properties']?['accountName'])",
                                                                             false
@@ -598,8 +746,8 @@
                                                                     },
                                                                     {
                                                                         "equals":  [
-                                                                            "@parameters('CallScpForAccounts')",
-                                                                            true
+                                                                            "@empty(items('For_Each_Entity')?['properties']?['additionalData']?['UserPrincipalName'])",
+                                                                            false
                                                                         ]
                                                                     },
                                                                     {
@@ -607,6 +755,14 @@
                                                                             "contains":  [
                                                                                 "@parameters('SkipAccounts')",
                                                                                 "@toLower(items('For_Each_Entity')?['properties']?['accountName'])"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "not":  {
+                                                                            "endsWith":  [
+                                                                                "@items('For_Each_Entity')?['properties']?['accountName']",
+                                                                                "$"
                                                                             ]
                                                                         }
                                                                     }
@@ -621,30 +777,24 @@
                                                     "actions":  {
                                                         "Condition_-_Host":  {
                                                             "actions":  {
-                                                                "Security_Copilot_prompt_for_Device":  {
-                                                                    "type":  "ApiConnection",
+                                                                "Append_Device_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "host":  {
-                                                                            "connection":  {
-                                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                                                            }
-                                                                        },
-                                                                        "method":  "post",
-                                                                        "body":  {
-                                                                            "PromptContent":  "Tell me about device @{items('For_Each_Entity')?['properties']?['hostName']}.",
-                                                                            "SkillName":  "GetIntuneDevices"
-                                                                        },
-                                                                        "path":  "/process-prompt"
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('Device:',trim(toLower(items('For_Each_Entity')?['properties']?['hostName'])))"
                                                                     }
                                                                 },
-                                                                "Compose_Device_Analysis":  {
+                                                                "Append_to_array_forScp-Devices":  {
                                                                     "runAfter":  {
-                                                                        "Security_Copilot_prompt_for_Device":  [
+                                                                        "Append_Device_to_ProcessedItems":  [
                                                                             "Succeeded"
                                                                         ]
                                                                     },
-                                                                    "type":  "Compose",
-                                                                    "inputs":  "@body('Security_Copilot_prompt_for_Device')?['EvaluationResultContent']"
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "forScp-Devices",
+                                                                        "value":  "@items('For_Each_Entity')?['properties']?['hostName']"
+                                                                    }
                                                                 }
                                                             },
                                                             "else":  {
@@ -691,7 +841,7 @@
                                                                         "value":  "@tolower(trim(replace(replace(items('For_Each_Entity')?['properties']?['commandLine'],'  ',' '),'net1 ','net ')))"
                                                                     }
                                                                 },
-                                                                "Append_to_array_variable_ProcessedCommandLines":  {
+                                                                "Append_CommandLineNormalized_to_ProcessedItem":  {
                                                                     "runAfter":  {
                                                                         "Set_variable_CommandLineNormalized":  [
                                                                             "Succeeded"
@@ -699,7 +849,19 @@
                                                                     },
                                                                     "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "name":  "ProcessedCommandLines",
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('CommandLine:',variables('CommandLineNormalized'))"
+                                                                    }
+                                                                },
+                                                                "Append_to_array_variable_forScp-CommandLines":  {
+                                                                    "runAfter":  {
+                                                                        "Append_CommandLineNormalized_to_ProcessedItem":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "forScp-CommandLines",
                                                                         "value":  "@variables('CommandLineNormalized')"
                                                                     }
                                                                 }
@@ -742,10 +904,22 @@
                                                         "Condition_-_FileHash":  {
                                                             "actions":  {
                                                                 "Append_Filehash_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "runAfter":  {
+                                                                        "Append_FileHash_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
                                                                     "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "name":  "forScp-Indicators",
                                                                         "value":  "@toLower(items('For_Each_Entity')?['properties']?['hashValue'])"
+                                                                    }
+                                                                },
+                                                                "Append_FileHash_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('FileHash:',trim(toLower(items('For_Each_Entity')?['properties']?['hashValue'])))"
                                                                     }
                                                                 }
                                                             },
@@ -787,10 +961,22 @@
                                                         "Condition_-_Url":  {
                                                             "actions":  {
                                                                 "Append_Url_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "runAfter":  {
+                                                                        "Append_URL_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
                                                                     "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "name":  "forScp-Indicators",
                                                                         "value":  "@toLower(split(items('For_Each_Entity')?['properties']?['url'],'?')[0])"
+                                                                    }
+                                                                },
+                                                                "Append_URL_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('URL:',trim(toLower(split(items('For_Each_Entity')?['properties']?['url'],'?')[0])))"
                                                                     }
                                                                 }
                                                             },
@@ -832,10 +1018,22 @@
                                                         "Condition_-_DNS":  {
                                                             "actions":  {
                                                                 "Append_Domain_to_array_variable_IndicatorsForMDTI":  {
+                                                                    "runAfter":  {
+                                                                        "Append_Domain_to_ProcessedItems":  [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
                                                                     "type":  "AppendToArrayVariable",
                                                                     "inputs":  {
-                                                                        "name":  "IndicatorsForMDTI",
+                                                                        "name":  "forScp-Indicators",
                                                                         "value":  "@toLower(items('For_Each_Entity')?['properties']?['domainName'])"
+                                                                    }
+                                                                },
+                                                                "Append_Domain_to_ProcessedItems":  {
+                                                                    "type":  "AppendToArrayVariable",
+                                                                    "inputs":  {
+                                                                        "name":  "ProcessedItems",
+                                                                        "value":  "@concat('Domain:',trim(toLower(items('For_Each_Entity')?['properties']?['domainName'])))"
                                                                     }
                                                                 }
                                                             },
@@ -879,53 +1077,108 @@
                                             "expression":  "@items('For_Each_Entity')?['kind']",
                                             "type":  "Switch"
                                         },
-                                        "Reset_variable_CommandLineNormalized":  {
-                                            "type":  "SetVariable",
-                                            "inputs":  {
-                                                "name":  "CommandLineNormalized",
-                                                "value":  "\"\""
-                                            }
+                                        "Show_item_for_debug_purposes":  {
+                                            "type":  "Compose",
+                                            "inputs":  "@items('For_Each_Entity')"
                                         }
                                     },
                                     "type":  "Foreach"
                                 },
-                                "Condition_Call_SCP_for_Command_Lines":  {
+                                "Condition_Call_for_IP_Addresses":  {
                                     "actions":  {
-                                        "Security_Copilot_prompt_for_Unique_Processes":  {
+                                        "For_each_forScp-IPs":  {
+                                            "foreach":  "@variables('Unique-forScp-IPs')",
+                                            "actions":  {
+                                                "Security_Copilot_prompt_for_IP":  {
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "PromptContent":  "I'm curious about any abuseipdb records for the IP address @{items('For_each_forScp-IPs')}. Can you look that up for me for the last 30 days?"
+                                                        },
+                                                        "path":  "/process-prompt"
+                                                    }
+                                                },
+                                                "Condition_-_SCP_-_Call_for_IPs_with_AbuseIPBD_was_successful":  {
+                                                    "actions":  {
+                                                        "Set_variable_ResultsAvailable_-_IPs":  {
+                                                            "runAfter":  {
+                                                                "Append_to_Results-IPs_Success":  [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type":  "SetVariable",
+                                                            "inputs":  {
+                                                                "name":  "ResultsAvailable",
+                                                                "value":  true
+                                                            }
+                                                        },
+                                                        "Append_to_Results-IPs_Success":  {
+                                                            "type":  "AppendToArrayVariable",
+                                                            "inputs":  {
+                                                                "name":  "Results-IPs",
+                                                                "value":  "\nResults of the analysis for the IP '@{items('For_each_forScp-IPs')}':\n\n@{body('Security_Copilot_prompt_for_IP')?['EvaluationResultContent']}\n "
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter":  {
+                                                        "Security_Copilot_prompt_for_IP":  [
+                                                            "Succeeded",
+                                                            "TimedOut",
+                                                            "Skipped",
+                                                            "Failed"
+                                                        ]
+                                                    },
+                                                    "else":  {
+                                                        "actions":  {
+                                                            "Append_to_Results-IPs_Error":  {
+                                                                "type":  "AppendToArrayVariable",
+                                                                "inputs":  {
+                                                                    "name":  "Results-IPs",
+                                                                    "value":  "\nResults of the analysis for the IP '@{items('For_each_forScp-IPs')}':\n\nError while retrieving the results: @{body('Security_Copilot_prompt_for_IP')?['EvaluationResultContent']}\n "
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "expression":  {
+                                                        "and":  [
+                                                            {
+                                                                "equals":  [
+                                                                    "@body('Security_Copilot_prompt_for_IP')?['evaluationResultType']",
+                                                                    "Success"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "type":  "If"
+                                                }
+                                            },
                                             "runAfter":  {
-                                                "Set_variable_UniqueCommandLines":  [
+                                                "Show_Unique-forScp-IPs_for_debug_purposes":  [
                                                     "Succeeded"
                                                 ]
                                             },
-                                            "type":  "ApiConnection",
-                                            "inputs":  {
-                                                "host":  {
-                                                    "connection":  {
-                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                                    }
-                                                },
-                                                "method":  "post",
-                                                "body":  {
-                                                    "PromptContent":  "Tell me more about the follwing process command lines: @{join(variables('UniqueCommandLines'),'\n')}",
-                                                    "SkillName":  "ScriptAnalyzer"
-                                                },
-                                                "path":  "/process-prompt"
-                                            }
+                                            "type":  "Foreach"
                                         },
-                                        "Compose_Process_Analysis":  {
+                                        "Show_Unique-forScp-IPs_for_debug_purposes":  {
                                             "runAfter":  {
-                                                "Security_Copilot_prompt_for_Unique_Processes":  [
+                                                "Set_variable_-_Unique-forScp-IPs":  [
                                                     "Succeeded"
                                                 ]
                                             },
                                             "type":  "Compose",
-                                            "inputs":  "@body('Security_Copilot_prompt_for_Unique_Processes')?['EvaluationResultContent']"
+                                            "inputs":  "@variables('Unique-forScp-IPs')"
                                         },
-                                        "Set_variable_UniqueCommandLines":  {
+                                        "Set_variable_-_Unique-forScp-IPs":  {
                                             "type":  "SetVariable",
                                             "inputs":  {
-                                                "name":  "UniqueCommandLines",
-                                                "value":  "@sort(union(variables('ProcessedCommandLines'),variables('ProcessedCommandLines')))"
+                                                "name":  "Unique-forScp-IPs",
+                                                "value":  "@sort(union(variables('forScp-IPs'),variables('forScp-IPs')))"
                                             }
                                         }
                                     },
@@ -942,7 +1195,493 @@
                                         "and":  [
                                             {
                                                 "equals":  [
-                                                    "@parameters('CallScpForCommandLines')",
+                                                    "@and(not(equals(variables('forScp-IPs'),null)), greater(length(variables('forScp-IPs')), 0))",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_Call_SCP_for_Users_Details":  {
+                                    "actions":  {
+                                        "For_each_forScp-UsersForDetails":  {
+                                            "foreach":  "@variables('Unique-forScp-UsersForDetails')",
+                                            "actions":  {
+                                                "Security_Copilot_prompt_for_Account_":  {
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "PromptContent":  "Give me all usr details for @{items('For_each_forScp-UsersForDetails')}. Does  have any registered devices in Microsoft Entra? List the recent risky sign-ins for @{items('For_each_forScp-UsersForDetails')}. Get Microsoft Entra audit logs for @{items('For_each_forScp-UsersForDetails')} for the past 72 hours.",
+                                                            "SkillName":  "GetEntraUserDetailsV1"
+                                                        },
+                                                        "path":  "/process-prompt"
+                                                    }
+                                                },
+                                                "Condition_-_SCP_-_Call_for_Account_on_Entra_was_successful":  {
+                                                    "actions":  {
+                                                        "Set_variable_-_ResultsAvailable_-_Accounts":  {
+                                                            "runAfter":  {
+                                                                "Append_to_Results-UsersDetails_-_Success":  [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type":  "SetVariable",
+                                                            "inputs":  {
+                                                                "name":  "ResultsAvailable",
+                                                                "value":  true
+                                                            }
+                                                        },
+                                                        "Append_to_Results-UsersDetails_-_Success":  {
+                                                            "type":  "AppendToArrayVariable",
+                                                            "inputs":  {
+                                                                "name":  "Results-UsersDetails",
+                                                                "value":  "\nResults of the analysis for the account '@{items('For_each_forScp-UsersForDetails')}':\n\n@{body('Security_Copilot_prompt_for_Account_')?['EvaluationResultContent']}\n "
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter":  {
+                                                        "Security_Copilot_prompt_for_Account_":  [
+                                                            "Succeeded",
+                                                            "TimedOut",
+                                                            "Skipped",
+                                                            "Failed"
+                                                        ]
+                                                    },
+                                                    "else":  {
+                                                        "actions":  {
+                                                            "Append_to_Results-UsersDetails_-_Error":  {
+                                                                "type":  "AppendToArrayVariable",
+                                                                "inputs":  {
+                                                                    "name":  "Results-UsersDetails",
+                                                                    "value":  "\nResults of the analysis for the account '@{items('For_each_forScp-UsersForDetails')}':\n\nError while retrieving the results: @{body('Security_Copilot_prompt_for_Account_')?['EvaluationResultContent']}\n "
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "expression":  {
+                                                        "and":  [
+                                                            {
+                                                                "equals":  [
+                                                                    "@body('Security_Copilot_prompt_for_Account_')?['evaluationResultType']",
+                                                                    "Success"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "type":  "If"
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Show_Unique-forScp-UsersForDetails_for_debug_purposes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Foreach"
+                                        },
+                                        "Show_Unique-forScp-UsersForDetails_for_debug_purposes":  {
+                                            "runAfter":  {
+                                                "Set_variable_-_Unique-forScp-UsersForDetails":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@variables('Unique-forScp-UsersForDetails')"
+                                        },
+                                        "Set_variable_-_Unique-forScp-UsersForDetails":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Unique-forScp-UsersForDetails",
+                                                "value":  "@sort(union(variables('forScp-UsersForDetails'),variables('forScp-UsersForDetails')))"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@and(not(equals(variables('forScp-UsersForDetails'),null)), greater(length(variables('forScp-UsersForDetails')), 0))",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_Call_SCP_for_Users_Risk":  {
+                                    "actions":  {
+                                        "Security_Copilot_prompt_for_Users_Risk":  {
+                                            "runAfter":  {
+                                                "Show_Unique-forScp-UsersForRiskAnalysis_for_debug_purposes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "PromptContent":  "@join(variables('Unique-forScp-UsersForRiskAnalysis'),', ')",
+                                                    "SkillName":  "GetEntraRiskyUsers"
+                                                },
+                                                "path":  "/process-prompt"
+                                            }
+                                        },
+                                        "Condition_-_Users_Risk_retrieved":  {
+                                            "actions":  {
+                                                "Compose_Users_Risk":  {
+                                                    "type":  "Compose",
+                                                    "inputs":  "@body('Security_Copilot_prompt_for_Users_Risk')?['EvaluationResultContent']"
+                                                },
+                                                "Set_variable_-_ResultsAvailable_-_Users_Risk":  {
+                                                    "runAfter":  {
+                                                        "Append_to_Results-UsersRisk_-_Success":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "ResultsAvailable",
+                                                        "value":  true
+                                                    }
+                                                },
+                                                "Append_to_Results-UsersRisk_-_Success":  {
+                                                    "runAfter":  {
+                                                        "Compose_Users_Risk":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "AppendToArrayVariable",
+                                                    "inputs":  {
+                                                        "name":  "Results-UsersRisk",
+                                                        "value":  "@body('Security_Copilot_prompt_for_Users_Risk')?['EvaluationResultContent']"
+                                                    }
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Security_Copilot_prompt_for_Users_Risk":  [
+                                                    "Succeeded",
+                                                    "TimedOut",
+                                                    "Skipped",
+                                                    "Failed"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                    "Append_to_Results-UsersRisk_-_Error":  {
+                                                        "type":  "AppendToArrayVariable",
+                                                        "inputs":  {
+                                                            "name":  "Results-UsersRisk",
+                                                            "value":  "Error while retrieving the users risk: '@{body('Security_Copilot_prompt_for_Users_Risk')?['EvaluationResultContent']}'"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "equals":  [
+                                                            "@body('Security_Copilot_prompt_for_Users_Risk')?['evaluationResultType']",
+                                                            "Success"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
+                                        },
+                                        "Show_Unique-forScp-UsersForRiskAnalysis_for_debug_purposes":  {
+                                            "runAfter":  {
+                                                "Set_variable_Unique-forScp-UsersForRiskAnalysis":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@variables('Unique-forScp-UsersForRiskAnalysis')"
+                                        },
+                                        "Set_variable_Unique-forScp-UsersForRiskAnalysis":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Unique-forScp-UsersForRiskAnalysis",
+                                                "value":  "@sort(union(variables('forScp-UsersForRiskAnalysis'),variables('forScp-UsersForRiskAnalysis')))"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@and(not(equals(variables('forScp-UsersForRiskAnalysis'),null)), greater(length(variables('forScp-UsersForRiskAnalysis')), 0))",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_Call_SCP_for_Devices_Details":  {
+                                    "actions":  {
+                                        "For_each_forScp-Devices":  {
+                                            "foreach":  "@variables('Unique-forScp-Devices')",
+                                            "actions":  {
+                                                "Security_Copilot_prompt_for_Device":  {
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "PromptContent":  "Tell me about device @{items('For_each_forScp-Devices')}.",
+                                                            "SkillName":  "GetIntuneDevices"
+                                                        },
+                                                        "path":  "/process-prompt"
+                                                    }
+                                                },
+                                                "Condition_-_SCP_-_Call_for_devices_on_Intune_was_successful":  {
+                                                    "actions":  {
+                                                        "Set_variable_-_ResultsAvailable_-_Devices":  {
+                                                            "runAfter":  {
+                                                                "Append_to_Results-Devices-Success":  [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type":  "SetVariable",
+                                                            "inputs":  {
+                                                                "name":  "ResultsAvailable",
+                                                                "value":  true
+                                                            }
+                                                        },
+                                                        "Append_to_Results-Devices-Success":  {
+                                                            "type":  "AppendToArrayVariable",
+                                                            "inputs":  {
+                                                                "name":  "Results-Devices",
+                                                                "value":  "\nResults of the analysis for the device '@{items('For_each_forScp-Devices')}':\n\n@{body('Security_Copilot_prompt_for_Device')?['EvaluationResultContent']}\n"
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter":  {
+                                                        "Security_Copilot_prompt_for_Device":  [
+                                                            "Succeeded",
+                                                            "TimedOut",
+                                                            "Skipped",
+                                                            "Failed"
+                                                        ]
+                                                    },
+                                                    "else":  {
+                                                        "actions":  {
+                                                            "Append_to_results-Devices-Error":  {
+                                                                "type":  "AppendToArrayVariable",
+                                                                "inputs":  {
+                                                                    "name":  "Results-Devices",
+                                                                    "value":  "\nResults of the analysis for the device '@{items('For_each_forScp-Devices')}': \n\nError while retrieving the results: '@{body('Security_Copilot_prompt_for_Device')?['EvaluationResultContent']}'\n"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "expression":  {
+                                                        "and":  [
+                                                            {
+                                                                "equals":  [
+                                                                    "@body('Security_Copilot_prompt_for_Device')?['evaluationResultType']",
+                                                                    "Success"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "type":  "If"
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Show_Unique-forScp-Devices_for_debug_purposes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Foreach"
+                                        },
+                                        "Show_Unique-forScp-Devices_for_debug_purposes":  {
+                                            "runAfter":  {
+                                                "Set_variable_Unique-forScp-Devices":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@variables('Unique-forScp-Devices')"
+                                        },
+                                        "Set_variable_Unique-forScp-Devices":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Unique-forScp-Devices",
+                                                "value":  "@sort(union(variables('forScp-Devices'),variables('forScp-Devices')))"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@and(not(equals(variables('forScp-Devices'),null)), greater(length(variables('forScp-Devices')), 0))",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_Call_SCP_for_Command_Lines":  {
+                                    "actions":  {
+                                        "Security_Copilot_prompt_for_Unique_Processes":  {
+                                            "runAfter":  {
+                                                "Show_Unique-forScp-CommandLines_for_debug_purposes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "PromptContent":  "From the following list, extract the command lines and related descriptions containing commands that are most likely DIRECTLY CORRELATED to malicious activities. Remove all command lines containing only the names of well-known portable executable files that are part of the Windows or Linux operating system, where no additional parameters are specified. For example, remove 'notepad.exe' and 'cmd.exe' but keep 'notepad.exe -param1' or 'cmd.exe -paramX' or 'unknownfile.exe'. The list starts here:\n \n@{join(variables('Unique-forScp-CommandLines'),'\n')}",
+                                                    "SkillName":  "ScriptAnalyzer"
+                                                },
+                                                "path":  "/process-prompt"
+                                            }
+                                        },
+                                        "Condition_-_SCP_-_Call_for_Processes_was_successful":  {
+                                            "actions":  {
+                                                "Compose_Process_Analysis":  {
+                                                    "type":  "Compose",
+                                                    "inputs":  "@body('Security_Copilot_prompt_for_Unique_Processes')?['EvaluationResultContent']"
+                                                },
+                                                "Set_variable_-_ResultsAvailable_-_Command_Lines":  {
+                                                    "runAfter":  {
+                                                        "Append_to_Results-CommandLines_-_Success":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "ResultsAvailable",
+                                                        "value":  true
+                                                    }
+                                                },
+                                                "Append_to_Results-CommandLines_-_Success":  {
+                                                    "runAfter":  {
+                                                        "Compose_Process_Analysis":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "AppendToArrayVariable",
+                                                    "inputs":  {
+                                                        "name":  "Results-CommandLines",
+                                                        "value":  "@body('Security_Copilot_prompt_for_Unique_Processes')?['EvaluationResultContent']"
+                                                    }
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Security_Copilot_prompt_for_Unique_Processes":  [
+                                                    "Succeeded",
+                                                    "TimedOut",
+                                                    "Skipped",
+                                                    "Failed"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                    "Append_to_Results-CommandLines_-_Error":  {
+                                                        "type":  "AppendToArrayVariable",
+                                                        "inputs":  {
+                                                            "name":  "Results-CommandLines",
+                                                            "value":  "Error while analyzing the command lines: '@{body('Security_Copilot_prompt_for_Unique_Processes')?['EvaluationResultContent']}'"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "equals":  [
+                                                            "@body('Security_Copilot_prompt_for_Unique_Processes')?['evaluationResultType']",
+                                                            "Success"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
+                                        },
+                                        "Show_Unique-forScp-CommandLines_for_debug_purposes":  {
+                                            "runAfter":  {
+                                                "Set_variable_Unique-forScp-CommandLines":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@variables('Unique-forScp-CommandLines')"
+                                        },
+                                        "Set_variable_Unique-forScp-CommandLines":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Unique-forScp-CommandLines",
+                                                "value":  "@sort(union(variables('forScp-CommandLines'),variables('forScp-CommandLines')))"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "For_Each_Entity":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@and(not(equals(variables('forScp-CommandLines'), null)), greater(length(variables('forScp-CommandLines')), 0))",
                                                     true
                                                 ]
                                             }
@@ -958,7 +1697,7 @@
                                                     "type":  "SetVariable",
                                                     "inputs":  {
                                                         "name":  "SubarrayIndicatorsForMDTI",
-                                                        "value":  "@take(skip(variables('IndicatorsForMDTI'),variables('CounterIndicatorsForMDTI')),10)"
+                                                        "value":  "@take(skip(variables('Unique-forScp-Indicators'),variables('CounterIndicatorsForMDTI')),10)"
                                                     }
                                                 },
                                                 "Set_variable_CsvIndicatorsForMDTI":  {
@@ -970,7 +1709,7 @@
                                                     "type":  "SetVariable",
                                                     "inputs":  {
                                                         "name":  "CsvIndicatorsForMDTI",
-                                                        "value":  "@join(variables('SubarrayIndicatorsForMDTI'),',')"
+                                                        "value":  "@join(variables('SubarrayIndicatorsForMDTI'),', ')"
                                                     }
                                                 },
                                                 "Security_Copilot_prompt_for_IoC_to_MDTI":  {
@@ -994,30 +1733,9 @@
                                                         "path":  "/process-prompt"
                                                     }
                                                 },
-                                                "Compose_IoC_from_MDTI":  {
-                                                    "runAfter":  {
-                                                        "Security_Copilot_prompt_for_IoC_to_MDTI":  [
-                                                            "Succeeded"
-                                                        ]
-                                                    },
-                                                    "type":  "Compose",
-                                                    "inputs":  "@body('Security_Copilot_prompt_for_IoC_to_MDTI')?['EvaluationResultContent']"
-                                                },
-                                                "Append_to_array_variable_ResponsesFromMDTI":  {
-                                                    "runAfter":  {
-                                                        "Compose_IoC_from_MDTI":  [
-                                                            "Succeeded"
-                                                        ]
-                                                    },
-                                                    "type":  "AppendToArrayVariable",
-                                                    "inputs":  {
-                                                        "name":  "ResponsesFromMDTI",
-                                                        "value":  "@outputs('Compose_IoC_from_MDTI')"
-                                                    }
-                                                },
                                                 "Compose_New_Counter_Value":  {
                                                     "runAfter":  {
-                                                        "Append_to_array_variable_ResponsesFromMDTI":  [
+                                                        "Condition_-_SCP_-_Call_for_indicators_was_successful":  [
                                                             "Succeeded"
                                                         ]
                                                     },
@@ -1035,14 +1753,221 @@
                                                         "name":  "CounterIndicatorsForMDTI",
                                                         "value":  "@outputs('Compose_New_Counter_Value')"
                                                     }
+                                                },
+                                                "Condition_-_SCP_-_Call_for_indicators_was_successful":  {
+                                                    "actions":  {
+                                                        "Compose_IoC_from_MDTI":  {
+                                                            "type":  "Compose",
+                                                            "inputs":  "@body('Security_Copilot_prompt_for_IoC_to_MDTI')?['EvaluationResultContent']"
+                                                        },
+                                                        "Append_to_array_variable_ResponsesFromMDTI_-_Success":  {
+                                                            "runAfter":  {
+                                                                "Compose_IoC_from_MDTI":  [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type":  "AppendToArrayVariable",
+                                                            "inputs":  {
+                                                                "name":  "ResponsesFromMDTI",
+                                                                "value":  "@body('Security_Copilot_prompt_for_IoC_to_MDTI')?['EvaluationResultContent']"
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter":  {
+                                                        "Security_Copilot_prompt_for_IoC_to_MDTI":  [
+                                                            "Succeeded",
+                                                            "TimedOut",
+                                                            "Skipped",
+                                                            "Failed"
+                                                        ]
+                                                    },
+                                                    "else":  {
+                                                        "actions":  {
+                                                            "Append_to_array_variable_ResponsesFromMDTI_-_Error":  {
+                                                                "type":  "AppendToArrayVariable",
+                                                                "inputs":  {
+                                                                    "name":  "ResponsesFromMDTI",
+                                                                    "value":  "Error during the iteration @{add(div(variables('CounterIndicatorsForMDTI'),10),1)} wirh MDTI: '@{body('Security_Copilot_prompt_for_IoC_to_MDTI')?['EvaluationResultContent']}'"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "expression":  {
+                                                        "and":  [
+                                                            {
+                                                                "equals":  [
+                                                                    "@body('Security_Copilot_prompt_for_IoC_to_MDTI')?['evaluationResultType']",
+                                                                    "Success"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "type":  "If"
                                                 }
                                             },
-                                            "expression":  "@equals(greaterOrEquals(length(variables('IndicatorsForMDTI')),variables('CounterIndicatorsForMDTI')),false)",
+                                            "runAfter":  {
+                                                "Show_Unique-forScp-Indicators_for_debug_purposes":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "expression":  "@equals(greaterOrEquals(length(variables('Unique-forScp-Indicators')),variables('CounterIndicatorsForMDTI')),false)",
                                             "limit":  {
                                                 "count":  60,
                                                 "timeout":  "PT1H"
                                             },
                                             "type":  "Until"
+                                        },
+                                        "Set_variable_OutputLength_-_MDTI_Output":  {
+                                            "runAfter":  {
+                                                "Set_variable_original_Response-MDTI":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "OutputLengthMDTI",
+                                                "value":  "@length(variables('Response-MDTI'))"
+                                            }
+                                        },
+                                        "Condition_-_MDTI_Output_Length":  {
+                                            "actions":  {
+                                                "Submit_a_Security_Copilot_prompt_-_Summarize_MDTI_response":  {
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "PromptContent":  "From the following detailed list containing the results of the analysis of Indicators of Compromise (IoC) made by MDTI, extract suspicious and malicious indicators with the all the related details on reputation and explanations. Do not return unknown indicators. The list starts here: @{variables('Response-MDTI')}\n",
+                                                            "SkillName":  "SummarizeData"
+                                                        },
+                                                        "path":  "/process-prompt"
+                                                    }
+                                                },
+                                                "Condition_-_SCP_-_Call_for_indicator_summarization_was_successful":  {
+                                                    "actions":  {
+                                                        "Set_variable_summarized_Response-MDTI_-_Success":  {
+                                                            "type":  "SetVariable",
+                                                            "inputs":  {
+                                                                "name":  "Response-MDTI",
+                                                                "value":  "@body('Submit_a_Security_Copilot_prompt_-_Summarize_MDTI_response')?['EvaluationResultContent']"
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter":  {
+                                                        "Submit_a_Security_Copilot_prompt_-_Summarize_MDTI_response":  [
+                                                            "Succeeded",
+                                                            "TimedOut",
+                                                            "Skipped",
+                                                            "Failed"
+                                                        ]
+                                                    },
+                                                    "else":  {
+                                                        "actions":  {
+                                                            "Set_variable_summarized_Response-MDTI_-_Error":  {
+                                                                "type":  "SetVariable",
+                                                                "inputs":  {
+                                                                    "name":  "Response-MDTI",
+                                                                    "value":  "Error while summarizing the results retrieved from MDTI: '@{body('Submit_a_Security_Copilot_prompt_-_Summarize_MDTI_response')?['EvaluationResultContent']}'"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "expression":  {
+                                                        "and":  [
+                                                            {
+                                                                "equals":  [
+                                                                    "",
+                                                                    ""
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "type":  "If"
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Condition_-_MDTI_Results_available":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "greater":  [
+                                                            "@variables('OutputLengthMDTI')",
+                                                            "@parameters('MaxMdtiOutputLenghtForPreSummarization')"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
+                                        },
+                                        "Set_variable_original_Response-MDTI":  {
+                                            "runAfter":  {
+                                                "Until":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Response-MDTI",
+                                                "value":  "@join(variables('ResponsesFromMDTI'),' \n\n\n')"
+                                            }
+                                        },
+                                        "Show_Unique-forScp-Indicators_for_debug_purposes":  {
+                                            "runAfter":  {
+                                                "Set_variable_Unique-forScp-Indicators":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Compose",
+                                            "inputs":  "@variables('Unique-forScp-Indicators')"
+                                        },
+                                        "Set_variable_Unique-forScp-Indicators":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "Unique-forScp-Indicators",
+                                                "value":  "@sort(union(variables('forScp-Indicators'),variables('forScp-Indicators')))"
+                                            }
+                                        },
+                                        "Condition_-_MDTI_Results_available":  {
+                                            "actions":  {
+                                                "Set_variable_-_ResultsAvailable_-_MDTI":  {
+                                                    "type":  "SetVariable",
+                                                    "inputs":  {
+                                                        "name":  "ResultsAvailable",
+                                                        "value":  true
+                                                    }
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Set_variable_OutputLength_-_MDTI_Output":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "greater":  [
+                                                            "@variables('OutputLengthMDTI')",
+                                                            0
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
                                         }
                                     },
                                     "runAfter":  {
@@ -1058,25 +1983,7 @@
                                         "or":  [
                                             {
                                                 "equals":  [
-                                                    "@parameters('CallScpForIPsWithMDTI')",
-                                                    true
-                                                ]
-                                            },
-                                            {
-                                                "equals":  [
-                                                    "@parameters('CallScpForFilehashesWithMDTI')",
-                                                    true
-                                                ]
-                                            },
-                                            {
-                                                "equals":  [
-                                                    "@parameters('CallScpForUrlsWithMDTI')",
-                                                    true
-                                                ]
-                                            },
-                                            {
-                                                "equals":  [
-                                                    "@parameters('CallScpForDomainsWithMDTI')",
+                                                    "@and(not(equals(variables('forScp-Indicators'),null)), greater(length(variables('forScp-Indicators')), 0))",
                                                     true
                                                 ]
                                             }
@@ -1086,7 +1993,7 @@
                                 }
                             },
                             "runAfter":  {
-                                "Initialize_variable_ResponsesFromMDTI":  [
+                                "Condition_-_Validate_Parameters":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1112,133 +2019,6 @@
                             },
                             "type":  "If"
                         },
-                        "Condition_-_Incident_Investigation":  {
-                            "actions":  {
-                                "Security_Copilot_perform_incident_investigation":  {
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "body":  {
-                                            "PromptContent":  "Here is the security incident detail: @{outputs('Compose_-_Normalized_Incident_Data')}\n\nPerform investigation on security incident in following order. Incident Overview, Incident Description, Analysis on Ip Address, Account, Host and Process, Possible mitigation steps and Conclusion. ",
-                                            "SkillName":  "SummarizeData"
-                                        },
-                                        "path":  "/process-prompt"
-                                    }
-                                },
-                                "Compose_-_Incident_Investigation":  {
-                                    "runAfter":  {
-                                        "Security_Copilot_perform_incident_investigation":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "Compose",
-                                    "inputs":  "@body('Security_Copilot_perform_incident_investigation')?['EvaluationResultContent']"
-                                },
-                                "Add_Investigation_Notes_to_Incident":  {
-                                    "runAfter":  {
-                                        "Compose_-_Incident_Investigation":  [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type":  "ApiConnection",
-                                    "inputs":  {
-                                        "host":  {
-                                            "connection":  {
-                                                "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
-                                            }
-                                        },
-                                        "method":  "post",
-                                        "body":  {
-                                            "incidentArmId":  "@triggerBody()?['object']?['id']",
-                                            "message":  "\u003cbr\u003e@{outputs('Compose_-_Incident_Investigation')}\u003cbr\u003e"
-                                        },
-                                        "path":  "/Incidents/Comment"
-                                    }
-                                }
-                            },
-                            "runAfter":  {
-                                "Compose_-_Normalized_Incident_Data":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "else":  {
-                                "actions":  {
-                                    "Terminate_-_No_investigation":  {
-                                        "type":  "Terminate",
-                                        "inputs":  {
-                                            "runStatus":  "Succeeded"
-                                        }
-                                    }
-                                }
-                            },
-                            "expression":  {
-                                "or":  [
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForIPsWithAbuseIPDB')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForAccounts')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForHosts')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForCommandLines')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForIPsWithMDTI')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForFilehashesWithMDTI')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForUrlsWithMDTI')",
-                                            true
-                                        ]
-                                    },
-                                    {
-                                        "equals":  [
-                                            "@parameters('CallScpForDomainsWithMDTI')",
-                                            true
-                                        ]
-                                    }
-                                ]
-                            },
-                            "type":  "If"
-                        },
-                        "Compose_-_Incident_Data":  {
-                            "runAfter":  {
-                                "Condition_-_Validate_Entities":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "Incident Ttile: @{triggerBody()?['object']?['properties']?['title']},\nIncident Description: @{triggerBody()?['object']?['properties']?['description']},\nIncident Severity: @{triggerBody()?['object']?['properties']?['severity']},\nIncident Tactics: @{triggerBody()?['object']?['properties']?['additionalData']?['tactics']},\nIp Address Analysis: @{if(parameters('CallScpForIPsWithAbuseIPDB'),outputs('Compose_AbuseDBIP_Analysis'),'skipped...')},\nAccount Analysis: @{if(parameters('CallScpForAccounts'),outputs('Compose_Account_Analysis'),'skipped...')},\nDevice Analysis: @{if(parameters('CallScpForHosts'),outputs('Compose_Device_Analysis'),'skipped...')},\nProcess Analysis: @{if(parameters('CallScpForCommandLines'),outputs('Compose_Process_Analysis'),'skipped...')}\nEvidences from MDTI: @{if(or(parameters('CallScpForIPsWithMDTI'),parameters('CallScpForFilehashesWithMDTI'),parameters('CallScpForUrlsWithMDTI'),parameters('CallScpForDomainsWithMDTI')),join(variables('ResponsesFromMDTI'),' ____ '),'skipped...')}"
-                        },
                         "Initialize_variable_CommandLineNormalized":  {
                             "runAfter":  {
                                 "Compose_Incident_Entities":  [
@@ -1255,7 +2035,7 @@
                                 ]
                             }
                         },
-                        "Initialize_variable_UniqueCommandLines":  {
+                        "Initialize_variable_forScp-CommandLines":  {
                             "runAfter":  {
                                 "Initialize_variable_ProcessedCommandLines":  [
                                     "Succeeded"
@@ -1265,20 +2045,11 @@
                             "inputs":  {
                                 "variables":  [
                                     {
-                                        "name":  "UniqueCommandLines",
+                                        "name":  "forScp-CommandLines",
                                         "type":  "array"
                                     }
                                 ]
                             }
-                        },
-                        "Compose_-_Normalized_Incident_Data":  {
-                            "runAfter":  {
-                                "Compose_-_Incident_Data":  [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type":  "Compose",
-                            "inputs":  "@replace(replace(outputs('Compose_-_Incident_Data'),',null',''),'[null,','')"
                         },
                         "Initialize_variable_ProcessedCommandLines":  {
                             "runAfter":  {
@@ -1296,9 +2067,9 @@
                                 ]
                             }
                         },
-                        "Initialize_variable_IndicatorsForMDTI":  {
+                        "Initialize_variable_forScp-Indicators":  {
                             "runAfter":  {
-                                "Initialize_variable_UniqueCommandLines":  [
+                                "Initialize_variable_Results-CommandLines":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1306,7 +2077,7 @@
                             "inputs":  {
                                 "variables":  [
                                     {
-                                        "name":  "IndicatorsForMDTI",
+                                        "name":  "forScp-Indicators",
                                         "type":  "array"
                                     }
                                 ]
@@ -1314,7 +2085,7 @@
                         },
                         "Initialize_variable_CounterIndicatorsForMDTI":  {
                             "runAfter":  {
-                                "Initialize_variable_IndicatorsForMDTI":  [
+                                "Initialize_variable_Unique-forScp-Indicators":  [
                                     "Succeeded"
                                 ]
                             },
@@ -1376,6 +2147,780 @@
                                     }
                                 ]
                             }
+                        },
+                        "Initialize_variable_OutputLength":  {
+                            "runAfter":  {
+                                "Initialize_variable_Results-IPs":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "OutputLengthMDTI",
+                                        "type":  "integer"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Response-MDTI":  {
+                            "runAfter":  {
+                                "Initialize_variable_ResponsesFromMDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Response-MDTI",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_forScp-UsersForRiskAnalysis":  {
+                            "runAfter":  {
+                                "Initialize_variable_Results-UsersDetails":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "forScp-UsersForRiskAnalysis",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_ProcessedItems":  {
+                            "runAfter":  {
+                                "Initialize_variable_OutputLength":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ProcessedItems",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_forScp-UsersForDetails":  {
+                            "runAfter":  {
+                                "Initialize_variable_Response-MDTI":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "forScp-UsersForDetails",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_forScp-Devices":  {
+                            "runAfter":  {
+                                "Initialize_variable_Results-UsersRisk":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "forScp-Devices",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_forScp-IPs":  {
+                            "runAfter":  {
+                                "Initialize_variable_Unique-forScp-Devices":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "forScp-IPs",
+                                        "type":  "array"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-CommandLines":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-CommandLines":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-CommandLines",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-Indicators":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-Indicators":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-Indicators",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-UsersForDetails":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-UsersForDetails":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-UsersForDetails",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-UsersForRiskAnalysis":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-UsersForRiskAnalysis":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-UsersForRiskAnalysis",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-Devices":  {
+                            "runAfter":  {
+                                "Initialize_variable_Results-Devices":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-Devices",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Unique-forScp-IPs":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-IPs":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Unique-forScp-IPs",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_ResultsAvailable":  {
+                            "runAfter":  {
+                                "Initialize_variable_ProcessedItems":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ResultsAvailable",
+                                        "type":  "boolean",
+                                        "value":  false
+                                    }
+                                ]
+                            }
+                        },
+                        "Condition_-_Results_Available":  {
+                            "actions":  {
+                                "Compose_-_Incident_Data":  {
+                                    "type":  "Compose",
+                                    "inputs":  "Incident Ttile: \n@{triggerBody()?['object']?['properties']?['title']},\n\nIncident Description: \n@{triggerBody()?['object']?['properties']?['description']},\n\nIncident Severity: \n@{triggerBody()?['object']?['properties']?['severity']},\n\nIncident Tactics: \n@{triggerBody()?['object']?['properties']?['additionalData']?['tactics']},\n\n______________________________________\nIp Addresses Analysis: \n@{if(parameters('CallScpForIPsWithAbuseIPDB'),variables('Results-IPs'),'skipped...')},\n\n______________________________________\nAccounts Analysis: \n@{if(parameters('CallScpForAccounts'),variables('Results-UsersDetails'),'skipped...')},\n\n______________________________________\nUsers Risk Analysis: \n@{if(parameters('CallScpForUserRisk'),outputs('Compose_Users_Risk'),'skipped...')},\n\n______________________________________\nDevices Analysis: \n@{if(parameters('CallScpForHosts'),variables('Results-Devices'),'skipped...')},\n\n______________________________________\nProcesses Analysis: \n@{if(parameters('CallScpForCommandLines'),outputs('Compose_Process_Analysis'),'skipped...')}\n\n______________________________________\nIndicators Analysis from MDTI: \n@{if(or(parameters('CallScpForIPsWithMDTI'),parameters('CallScpForFilehashesWithMDTI'),parameters('CallScpForUrlsWithMDTI'),parameters('CallScpForDomainsWithMDTI')),variables('Response-MDTI'),'skipped...')}"
+                                },
+                                "Compose_-_Normalized_Incident_Data":  {
+                                    "runAfter":  {
+                                        "Compose_-_Incident_Data":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Compose",
+                                    "inputs":  "@replace(replace(outputs('Compose_-_Incident_Data'),',null',''),'[null,','')"
+                                },
+                                "Condition_-_Send_unsummarized_results_by_email":  {
+                                    "actions":  {
+                                        "Send_an_email_(V2)_-_Enrichment_Details":  {
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['office365']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "To":  "@trim(parameters('RecipientEmail'))",
+                                                    "Subject":  "Incident @{triggerBody()?['object']?['properties']?['providerIncidentId']} - Enrichment Details",
+                                                    "Body":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Details---\u003c/strong\u003e\u003c/b\u003e\u003c/p\u003e\u003cp class=\"editor-paragraph\"\u003eIncident URL: @{concat('https://security.microsoft.com/incident2/',triggerBody()?['object']?['properties']?['providerIncidentId'],'/overview')}\u003c/p\u003e\u003cbr\u003e\u003cp class=\"editor-paragraph\"\u003e@{outputs('Compose_-_Details_-_Replace_NewLine_char')}\u003c/p\u003e",
+                                                    "Importance":  "Normal"
+                                                },
+                                                "path":  "/v2/Mail"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Compose_-_Details_-_Replace_NewLine_char":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "contains":  [
+                                                    "@parameters('RecipientEmail')",
+                                                    "@"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Condition_-_Write_unsummarized_results_on_incident":  {
+                                    "actions":  {
+                                        "Add_unsummarized_results_to_incident":  {
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                                    "message":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Details---\u003c/strong\u003e\u003c/b\u003e\u003c/p\u003e\u003cbr\u003e\u003cp class=\"editor-paragraph\"\u003e@{outputs('Compose_-_Details_-_Replace_NewLine_char')}\u003c/p\u003e\u003cbr\u003e"
+                                                },
+                                                "path":  "/Incidents/Comment"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Compose_-_Details_-_Replace_NewLine_char":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@parameters('WriteUnsummarizedResultsToIncident')",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Security_Copilot_summarize_incident_investigation":  {
+                                    "runAfter":  {
+                                        "Condition_-_Send_unsummarized_results_by_email":  [
+                                            "Succeeded",
+                                            "TimedOut",
+                                            "Skipped",
+                                            "Failed"
+                                        ],
+                                        "Condition_-_Write_unsummarized_results_on_incident":  [
+                                            "Succeeded",
+                                            "TimedOut",
+                                            "Skipped",
+                                            "Failed"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['securitycopilot']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "PromptContent":  "Here is the security incident detail: @{outputs('Compose_-_Normalized_Incident_Data')}\n\nPerform investigation on security incident in following order. Incident Overview, Incident Description, Ip Addresses Analysis , Account Analysis, Users Risk Analysis, Devices Analysis, Processes Analysis, Indicators Analysis from MDTI, Possible mitigation steps and Conclusion. Ignore all error messages",
+                                            "SkillName":  "SummarizeData"
+                                        },
+                                        "path":  "/process-prompt"
+                                    }
+                                },
+                                "Condition_-_SCP_-_Final_prompt_was_successful":  {
+                                    "actions":  {
+                                        "Compose_-_Incident_Investigation":  {
+                                            "type":  "Compose",
+                                            "inputs":  "@body('Security_Copilot_summarize_incident_investigation')?['EvaluationResultContent']"
+                                        },
+                                        "Condition_-_Write_final_summary_to_incident_-_Success":  {
+                                            "actions":  {
+                                                "Add_Investigation_Final_summary_to_Incident":  {
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                                            "message":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Summary ---\u003c/strong\u003e\u003c/b\u003e\u003c/p\u003e\u003cp class=\"editor-paragraph\"\u003e\u003cbr\u003e@{outputs('Compose_-_Incident_Investigation')}\u003c/p\u003e\u003cbr\u003e"
+                                                        },
+                                                        "path":  "/Incidents/Comment"
+                                                    }
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Compose_-_Incident_Investigation":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "equals":  [
+                                                            "@parameters('WriteFinalSummaryToIncident')",
+                                                            true
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
+                                        },
+                                        "Condition_-_RecipientEmail_-_Final_-_Success":  {
+                                            "actions":  {
+                                                "Send_an_email_(V2)_-_Enrichment_Summary_-_Success":  {
+                                                    "runAfter":  {
+                                                        "Compose_-_Summary_-_Success_-_Replace_NewLine_char":  [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type":  "ApiConnection",
+                                                    "inputs":  {
+                                                        "host":  {
+                                                            "connection":  {
+                                                                "name":  "@parameters('$connections')['office365']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method":  "post",
+                                                        "body":  {
+                                                            "To":  "@trim(parameters('RecipientEmail'))",
+                                                            "Subject":  "Incident @{triggerBody()?['object']?['properties']?['providerIncidentId']} - Enrichment Summary",
+                                                            "Body":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Summary ---\u003c/strong\u003e\u003c/b\u003e\u003cbr\u003eIncident URL: @{concat('https://security.microsoft.com/incident2/',triggerBody()?['object']?['properties']?['providerIncidentId'],'/overview')}\u003c/p\u003e\u003cbr\u003e\u003cp class=\"editor-paragraph\"\u003e@{outputs('Compose_-_Summary_-_Success_-_Replace_NewLine_char')}\u003c/p\u003e",
+                                                            "Importance":  "Normal"
+                                                        },
+                                                        "path":  "/v2/Mail"
+                                                    }
+                                                },
+                                                "Compose_-_Summary_-_Success_-_Replace_NewLine_char":  {
+                                                    "type":  "Compose",
+                                                    "inputs":  "@replace(replace(outputs('Compose_-_Incident_Investigation'),'\\n','\u003cbr\u003e'),'\n','\u003cbr\u003e')"
+                                                }
+                                            },
+                                            "runAfter":  {
+                                                "Compose_-_Incident_Investigation":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else":  {
+                                                "actions":  {
+                                                }
+                                            },
+                                            "expression":  {
+                                                "and":  [
+                                                    {
+                                                        "contains":  [
+                                                            "@parameters('RecipientEmail')",
+                                                            "@"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type":  "If"
+                                        },
+                                        "Terminate_-_Success":  {
+                                            "runAfter":  {
+                                                "Condition_-_Write_final_summary_to_incident_-_Success":  [
+                                                    "Succeeded"
+                                                ],
+                                                "Condition_-_RecipientEmail_-_Final_-_Success":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "Terminate",
+                                            "inputs":  {
+                                                "runStatus":  "Succeeded"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Security_Copilot_summarize_incident_investigation":  [
+                                            "Succeeded",
+                                            "TimedOut",
+                                            "Skipped",
+                                            "Failed"
+                                        ]
+                                    },
+                                    "else":  {
+                                        "actions":  {
+                                            "Condition_-_Unsummarized_results_not_already_written_to_incident":  {
+                                                "actions":  {
+                                                    "Add_Investigation_Final_comment_to_Incident":  {
+                                                        "type":  "ApiConnection",
+                                                        "inputs":  {
+                                                            "host":  {
+                                                                "connection":  {
+                                                                    "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method":  "post",
+                                                            "body":  {
+                                                                "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                                                "message":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Evidences ---\u003c/strong\u003e\u003c/b\u003e\u003c/p\u003e\u003cp class=\"editor-paragraph\"\u003e\u003ci\u003e\u003cem class=\"editor-text-italic\"\u003e(Content not summarized)\u003c/em\u003e\u003c/i\u003e\u003c/p\u003e\u003cbr\u003e\u003cp class=\"editor-paragraph\"\u003e@{outputs('Compose_-_Details_-_Replace_NewLine_char')}\u003c/p\u003e"
+                                                            },
+                                                            "path":  "/Incidents/Comment"
+                                                        }
+                                                    }
+                                                },
+                                                "else":  {
+                                                    "actions":  {
+                                                    }
+                                                },
+                                                "expression":  {
+                                                    "and":  [
+                                                        {
+                                                            "equals":  [
+                                                                "@parameters('WriteUnsummarizedResultsToIncident')",
+                                                                false
+                                                            ]
+                                                        },
+                                                        {
+                                                            "equals":  [
+                                                                "@parameters('WriteFinalSummaryToIncident')",
+                                                                true
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "type":  "If"
+                                            },
+                                            "Terminate_-_Failed":  {
+                                                "runAfter":  {
+                                                    "Condition_-_Unsummarized_results_not_already_written_to_incident":  [
+                                                        "Succeeded"
+                                                    ],
+                                                    "Condition_-_Unsummarized_results_not_already_sent_by_email":  [
+                                                        "Succeeded"
+                                                    ]
+                                                },
+                                                "type":  "Terminate",
+                                                "inputs":  {
+                                                    "runStatus":  "Failed",
+                                                    "runError":  {
+                                                        "message":  "Final summarization failed"
+                                                    }
+                                                }
+                                            },
+                                            "Condition_-_Unsummarized_results_not_already_sent_by_email":  {
+                                                "actions":  {
+                                                    "Send_an_email_(V2)_-_Enrichment_Summary_-_Failure":  {
+                                                        "type":  "ApiConnection",
+                                                        "inputs":  {
+                                                            "host":  {
+                                                                "connection":  {
+                                                                    "name":  "@parameters('$connections')['office365']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method":  "post",
+                                                            "body":  {
+                                                                "To":  "@trim(parameters('RecipientEmail'))",
+                                                                "Subject":  "Incident @{triggerBody()?['object']?['properties']?['providerIncidentId']} - Enrichment Summary - Failure",
+                                                                "Body":  "\u003cp class=\"editor-paragraph\"\u003e\u003cb\u003e\u003cstrong class=\"editor-text-bold\"\u003e--- Incident Analysis - Evidences ---\u003c/strong\u003e\u003c/b\u003e\u003cbr\u003e\u003ci\u003e\u003cem class=\"editor-text-italic\"\u003e(Content not summarized)\u003c/em\u003e\u003c/i\u003e\u003cbr\u003e\u003cbr\u003e@{outputs('Compose_-_Details_-_Replace_NewLine_char')}\u003c/p\u003e",
+                                                                "Importance":  "Normal"
+                                                            },
+                                                            "path":  "/v2/Mail"
+                                                        }
+                                                    }
+                                                },
+                                                "else":  {
+                                                    "actions":  {
+                                                    }
+                                                },
+                                                "expression":  {
+                                                    "and":  [
+                                                        {
+                                                            "equals":  [
+                                                                "@parameters('SendUnsummarizedResultsByEmail')",
+                                                                false
+                                                            ]
+                                                        },
+                                                        {
+                                                            "equals":  [
+                                                                "@parameters('SendFinalSummaryByEmail')",
+                                                                true
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "type":  "If"
+                                            }
+                                        }
+                                    },
+                                    "expression":  {
+                                        "and":  [
+                                            {
+                                                "equals":  [
+                                                    "@body('Security_Copilot_summarize_incident_investigation')?['evaluationResultType']",
+                                                    "Success"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type":  "If"
+                                },
+                                "Compose_-_Details_-_Replace_NewLine_char":  {
+                                    "runAfter":  {
+                                        "Compose_-_Normalized_Incident_Data":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Compose",
+                                    "inputs":  "@replace(replace(outputs('Compose_-_Normalized_Incident_Data'),'\\n','\u003cbr\u003e'),'\n','\u003cbr\u003e')"
+                                }
+                            },
+                            "runAfter":  {
+                                "Condition_-_Validate_Entities":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else":  {
+                                "actions":  {
+                                    "No_results_available":  {
+                                        "type":  "Terminate",
+                                        "inputs":  {
+                                            "runStatus":  "Cancelled"
+                                        }
+                                    }
+                                }
+                            },
+                            "expression":  {
+                                "and":  [
+                                    {
+                                        "equals":  [
+                                            "@variables('ResultsAvailable')",
+                                            true
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type":  "If"
+                        },
+                        "Condition_-_Validate_Parameters":  {
+                            "actions":  {
+                            },
+                            "runAfter":  {
+                                "Initialize_variable_ResultsAvailable":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else":  {
+                                "actions":  {
+                                    "Invalid_Parameters":  {
+                                        "type":  "Terminate",
+                                        "inputs":  {
+                                            "runStatus":  "Cancelled"
+                                        }
+                                    }
+                                }
+                            },
+                            "expression":  {
+                                "and":  [
+                                    {
+                                        "contains":  [
+                                            "@parameters('RecipientEmail')",
+                                            "@"
+                                        ]
+                                    },
+                                    {
+                                        "or":  [
+                                            {
+                                                "equals":  [
+                                                    "@parameters('SendUnsummarizedResultsByEmail')",
+                                                    true
+                                                ]
+                                            },
+                                            {
+                                                "equals":  [
+                                                    "@parameters('SendFinalSummaryByEmail')",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type":  "If"
+                        },
+                        "Initialize_variable_Results-Devices":  {
+                            "runAfter":  {
+                                "Initialize_variable_forScp-Devices":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Results-Devices",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Results-IPs":  {
+                            "runAfter":  {
+                                "Initialize_variable_Unique-forScp-IPs":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Results-IPs",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Results-UsersDetails":  {
+                            "runAfter":  {
+                                "Initialize_variable_Unique-forScp-UsersForDetails":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Results-UsersDetails",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Results-UsersRisk":  {
+                            "runAfter":  {
+                                "Initialize_variable_Unique-forScp-UsersForRiskAnalysis":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Results-UsersRisk",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable_Results-CommandLines":  {
+                            "runAfter":  {
+                                "Initialize_variable_Unique-forScp-CommandLines":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Results-CommandLines",
+                                        "type":  "array",
+                                        "value":  [
+                                        ]
+                                    }
+                                ]
+                            }
                         }
                     },
                     "outputs":  {
@@ -1398,6 +2943,11 @@
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
                                 "connectionName":  "[variables('SecuritycopilotConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            },
+                            "office365":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName":  "[variables('Office365ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
                             }
                         }
                     }
@@ -1416,7 +2966,8 @@
             "apiVersion":  "2017-07-01",
             "dependsOn":  [
                 "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
-                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]"
+                "[resourceId('Microsoft.Web/connections', variables('SecuritycopilotConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
             ]
         },
         {
@@ -1447,6 +2998,21 @@
                 },
                 "api":  {
                     "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
                 }
             }
         }
