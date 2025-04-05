@@ -1,6 +1,6 @@
 ## Module 4 - Refining Reasoning and Response with Markdown - Security Copilot
 
-![Security Copilot Logo](../.././Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Logo](../../.././Images/ic_fluent_copilot_64_64%402x.png)
 
 Authors: Rick Kotlarz<br>
 Updated: 2025-April-4
