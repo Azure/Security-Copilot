@@ -1,6 +1,6 @@
 # Welcome to the Security Copilot Prompt Engineering Workshop!
 
-![Security Copilot Logo](.././Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Logo](../.././Images/ic_fluent_copilot_64_64%402x.png)
 
 Authors: Rick Kotlarz <br>
 Updated: 2025-April-4
