@@ -1,6 +1,6 @@
 ## Module 3 - Enhancing Reasoning and Response with Markdown - Security Copilot
 
-![Security Copilot Logo](../.././Images/ic_fluent_copilot_64_64%402x.png)
+![Security Copilot Logo](../../.././Images/ic_fluent_copilot_64_64%402x.png)
 
 Authors: Rick Kotlarz & Craig Freyman<br>
 Updated: 2025-April-4
