@@ -11,7 +11,7 @@
 &nbsp;
 ## User Details
 <a name="User Details"></a>
-- Who am i
+- Who am I
 -  What login attempts exist for the user on December 31st? (Created KQL)
 - What login attempts exist for the user in the last 14 days? (Created KQL) 
 - What login attempts exist for the user **_`<UPN>`_**?   in the last 14 days? (Targeting a specific user)
@@ -57,17 +57,17 @@ reasons.
  - Have there been any failed sign-ins during the last weekend?
  - Tell me about Lee Majors most recent failed sign-in
  - Show me the sign-in logs for **_`<UPN>`_**? 
-    - Show me the sign-in logs of users who signed in from **_`<Location>`_**? 
-    - Show me the sign-in logs from **_`<Application>`_**? 
-    - Show me the sign-in logs from operating system 'MAC OS
-    - Show me the sign-in logs from Edge
-    - Show me the sign-in logs from compliant devices
-    - Show me the sign-in logs from managed devices
-    - Show me the sign in logs for which conditional policies have been applied
-    - Show me ca policies evaluated for sign in with request id **_`<Request ID>`_**? 
-    - Show me the sign-in logs from client app
-    - Can you tell me if conditional access policy is working from sign-in logs
-    - Show me the sign-in logs from unmanaged devices in the past 14 days and list the entities involved
+ - Show me the sign-in logs of users who signed in from **_`<Location>`_**? 
+ - Show me the sign-in logs from **_`<Application>`_**? 
+ - Show me the sign-in logs from operating system 'MAC OS
+ - Show me the sign-in logs from Edge
+ - Show me the sign-in logs from compliant devices
+ - Show me the sign-in logs from managed devices
+ - Show me the sign in logs for which conditional policies have been applied
+ - Show me ca policies evaluated for sign in with request id **_`<Request ID>`_**? 
+ - Show me the sign-in logs from client app
+ - Can you tell me if conditional access policy is working from sign-in logs
+ - Show me the sign-in logs from unmanaged devices in the past 14 days and list the entities involved
 
 &nbsp;
 [![alt text](../../Images/backtotop.svg)](#entra)
