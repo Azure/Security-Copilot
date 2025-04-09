@@ -1,0 +1,43 @@
+Descriptor:
+  Name: UserAgentParser
+  DisplayName: User Agent Parser
+  Description: Skill to parse a single user agent string
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: ParseUserAgent
+        DisplayName: Parse User Agent
+        Description: Parse provided user agent string and return browser, operating system and device details
+        ExamplePrompt:
+        - 'Parse User Agent'
+        - 'Parse the following user agent string:'
+        - 'Identify the browser and version from this user agent:'
+        - 'Identify the operating system and version from this user agent:'
+        - 'Identify the device brand and model from this user agent:'
+        - 'Extract the operating system details from this user agent:'
+        - 'Analyze the user agent string and provide a summary:'
+        - 'Extract the platform information from this user agent:'
+        - 'Identify any bots or crawlers from this user agent:'
+        - 'Provide the full details of the user agent string:'
+        - 'Check if the user agent string indicates a specific application:'
+        Inputs:
+          - Name: useragentstring
+            Description: The user-agent string to parse
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            print parse_user_agent("{{useragentstring}}",dynamic(["browser","os","device"]))
+            | extend Browser_Family = parse_json(print_0)["Browser"]["Family"]
+            | extend Browser_MajorVersion = parse_json(print_0)["Browser"]["MajorVersion"]
+            | extend Browser_MinorVersion = parse_json(print_0)["Browser"]["MinorVersion"]
+            | extend Browser_Patch = parse_json(print_0)["Browser"]["Patch"]
+            | extend OperatingSystem_Family = parse_json(print_0)["OperatingSystem"]["Family"]
+            | extend MajorVersion = parse_json(print_0)["OperatingSystem"]["MajorVersion"]
+            | extend Patch = parse_json(print_0)["OperatingSystem"]["Patch"]
+            | extend PatchMinor = parse_json(print_0)["OperatingSystem"]["PatchMinor"]
+            | extend Family = parse_json(print_0)["Device"]["Family"]
+            | extend Brand = parse_json(print_0)["Device"]["Brand"]
+            | extend Model = parse_json(print_0)["Device"]["Model"]
+            | project-away print_0
