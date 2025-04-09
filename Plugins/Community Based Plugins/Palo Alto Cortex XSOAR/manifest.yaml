@@ -1,0 +1,31 @@
+Descriptor:
+  Name: Palto Alto Cortex XSOAR
+  DisplayName: Palto Alto Cortex XSOAR (Preview)
+  DescriptionDisplay: Get access to Palto Alto Cortex XSOAR to query investigation, incidents and indicators
+  Description: |-
+    Use this skillset to call  Palto Alto Cortex XSOAR APIs to perform actions accross the Palto Alto Cortex XSOAR platform.
+    - This skill invokes Palto Alto Cortex XSOAR's REST API
+    - Query to get a list of investigations, return a list of investigation details
+    - Query to get a list of incidents, return a list of incident details
+    - Query to get a list of indicators, return a list of indicator details
+  Icon: https://raw.githubusercontent.com/truongphung12947/copilot-manifest/main/paloalto-cortex-xsoar/paloalto_cortex_xsoar_transparent.png
+  Settings:
+    - Name: InstanceURL
+      Label: Instance URL
+      Description: The URL of the Cortex XSOAR to connect to
+      HintText: "e.g. https://example.com"
+      SettingType: String
+      Required: true
+  SupportedAuthTypes:
+    - APIKey
+  Authorization:
+    Type: APIKey
+    Key: Authorization
+    Location: Header
+    AuthScheme: ''
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/truongphung12947/copilot-manifest/main/paloalto-cortex-xsoar/api-specs.yaml
+      EndpointUrlSettingName: InstanceURL
