@@ -17,7 +17,7 @@ This plugin enables users to retrieve a list of devices onboarded into **Microso
 #### Upload the Plugin manifest
 
 1. Obtain the manifest  [MDEOnboardedDevicesPlugin.yaml](https://github.com/Azure/Copilot-For-Security/blob/main/Plugins/Community%20Based%20Plugins/Microsoft%20Graph%20API%20/Devices%20Onboarded%20into%20MDE/MDEOnboardedDevicesPlugin.yaml) and the OpenAPI Specification [MDEOnboardedDevices-OpenAPISpec.yaml](https://github.com/Azure/Copilot-For-Security/blob/main/Plugins/Community%20Based%20Plugins/Microsoft%20Graph%20API%20/Devices%20Onboarded%20into%20MDE/MDEOnboardedDevices-OpenAPISpec.yaml) files from this directory.
-2. Download the Spec file and move it to your prefered location, ensuring it is reachable by Securty  Copilot 
+2. Download the Spec file and move it to your preferred location, ensuring it is reachable by Security Copilot 
 
 
 3. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) 
