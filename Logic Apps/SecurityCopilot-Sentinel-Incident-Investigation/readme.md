@@ -62,7 +62,7 @@ By leveraging this Logic App, Security Operations Center (SOC) and incident resp
 - Automated incident investigation summary is structured in following order. Modify the prompt to re-order or change the investigation template.
     - Incident Overview, 
     - Incident Description, 
-    - Ip Addresses Analysis, 
+    - IP Addresses Analysis, 
     - Account Analysis, 
     - Users Risk Analysis, 
     - Devices Analysis, 
