@@ -1,7 +1,7 @@
 Descriptor:
   Name: Get mailbox rules
   DisplayName: Get mailbox rules
-  Description: This plugin provides a KQL queriy to assist with mailbox rule investigations.
+  Description: This plugin provides a KQL query to assist with mailbox rule investigations.
   DescriptionForModel: |
     This query analyzes user mailbox activities within the past 30 days, focusing on potentially malicious mailbox operations which are commonly associated with unauthorized access and attacker behavior. 
     It filters out system-generated events to reduce false positives and helps identify abnormal mailbox permission and rule changes, often indicative of malicious activity.
