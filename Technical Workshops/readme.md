@@ -6,11 +6,12 @@ Welcome to the series of technical workshops designed to enhance your skills and
 
 ## Workshop Topics
 
-Below is a table summarizing the focus areas of our workshop series:
+Below is a table summarizing the focus areas of our Security Copilot workshop series:
 
 | Workshop Topic                                      | Brief Description                                                                                                                                 |
 |-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-|[Security Copilot: Knowledge Base Workshop](https://github.com/Azure/Copilot-For-Security/tree/main/Technical%20Workshops/Knowledge%20base%20Workshop)| Learn how to integrate various knowledge bases with Security Copilot to enhance its ability to provide accurate, contextually relevant security insights. |
-| [Security Copilot: Custom Plugin Workshop](https://github.com/Azure/Copilot-For-Security/tree/main/Technical%20Workshops/Custom%20Plugin%20Workshop)| Dive into custom plugin creation to extend Security Copilot's capabilities, enabling tailored solutions for your specific security needs.      |
-|[Security Copilot: Automation Workshop](https://github.com/Azure/Copilot-For-Security/tree/main/Technical%20Workshops/Automation%20Workshop).| Discover how to use Microsoft Logic Apps to automate workflows and security responses, leveraging Security Copilot for enhanced security management. |
-
+| [Prompt Engineering Workshop](./Prompt%20Engineering%20Workshop) | Explore core concepts of prompt engineering and learn how to use Markdown to standardize, enhance, and refine reasoning and responses across four progressive modules. | 
+| [Knowledge Base Workshop](./Knowledge%20base%20Workshop) | Learn how to integrate various knowledge bases with Security Copilot to enhance its ability to provide accurate, contextually relevant security insights. |
+| [Custom Plugin Workshop](./Custom%20Plugin%20Workshop) | Dive into custom plugin creation to extend Security Copilot's capabilities, enabling tailored solutions for your specific security needs.      |
+| [Custom Plugin Calling Webservice](./Custom%20Plugin%20Calling%20Webservice) | This folder includes three plugins demonstrating how to send data via GET and POST to a Python/Flask-based REST API, showcasing how to craft prompts that guide Security Copilot to select the appropriate plugin and revealing the data exchange between Copilot and a custom web service. |
+| [Automation Workshop](./Automation%20Workshop) | Discover how to use Microsoft Logic Apps to automate workflows and security responses, leveraging Security Copilot for enhanced security management. |
