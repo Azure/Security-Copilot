@@ -30,6 +30,14 @@ SkillGroups:
           - Name: upn
             Description: User principal name, e.g., mscott@woodgrove.ms
             Required: true
+          - Name: exclude_ip
+            Description: Any IP address that should be excluded from the results.
+            Default: ""
+            Required: false
+          - Name: unusualsignin_context
+            Description: Additional context to tune the output appropriately
+            Default: ""
+            Required: false
         Settings:
           Target: Defender
           Template: |-
@@ -37,11 +45,13 @@ SkillGroups:
             // It analyzes login patterns, focusing on anomalies such as high failure rates, sign-ins from unfamiliar IPs or devices, or abnormal client applications.
             // Deviations from the usual patterns may indicate suspicious activity, prompting security actions like MFA review or password reset.
             // The output includes IP addresses, device IDs, and user agents to assist in identifying unusual behavior.
+            // The additional requests from the user are {{unusualsignin_context}}
             let UPN = "{{upn}}";  // Replace with the specific users upn
             let TimeFrame = ago(30d); 
             // Retrieve and summarize the user's login activity, focusing on successful vs failed attempts and identifying unusual patterns.
             SigninLogs 
             | where TimeGenerated > TimeFrame
+            | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
             | where UserPrincipalName =~ UPN
             | summarize FirstSeen = min(TimeGenerated), LastObserved = max(TimeGenerated), SuccessfullCount = count(ResultType = 0), FailureCount = count(ResultType != 0) 
             by UserPrincipalName, IPAddress, Location, tostring(DeviceDetail.deviceId), UserAgent, ClientAppUsed, AppDisplayName
@@ -222,30 +232,42 @@ SkillGroups:
           - Name: upn
             Description: User principle name. i.e., mscott@woodgrove.ms
             Required: true
+          - Name: exclude_ip
+            Description: Any IP address that should be excluded from the results.
+            Default: ""
+            Required: false
+          - Name: usersignin_context
+            Description: Additional context to tune the output appropriately
+            Default: ""
+            Required: false
         Settings:
           Target: Defender
           Template: |-
+            // The additional context from the user is {{usersignin_context}}
             // This query establishes a baseline for a user's sign-in activity over the past 30 days by identifying the most frequently used IP address, location, device, application, and client application.
             // It helps detect deviations that may indicate suspicious behavior, such as sign-ins from unfamiliar locations, new devices, or different apps.
             // Anomalies can point to account compromise or unauthorized access, triggering actions like MFA enforcement or security reviews.
             // The query outputs the user's typical behavior patterns and highlights any deviations.
             // Provide a summary of the users baseline and analyze any deviations, recommending actions like enforcing MFA, resetting credentials, or initiating further security reviews if abnormal patterns are detected.            
+            // The additional context from the user is {{usersignin_context}}
             let UPN = "{{upn}}"; // Replace with the specific users email
             let TimeFrame = ago(30d);
             // Identify the most frequently used IP address for the user.
             let MostCommonIP = toscalar(
-                SigninLogs
-                | where TimeGenerated > TimeFrame
-                | where UserPrincipalName =~ UPN
-                | summarize IPCount = count() by IPAddress
-                | top 1 by IPCount desc
-                | project IPAddress
+              SigninLogs
+              | where TimeGenerated > TimeFrame
+              | where UserPrincipalName =~ UPN
+              | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
+              | summarize IPCount = count() by IPAddress
+              | top 1 by IPCount desc
+              | project IPAddress
             );
             // Identify the most frequently used location (e.g., city, country) for the user.
             let MostCommonLocation = toscalar(
                 SigninLogs
                 | where TimeGenerated > TimeFrame
                 | where UserPrincipalName =~ UPN
+                | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
                 | summarize LocationCount = count() by Location
                 | top 1 by LocationCount desc
                 | project Location
@@ -255,6 +277,7 @@ SkillGroups:
                 SigninLogs
                 | where TimeGenerated > TimeFrame
                 | where UserPrincipalName =~ UPN
+                | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
                 | summarize DeviceCount = count() by tostring(DeviceDetail.deviceId)
                 | top 1 by DeviceCount desc
                 | project tostring(DeviceDetail_deviceId)
@@ -263,6 +286,7 @@ SkillGroups:
             let MostCommonApp = toscalar(
                 SigninLogs
                 | where TimeGenerated > TimeFrame
+                | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
                 | where UserPrincipalName =~ UPN
                 | summarize AppCount = count() by AppDisplayName
                 | top 1 by AppCount desc
@@ -272,6 +296,7 @@ SkillGroups:
             let MostCommonClientApp = toscalar(
                 SigninLogs
                 | where TimeGenerated > TimeFrame
+                | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
                 | where UserPrincipalName =~ UPN
                 | summarize ClientAppCount = count() by ClientAppUsed
                 | top 1 by ClientAppCount desc
@@ -314,92 +339,123 @@ SkillGroups:
           - Name: lookback_period
             Description: The time range to look back. i.e., 1d, 7d, 30d (default is 1d)
             Required: false
+          - Name: exclude_ip
+            Description: Any IP address that should be excluded from the results.
+            Default: ""
+            Required: false
         Settings:
           Target: Defender
           Template: |-
             SigninLogs
             | where TimeGenerated >= ago(1d) // Specify the lookback_period, default 1d
+            | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
             | where ResultType != 0  // Filtering for failed sign-ins; 0 indicates success
             | where UserPrincipalName == "{{upn}}"
             | summarize FailedAttempts = count(), UniqueIPs = dcount(IPAddress), Locations = dcount(Location), ResultDescriptions = makeset(ResultDescription) by bin(TimeGenerated, 1d)
             | project TimeGenerated, FailedAttempts, UniqueIPs, Locations, ResultDescriptions
             | order by TimeGenerated desc
 
-      - Name: UserRiskDetections
-        DisplayName: Entra User Risk Detections
-        Description: "Analyze risk events for a specific user by joining user risk detections with security alerts to provide enriched insights. This query identifies and correlates risk activities with security alerts, highlighting types, details, timing, and severity. It supports detailed investigations by surfacing connected risks and alerts for prioritization and actionable response."
-        DescriptionForModel: |-
-          Performs a KQL query on the AADUserRiskEvents table, filtering for a specified user's principal name (UserPrincipalName) and joining with the SecurityAlert table to correlate user risk events with associated security alerts. Key features include:
-
-          - **Risk and Alert Correlation**:
-            - Links risk events (Id) with related security alerts (VendorOriginalId) for enhanced context.
-            - Provides detailed information on RiskLevel, RiskDetail, and RiskState alongside alert-specific data like AlertName, AlertSeverity, and CompromisedEntity.
-
-          - **User-Focused Insights**:
-            - Focuses on a single user's activity, helping analysts investigate incidents involving that user.
-            - Highlights the date and time of events (ActivityDateTime and StartTime) for timeline reconstruction.
-
-          - **Enhanced Investigation**:
-            - Surfaces patterns in risk and alert data, aiding in anomaly detection and prioritization.
-            - Supports actions like user-specific remediations and incident containment.
-
-          This skill enables efficient monitoring and investigation of user-specific risks and alerts, helping prioritize and mitigate potential threats effectively.
-
+      - Name: EnhancedUserRiskAssessment
+        DisplayName: Enhanced User Risk Assessment
+        Description: >
+          Combines user risk events, recent sign-ins, high-risk user indicators, and security alerts to deliver detailed context around risky user activities for a specific user. Useful for threat detection, incident prioritization, and remediation planning.
         Inputs:
           - Name: upn
-            Description: The UPN to search for. For example, mscott@dunder.com
+            Description: User principal name. i.e., mscott@woodgrove.ms
             Required: true
+        ExamplePrompt:
+          - "Get enhanced user risk details"
+          - "Fetch detailed user risk assessment"
+          - "Run comprehensive user risk check"
         Settings:
           Target: Defender
           Template: |-
-            AADUserRiskEvents
-            | where TimeGenerated > ago(7d)
-            | where UserPrincipalName == "{{upn}}"
-            | join kind=inner (SecurityAlert) on $left.Id == $right.VendorOriginalId
+            let TimeFrame = ago(7d);
+            let upn = "{{upn}}";
+            let UserRiskEvents = AADUserRiskEvents
+            | where TimeGenerated > TimeFrame and RiskLevel != "none" and RiskState != "remediated" and UserPrincipalName == upn
+            | project 
+                UserPrincipalName,
+                RiskLevel,
+                RiskEventType,
+                RiskDetail,
+                Activity,
+                ActivityDateTime,
+                DetectedDateTime,
+                IpAddress,
+                Location,
+                RiskState,
+                Id,
+                CorrelationId;
+            let RecentSignIns = SigninLogs
+            | where TimeGenerated > TimeFrame
+            | project
+                SignInId = Id,
+                UserPrincipalName,
+                SignInTime = TimeGenerated,
+                ResultType,
+                ResultDescription,
+                AppDisplayName,
+                ClientAppUsed,
+                SignInIPAddress = IPAddress,
+                SignInLocationDetails = LocationDetails,
+                DeviceDetail,
+                RiskLevelDuringSignIn,
+                ConditionalAccessStatus,
+                AuthenticationMethodsUsed,
+                CorrelationId;
+            let HighRiskUsers = AADRiskyUsers
+            | where TimeGenerated > TimeFrame and RiskLevel in ("high", "medium")
+            | project
+                UserPrincipalName,
+                UserRiskLevel = RiskLevel,
+                RiskState,
+                RiskLastUpdatedDateTime;
+            let Alerts = SecurityAlert
+            | where TimeGenerated > TimeFrame
+            | project
+                AlertName,
+                AlertSeverity,
+                CompromisedEntity,
+                AlertStartTime = StartTime,
+                AlertEndTime = EndTime,
+                VendorOriginalId;
+            UserRiskEvents
+            | join kind=leftouter RecentSignIns on CorrelationId
+            | join kind=leftouter HighRiskUsers on UserPrincipalName
+            | join kind=leftouter Alerts on $left.Id == $right.VendorOriginalId
+            | project
+                UserPrincipalName,
+                RiskLevel,
+                RiskEventType,
+                RiskDetail,
+                RiskState,
+                Activity,
+                ActivityDateTime,
+                DetectedDateTime,
+                IpAddress,
+                Location,
+                SignInTime,
+                ResultType,
+                ResultDescription,
+                AppDisplayName,
+                ClientAppUsed,
+                SignInIPAddress,
+                SignInLocationDetails,
+                DeviceDetail,
+                RiskLevelDuringSignIn,
+                ConditionalAccessStatus,
+                AuthenticationMethodsUsed,
+                UserRiskLevel,
+                RiskLastUpdatedDateTime,
+                AlertName,
+                AlertSeverity,
+                CompromisedEntity,
+                AlertStartTime,
+                AlertEndTime
+            | order by RiskLevel desc, DetectedDateTime desc
+            | take 10
 
-      - Name: HighRiskUserDetection
-        DisplayName: High-Risk User Detection
-        Description: Identify high-risk users with recent activity by correlating risk events and user status. Highlights unresolved risks, focusing on key details such as risk type, IP address, and recent activity for prioritizing remediation steps.
-        DescriptionForModel: |-
-          Performs a KQL query to analyze high-risk users by joining the `AADRiskyUsers` and `AADUserRiskEvents` tables. Key features include:
-
-          - **Risk Correlation**:
-            - Retrieves recent high-risk events (`DetectedDateTime` within the last 7 days) for a specified user.
-            - Joins data with high-risk user statuses from `AADRiskyUsers` to focus on unresolved risks.
-
-          - **Detailed Insights**:
-            - Columns include:
-              - `RiskEventType`: Type of risk detected.
-              - `RiskDetail`: Specific details about the risk.
-              - `IpAddress`: Location associated with risky activity.
-              - `DetectedDateTime`: Timestamp of the detection.
-              - `RiskLastUpdatedDateTime`: Last update time for the user's risk status.
-
-          - **Prioritization**:
-            - Orders results by `RiskLastUpdatedDateTime` to highlight users with the most recent unresolved high-risk activity.
-            - Ensures focus on persistent risks and users requiring immediate action.
-
-          - **Goal**:
-            - Enables security analysts to identify patterns of risky behavior, such as multiple high-risk sign-ins or repeated attempts from unusual locations.
-            - Supports prioritized investigations and swift remediation actions, such as enforcing MFA, reviewing user activity, or disabling accounts.
-
-          This skill helps analysts detect and respond to unresolved risks in high-risk users effectively.
-        Inputs:
-          - Name: upn
-            Description: The UPN to search for. For example, mscott@dunder.com
-            Required: true
-        Settings:
-          Target: Defender
-          Template: |-
-            let recentEvents = AADUserRiskEvents
-            | where DetectedDateTime > ago(7d)
-            | where RiskLevel == "high"
-            | where UserPrincipalName == "{{upn}}"
-            | project UserPrincipalName, Activity, DetectedDateTime, RiskEventType, RiskDetail, IpAddress;
-            AADRiskyUsers
-            | where RiskLevel == "high" 
-            | join kind=inner (recentEvents) on UserPrincipalName
-            | order by RiskLastUpdatedDateTime desc
 
       - Name: ImpossibleTravel
         DisplayName: Impossible Travel
@@ -432,6 +488,10 @@ SkillGroups:
           - Name: upn
             Description: The UPN (User Principal Name) to search for.
             Required: true
+          - Name: exclude_ip
+            Description: Any IP address that should be excluded from the results.
+            Default: ""
+            Required: false
         Settings:
           Target: Defender
           Template: |-
@@ -450,6 +510,7 @@ SkillGroups:
             SigninLogs
             | where ResultType == 0 // Filter for successful logins
             | where TimeGenerated > ago(7d)
+            | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
             | extend LocationDetails = parse_json(LocationDetails) // Parse location details
             | extend Latitude = tostring(LocationDetails.geoCoordinates.latitude),
                     Longitude = tostring(LocationDetails.geoCoordinates.longitude),
@@ -505,3 +566,39 @@ SkillGroups:
               | where Parameters has_any("DeleteMessage") or (Parameters has_any("MoveToFolder") and Parameters has_any("Conversation History"))
               | summarize PackedInfo = make_bag(packed), ActionType=any(ActionType) by UPN, AccountObjectId, IPAddress, ISP, ReportId, TimeGenerated
               | evaluate bag_unpack(PackedInfo)
+
+      - Name: DailyEntraIDRiskDetectionReview
+        DisplayName: Daily Entra ID Risk Detection Review
+        DescriptionForModel: |- 
+          Performs a KQL query on the `AADUserRiskEvents` table to summarize Entra ID risk detections from the previous day. Key features include:
+            - **Risk Detection Summary**: Groups risk events by `RiskEventType`, `RiskLevel`, `Activity`, `RiskDetail`, and `DetectionTimingType`.
+            - **Prioritization**: Assigns priority based on the severity and frequency of events:
+              - High priority for infrequent, high-risk detections.
+              - Medium priority for moderate-risk detections.
+              - Low priority for common or lower-severity detections.
+            - **Detailed Insights**:
+              - Total number of detections.
+              - Number of impacted users.
+              - Time range of detected risks (`FirstDetected`, `LastDetected`).
+            - **Actionable Recommendations**: Highlights detections of interest that may require further investigation or review, assisting analysts in identifying overlooked or significant risk events.
+          This skill aids security teams in efficiently reviewing and prioritizing Entra ID risk detections daily, reducing alert fatigue and ensuring critical threats are investigated.
+        Description: Summarize and prioritize Entra ID risk detections from the past day, highlighting interesting or critical alerts that may require SOC analyst review. Results include impactedUPNs if further analysis is required. 
+        Settings:
+          Target: Defender
+          Template: |-
+            // Summarizes and prioritizes Entra ID risk detections from the previous day.
+            let TimeFrame = ago(1d);
+            AADUserRiskEvents
+            | where TimeGenerated >= TimeFrame
+            | summarize 
+                TotalDetections = count(), 
+                ImpactedUsers = dcount(UserPrincipalName),
+                ImpactedUPNs = make_set(UserPrincipalName, 50), // Include impacted users explicitly
+                FirstDetected = min(DetectedDateTime),
+                LastDetected = max(DetectedDateTime)
+              by RiskEventType, RiskLevel, Activity, RiskDetail, DetectionTimingType, Source
+            | extend RiskPriority = case(
+                RiskLevel == "high" and TotalDetections < 10, "High",
+                RiskLevel == "medium" and TotalDetections < 5, "Medium",
+                "Low")
+            | order by RiskPriority asc, TotalDetections asc
