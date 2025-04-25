@@ -602,3 +602,58 @@ SkillGroups:
                 RiskLevel == "medium" and TotalDetections < 5, "Medium",
                 "Low")
             | order by RiskPriority asc, TotalDetections asc
+
+      - Name: SuccessfulLoginsFromIP
+        DisplayName: Successful Logins from an IP
+        DescriptionForModel: |
+          Perform a KQL query to identify all successful sign-in events from a specified IP address. Provides full event details including timestamp, user, location, device, and app information.
+        Description: Find all successful user sign-ins originating from a specified IP address.
+        Inputs:
+          - Name: ip_address
+            Description: IP address to search for. Example 1.2.3.4
+            Required: true
+          - Name: additional_context
+            Description: Any additional context for security copilot
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            //Query to return known successful connnections from a particular IP address. 
+            //Useful for troubleshooting false vs true positive alerts
+            //Here is any additional user context: {{additional_context}}
+            let TargetIP = "{{ip_address}}"; // Target IP address for investigation
+            SigninLogs
+            | where IPAddress == TargetIP // Filter events matching the specified IP
+            | where ResultType == 0 // Keep only successful sign-in events (ResultType = 0)
+            | project 
+                TimeGenerated, // Time of the sign-in
+                UserPrincipalName, // User who signed in
+                IPAddress, // IP address used
+                Location, // Geolocation (if available)
+                DeviceDetail, // Device information
+                AppDisplayName, // Application accessed
+                ClientAppUsed // Client app used (browser, native app, etc.)
+            | order by TimeGenerated desc // Show newest events first
+
+      - Name: SuccessfulLoginCountFromIP
+        DisplayName: Successful Login Count from an IP
+        DescriptionForModel: |
+          Perform a KQL query to check if there have been any successful sign-ins from a specified IP address. Returns the number of successful events.
+        Description: Return the total number of successful sign-in attempts from a given IP address.
+        Inputs:
+          - Name: ip_address
+            Description: IP address to search for. Example 1.2.3.4
+            Required: true
+          - Name: additional_context
+            Description: Any additional context for security copilot
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            //Query to count how many successful logins from a particular IP address to give additional perspective to help with troubleshooting true vs fales positive login events. 
+            //Here is any additional user context: {{additional_context}}
+            let TargetIP = "{{ip_address}}"; // Target IP address for counting successful logins
+            SigninLogs
+            | where IPAddress == TargetIP // Filter events matching the specified IP
+            | where ResultType == 0 // Keep only successful sign-in events
+            | summarize SuccessCount = count() // Return the number of successful sign-ins
