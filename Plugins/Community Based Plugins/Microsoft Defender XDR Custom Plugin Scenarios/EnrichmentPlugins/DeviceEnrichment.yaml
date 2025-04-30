@@ -22,10 +22,10 @@ Descriptor:
       SettingType: String
       Required: true
 
-    - Name: SubscriptionName
-      Label: SubscriptionName
-      Description: This is the subscription name that security copilot will use for sentinel.
-      HintText: yoursubscriptionname
+    - Name: SubscriptionId
+      Label: SubscriptionId
+      Description: This is the subscription ID that security copilot will use for sentinel.
+      HintText: SubscriptionId
       SettingType: String
       Required: true
       
@@ -130,7 +130,7 @@ SkillGroups:
         Settings:
           Target: Sentinel
           TenantId: "{{TenantId}}"
-          SubscriptionName: "{{SubscriptionName}}"
+          SubscriptionId: "{{SubscriptionId}}"
           ResourceGroupName: "{{ResourceGroupName}}"
           WorkspaceName: "{{WorkspaceName}}"
           Template: |-
@@ -177,7 +177,6 @@ SkillGroups:
         DisplayName: Device CVE Search
         DescriptionForModel: |-
           Identify specific CVEs affecting a specified device based on the selected severity level. For each vulnerability, it:
-          Identify specific CVEs affecting a specified device based on the selected severity level. For each vulnerability, it:
             1. **Analyzes Software Vendors**: Evaluates the type of software the vendor produces and the potential risks associated with the vulnerability, considering the software's role in the system and possible exploitation impacts.
             2. **Summarizes Device Security State**: Assesses the device's security posture by reviewing the number and severity of CVEs and identifying critical areas requiring immediate attention.
           This skill provides actionable security insights, enabling security analysts to prioritize remediation and address vulnerabilities effectively.
@@ -197,18 +196,6 @@ SkillGroups:
             | where DeviceName == "{{device_name}}"
             | where VulnerabilitySeverityLevel contains "{{severity_level}}"
             | project DeviceName, SoftwareVendor, SoftwareName, CveId
-            | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
-            | project 
-                DeviceName,
-                SoftwareVendor, 
-                SoftwareName,
-                CveId,
-                CvssScore,
-                EpssScore,
-                CvssVector,
-                IsExploitAvailable
-            | order by EpssScore desc, CvssScore desc
-
             | lookup DeviceTvmSoftwareVulnerabilitiesKB on CveId
             | project 
                 DeviceName,

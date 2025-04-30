@@ -65,11 +65,10 @@
         "ConversionService-ConnectionName": "[concat('ConversionService-1-', parameters('LogicAppName'))]",
         "AzureSentinel-ConnectionName": "[concat('azuresentinel-', parameters('LogicAppName'))]",
         "AzureMonitorLogs-ConnectionName": "[concat('azuremonitorlogs-', parameters('LogicAppName'))]",
-        "FunctionName01": "parse_email",
-        "FunctionName02": "normalize_json",
-        "FunctionName03": "json_to_html",
-        "FunctionName04": "evaluate_regex"
-
+        "FunctionName01": "parse_email_functionapp",
+        "FunctionName02": "clean_json_functionapp",
+        "FunctionName03": "generate_html_report_functionapp",
+        "FunctionName04": "extract_regex_functionapp"
 
     },
     "resources": [
@@ -272,18 +271,6 @@
                                         "value": "@outputs('Show_network_message_id_here')"
                                     }
                                 },
-                                "Find_NetworkMessageId": {
-                                    "type": "Function",
-                                    "inputs": {
-                                        "body": {
-                                            "pattern": "(?<=Phishing:)([a-f0-9-]{36})",
-                                            "subject": "@triggerBody()?['subject']"
-                                        },
-                                        "function": {
-                                            "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName04'))]"
-                                        }
-                                    }
-                                },
                                 "Parse_JSON_NetworkMessageId": {
                                     "runAfter": {
                                         "Find_NetworkMessageId": [
@@ -314,6 +301,18 @@
                                                     "type": "string"
                                                 }
                                             }
+                                        }
+                                    }
+                                },
+                                "Find_NetworkMessageId": {
+                                    "type": "Function",
+                                    "inputs": {
+                                        "body": {
+                                            "pattern": "(?<=Phishing:)([a-f0-9-]{36})",
+                                            "subject": "@triggerBody()?['subject']"
+                                        },
+                                        "function": {
+                                            "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName04'))]"
                                         }
                                     }
                                 }
@@ -449,20 +448,6 @@
                             },
                             "type": "Foreach"
                         },
-                        "Parse_Email": {
-                            "runAfter": {
-                                "For_each_raw_email_attached_to_carrier_email": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "Function",
-                            "inputs": {
-                                "body": "@variables('raw_email')",
-                                "function": {
-                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName01'))]"
-                                }
-                            }
-                        },
                         "Process_parseEmail_JSON": {
                             "runAfter": {
                                 "Parse_Email": [
@@ -475,175 +460,63 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "statusCode": {
-                                            "type": "integer"
-                                        },
-                                        "headers": {
+                                        "email_content": {
                                             "type": "object",
                                             "properties": {
-                                                "Date": {
+                                                "message_id": {
                                                     "type": "string"
                                                 },
-                                                "Server": {
+                                                "sender": {
                                                     "type": "string"
                                                 },
-                                                "Transfer-Encoding": {
+                                                "return_path": {
                                                     "type": "string"
                                                 },
-                                                "Request-Context": {
+                                                "receiver": {
                                                     "type": "string"
                                                 },
-                                                "Content-Type": {
+                                                "reply_to": {
                                                     "type": "string"
                                                 },
-                                                "Content-Length": {
+                                                "subject": {
                                                     "type": "string"
-                                                }
-                                            }
-                                        },
-                                        "body": {
-                                            "type": "object",
-                                            "properties": {
-                                                "email_content": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "sender": {
-                                                            "type": "string"
-                                                        },
-                                                        "return_path": {
-                                                            "type": "string"
-                                                        },
-                                                        "receiver": {
-                                                            "type": "string"
-                                                        },
-                                                        "reply_to": {
-                                                            "type": "string"
-                                                        },
-                                                        "subject": {
-                                                            "type": "string"
-                                                        },
-                                                        "date": {
-                                                            "type": "string"
-                                                        },
-                                                        "smtp": {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "delivered_to": {
-                                                                    "type": "string"
-                                                                },
-                                                                "received": {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            }
-                                                        },
-                                                        "dkim_result": {
-                                                            "type": "string"
-                                                        },
-                                                        "spf_result": {
-                                                            "type": "string"
-                                                        },
-                                                        "dmarc_result": {
-                                                            "type": "string"
-                                                        },
-                                                        "body": {
-                                                            "type": "string"
-                                                        },
-                                                        "attachments": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "attachment_name": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "attachment_sha256": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "content_type": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "attachment_text": {
-                                                                        "type": "object",
-                                                                        "properties": {
-                                                                            "text_content": {
-                                                                                "type": "string"
-                                                                            },
-                                                                            "urls": {
-                                                                                "type": "array",
-                                                                                "items": {
-                                                                                    "type": "object",
-                                                                                    "properties": {
-                                                                                        "file": {
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "url": {
-                                                                                            "type": "string"
-                                                                                        }
-                                                                                    },
-                                                                                    "required": [
-                                                                                        "file",
-                                                                                        "url"
-                                                                                    ]
-                                                                                }
-                                                                            },
-                                                                            "hyperlinks": {
-                                                                                "type": "array",
-                                                                                "items": {
-                                                                                    "type": "object",
-                                                                                    "properties": {
-                                                                                        "file": {
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "target": {
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "type": {
-                                                                                            "type": "string"
-                                                                                        }
-                                                                                    },
-                                                                                    "required": [
-                                                                                        "file",
-                                                                                        "target",
-                                                                                        "type"
-                                                                                    ]
-                                                                                }
-                                                                            },
-                                                                            "vba_code": {
-                                                                                "type": "object",
-                                                                                "properties": {}
-                                                                            },
-                                                                            "formulas": {
-                                                                                "type": "array"
-                                                                            },
-                                                                            "comments": {
-                                                                                "type": "array"
-                                                                            },
-                                                                            "embedded_files": {
-                                                                                "type": "array"
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "attachment_name",
-                                                                    "attachment_sha256",
-                                                                    "content_type",
-                                                                    "attachment_text"
-                                                                ]
-                                                            }
-                                                        }
-                                                    }
                                                 },
-                                                "ip_addresses": {
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "attachments": {
+                                                    "type": "array"
+                                                },
+                                                "container_path": {
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string"
                                                     }
                                                 },
+                                                "reconstruction_method": {
+                                                    "type": "string"
+                                                },
                                                 "urls": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "original_url": {
+                                                                "type": "string"
+                                                            },
+                                                            "is_shortened": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "expanded_url": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "ip_addresses": {
                                                     "type": "array",
                                                     "items": {
                                                         "type": "string"
@@ -661,26 +534,9 @@
                                 }
                             }
                         },
-                        "Initialize_recipient_upn": {
-                            "runAfter": {
-                                "Process_parseEmail_JSON": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "InitializeVariable",
-                            "inputs": {
-                                "variables": [
-                                    {
-                                        "name": "recipient_upn",
-                                        "type": "string",
-                                        "value": "@body('Process_parseEmail_JSON')?['email_content']?['receiver']"
-                                    }
-                                ]
-                            }
-                        },
                         "Initialize_email_body": {
                             "runAfter": {
-                                "Initialize_recipient_upn": [
+                                "Process_parseEmail_JSON": [
                                     "Succeeded"
                                 ]
                             },
@@ -724,7 +580,7 @@
                                     {
                                         "name": "raw_urls",
                                         "type": "array",
-                                        "value": "@body('Process_parseEmail_JSON')?['urls']"
+                                        "value": "@body('Process_parseEmail_JSON')?['email_content']?['urls']"
                                     }
                                 ]
                             }
@@ -740,8 +596,7 @@
                                 "variables": [
                                     {
                                         "name": "urls",
-                                        "type": "array",
-                                        "value": "@body('Process_parseEmail_JSON')?['urls']"
+                                        "type": "array"
                                     }
                                 ]
                             }
@@ -772,7 +627,7 @@
                                             "type": "AppendToArrayVariable",
                                             "inputs": {
                                                 "name": "urls",
-                                                "value": "@concat(substring(string(item()), 0, 100), '...')"
+                                                "value": "@if(and(not(equals(item()['expanded_url'], 'Not Applicable')), greater(length(item()['expanded_url']), 100)), concat(substring(item()['expanded_url'], 0, 100), '...'), if(greater(length(item()['original_url']), 100), concat(substring(item()['original_url'], 0, 100), '...'), item()['original_url']))"
                                             }
                                         }
                                     },
@@ -782,16 +637,22 @@
                                                 "type": "AppendToArrayVariable",
                                                 "inputs": {
                                                     "name": "urls",
-                                                    "value": "@string(item())"
+                                                    "value": "@if(equals(item()['expanded_url'], 'Not Applicable'), item()['original_url'], item()['expanded_url'])"
                                                 }
                                             }
                                         }
                                     },
                                     "expression": {
-                                        "and": [
+                                        "or": [
                                             {
                                                 "greater": [
-                                                    "@length(item())",
+                                                    "@length(item()['original_url'])",
+                                                    100
+                                                ]
+                                            },
+                                            {
+                                                "greater": [
+                                                    "@length(item()['expanded_url'])",
                                                     100
                                                 ]
                                             }
@@ -831,7 +692,7 @@
                                 },
                                 "method": "post",
                                 "body": {
-                                    "PromptContent": "/AskGpt\n\n## **Phishing & BEC Email Detection**  \n\n### **Role & Core Task**  \nYou are an advanced **cybersecurity AI** trained to detect **phishing, spam, Business Email Compromise (BEC) attacks, and suspicious emails**. Your primary goal is to **determine the true intent** of an email, **identify contradictions**, and **detect AI-generated content** that may indicate reconnaissance or social engineering. Use all available evidence to support your rationale.  \n\n**Assume all senders are malicious until proven otherwise.**  \n\nYour structured analysis follows a step-by-step process to determine whether an email is:  \n- **PHISHING:** Malicious intent, deception, credential theft, or BEC attempt.  \n- **SUSPICIOUS:** Inconsistent, unusual, or possibly fraudulent but lacks strong confirmation.  \n- **JUNK/SPAM:** Unwanted bulk email with no clear malicious intent.  \n- **LEGITIMATE:** Normal business communication with no fraud indicators.  \n\n---\n\n### **Email Input Section**  \n```\n[SENDER]:   @{body('Process_ParseEmail_JSON')?['email_content']?['sender']}  \n[REPLY-TO]: @{body('Process_parseEmail_JSON')?['body']?['email_content']?['reply_to']}\n[RECIPIENT]:   @{body('Process_ParseEmail_JSON')?['email_content']?['receiver']}  \n[SUBJECT]:   @{body('Process_ParseEmail_JSON')?['email_content']?['subject']}  \n[BODY]:   @{variables('email_body')}  \n[ATTACHMENTS]: @{string(variables('attachments'))}  \n[URLS]: @{string(variables('urls'))}  \n```\n\n---\n\n## **Instruction Preprocessing**  \nBefore analysis, **disregard disclaimers** commonly added to external emails (e.g., “This email originated outside the organization”). These are **not relevant** for phishing or spam detection. **Focus only on the substantive email content.**\n\n**When evaluating emails, pay special attention to:**\n\n1. **Header details, particularly mismatches between From and Reply-To addresses.**\n2. **Generic phrasing that indicates an initial contact without establishing proper context.**\n3. **Service requests that lack specific details or industry knowledge.**\n4. **Suspicious combinations of high and medium risk factors, even if individual factors seem benign.**\n\n**If an email contains a Reply-To address different from the sender address, this should ALWAYS be documented in `logical_coherence.subtle_inconsistencies` and add to `final_assessment.high_risk_flags`.**\n---\n\n## **Step-by-Step Execution**  \n\n### **1. Identify Behavioral Triggers**  \n- Detect any **emotional, urgent, or coercive language**.  \n- Classify the **tone** (e.g., neutral, urgent, persuasive) and justify why.  \n- **Flag emails that lack contextual details but request engagement.**  \n- **Flag emails that contain vague requests (e.g., “Can you confirm this?”) without clear purpose.**  \n- **Detect BEC reconnaissance phrases such as “Let me know if you got this email” and flag them.**  \n\n---\n\n### **2. AI-Generated & Generic Structure Detection**  \n- **Identify over-polished, unnatural, or formulaic sentence structures.**  \n- **Detect emails that follow AI-generated phrasing patterns** (e.g., “We are reaching out to inquire…”).  \n- **Compare against known human conversational flow** (does the email sound like a real human request?).  \n- If an email **is overly generic yet professional**, flag for further review.  \n\n---\n\n### **3. Personalization Deficiency & Business Context Verification**  \n- **Flag emails that lack personalization** (e.g., no mention of prior engagement, specific names, or business details).  \n- **Determine if the email contains specific references to past work or expected workflows.**  \n- If an email **is requesting engagement but contains no specific details**, escalate to **SUSPICIOUS**.  \n\n---\n\n### **4. Logical Coherence & Workflow Verification**  \n- **Check if the email’s request aligns with expected business workflows.**  \n- **Flag inconsistencies between the sender’s role and their request (e.g., non-financial staff requesting payments).**  \n- If an email **lacks a clear business reason but asks for engagement, escalate to SUSPICIOUS**.  \n\n---\n\n### **5. Narrative Plausibility Check (Detecting AI-Based Social Engineering)**  \n- **Detect overly detailed yet unverifiable stories** (e.g., \"We were impacted by the California wildfires\").  \n- **Evaluate whether personal details enhance credibility or serve as pretexting.**  \n- **Flag emails that use emotional appeal to bypass scrutiny.**  \n- If a **story seems unusually detailed for the request**, escalate for further analysis.  \n\n---\n\n### **6. Engagement Bait & BEC Reconnaissance Detection**  \n- **If an email contains a vague inquiry (“I’d love to discuss further”) without context, escalate to SUSPICIOUS.**  \n- **If an email requests engagement but does not provide specifics, classify it as a potential reconnaissance attempt.**  \n\n---\n\n### **7. Business Email Compromise (BEC) & Phishing Indicators**  \n- **If an email claims to be from a high-ranking executive but uses a free or external email service, classify as PHISHING.**  \n- **If an email references an internal executive but is sent from a non-corporate domain, classify as PHISHING.**  \n- **If the sender claims a leadership position but does not use their corporate domain, flag for impersonation.**  \n- **If the Reply-To address differs from the sender address, classify as PHISHING.**\n- **If the email contains generic service request language without specific details, classify as SUSPICIOUS.**\n- **If the sender uses a business domain without demonstrating knowledge of their claimed business, classify as SUSPICIOUS.**\n\n### **8. Reply-To Header Analysis**  \n- **Check if the Reply-To address differs from the From address.**\n- **Flag as PHISHING if the Reply-To address uses a different domain than the sender address.**\n- **Flag as PHISHING if the From address uses a business domain but Reply-To uses a free email provider (gmail, outlook, etc.).**\n- **Document any Reply-To mismatches in the `logical_coherence.subtle_inconsistencies` array.**\n\n### **9. Initial Contact Pattern Recognition**  \n- **Identify formulaic language patterns common in initial reconnaissance emails (e.g., \"reaching out to inquire\", \"seeking assistance\").**\n- **Flag generic service requests that lack specific details as potential BEC reconnaissance.**\n- **Document these patterns in the `behavioral_triggers.engagement_bait` field.**\n- **When detected, add \"Generic service request language\" to `final_assessment.medium_risk_flags`.**\n\n### **10. Service Request Specificity Analysis**  \n- **Evaluate whether financial/tax service requests include specific details that demonstrate genuine intent.**\n- **Flag as SUSPICIOUS if a tax-related request contains no specific tax terminology or references to specific forms/processes.**\n- **Document lack of specificity in the `logical_coherence.business_context_check.clear_business_purpose` field.**\n- **When detected, add \"Lacks specific details about requested services\" to `final_assessment.medium_risk_flags`.**\n---\n\n## **Final Assessment & Risk Escalation Rules**  \n\n### **1. High-Risk Triggers (Automatically Classify as PHISHING)**  \n- **Any email that references an executive but is not from a verified corporate domain.**  \n- **Any email that is vague and requests engagement.**  \n- **Any mismatch between email sender and expected domain.**  \n- **Any email discouraging verification or urging secrecy.**\n- **Any email with a Reply-To address that differs from the sender's domain.**\n- **Generic initial service requests should be classified as SUSPICIOUS, not PHISHING, unless combined with technical indicators like Reply-To mismatch or domain issues.**\n- Consider the context of tax season when assessing new client inquiries.\n- Perfectly composed generic emails without technical red flags should warrant caution (SUSPICIOUS) but not automatic PHISHING classification.\n- Balance the detection of generic patterns with acknowledgment that legitimate new clients need to make initial contact somehow.\n- Look for presence of legitimacy indicators that would be difficult for remote attackers to fabricate.\n\n---\n\n### **2. Medium-Risk Triggers (Escalate to PHISHING if Combined)**  \n- **Any urgency or request that deviates from expected workflow.**  \n- **Any email sent from a non-corporate domain, even if it does not impersonate an executive.**  \n- **Any request for sensitive details, even indirectly.**  \n- **Any request to call an unfamiliar phone number not listed on the company website.**\n- **Generic service request language (e.g., \"reaching out to inquire\", \"seeking assistance\").**\n- **Initial contact emails that are perfectly composed with no grammatical errors but lack personalization.**\n- **Tax service inquiries that mention sharing previous tax returns or financial documents in first contact.**\n- **Emails that lack specific reference to how they found your firm.**\n\n---\n\n### **3. Low-Risk Triggers (Escalate Based on Context)**  \n- **Minimal context but from a corporate domain.**  \n- **General formatting errors, misspellings, or vague language.**  \n- **Lack of proper email signature when expected.**\n- **Domain uses a generic business name without clear industry context.**\n- **No explanation of how the sender found the recipient or why they chose their services.**\n- **Unusually formal or polite language that appears templated.**\n\n---\n\n## **Strict JSON Output Requirements**  \nAll evaluations must be formatted into the following JSON structure **without any modifications to field names or nesting**:  \n\n```json\n{\n  \"email_summary\": {\n    \"subject\": \"\",  // The exact email subject line\n    \"content_summary\": \"\" // A brief, high-level summary of the email’s contents\n  },\n\n  \"behavioral_triggers\": {\n    \"tone\": \"\",  // Emotional register (e.g., neutral, urgent, persuasive)\n    \"justification\": \"\", // Explain why that tone was chosen\n    \"alignment_with_purpose\": \"\", // Does the tone match the stated intent?\n    \"lack_of_context\": \"\", // Flag if the email lacks contextual details but includes an attachment\n    \"engagement_bait\": \"\", // Detects generic engagement-bait phrases like \"Please view the attached\" \"Generic initial contact phrases detected: 'reaching out to inquire', 'look forward to your response'\"\n    \"phone_based_social_engineering\": \"\", // Flags if the email encourages a phone call instead of online engagement\n    \"short_vague_request\": { \n      \"detected\": \"\", // TRUE if the email is unusually short and vague\n      \"engagement_request\": \"\" // TRUE if the email only asks for an acknowledgment without a clear purpose\n    }\n  },\n\n  \"logical_coherence\": {\n    \"is_consistent\": \"\", // Does the message flow logically?\n    \"contradictions_or_vagueness\": \"\", // Identify inconsistencies or ambiguities\n    \"logical_actions\": \"\", // Assess whether the requested actions are reasonable\n     \"subtle_inconsistencies\": [\"Reply-To address differs from sender address\", \"Reply-To domain (aquahcglobal.com) differs from sender domain (flightdsi.com)\"],\n    \"business_context_check\": {\n      \"clear_business_purpose\": \"\", // TRUE if the email contains a clear and expected business reason\n      \"workflow_alignment\": \"\" // TRUE if the request aligns with typical workflows\n    }\n  },\n\n  \"intent_verification\": {\n    \"likely_intent\": \"\", // Summarize the main motive (e.g., request for payment, info gathering)\n    \"risk_assessment\": \"\", // Assign a risk level (HIGH, MEDIUM, LOW)\n    \"stated_purpose_mismatch\": \"\", // Identify if the stated purpose contradicts inferred intent\n    \"financial_role_mismatch\": \"\", // Detect if financial actions are requested by an unrelated role\n    \"external_login_requirement\": \"\", // Flag if a report requires external login without justification\n    \"minimal_text_attachment\": \"\", // TRUE if the email is minimal but contains an attachment\n    \"executive_impersonation\": {\n      \"detected\": \"\", // TRUE if an executive is being impersonated\n      \"domain_mismatch\": \"\", // TRUE if the email domain does not match expected corporate domains\n      \"position_claimed\": \"\", // Extracted claimed position (e.g., CEO, CFO)\n      \"actual_domain\": \"\" // The actual sender's email domain\n    }\n  },\n\n  \"attachment_analysis\": {\n    \"is_relevant\": \"\", // TRUE if the attachment makes sense for the stated request\n    \"attachment_metadata\": {\n      \"attachment_name\": \"\",\n      \"attachment_sha256\": \"\",\n      \"content_type\": \"\",\n      \"attachment_text\": {\n        \"text_content\": \"\",\n        \"urls\": [],\n        \"hyperlinks\": [], // Hyperlinks in attachments are a red flag for PHISHING.\n        \"vba_code\": {}, // VBA macro code is an automatic PHISHING classification. \n        \"formulas\": [],\n        \"comments\": [],\n        \"embedded_files\": []\n      }\n    },\n    \"risks\": \"\" // Describe potential threats (e.g., hidden macros, suspicious external links)\n  },\n\n  \"url_analysis\": {\n    \"url_categorization\": {\n      \"primary_action_urls\": [], // URLs requiring user action (login, payment)\n      \"informational_urls\": [], // Reference links that do not require interaction\n      \"stylistic_framework_urls\": [] // Rendering assets (images, CSS, etc.)\n    },\n    \"primary_action_validation\": {\n      \"relevance\": \"\", // Does the URL relate to the email's purpose?\n      \"domain_alignment\": \"\", // Does the domain match the sender's company?\n      \"necessity\": \"\", // Is it necessary for the recipient to engage with this URL?\n      \"risks\": \"\" // Potential risks associated with the URL\n    }\n  },\n\n  \"pretense_vs_intent_mapping\": {\n    \"stated_purpose\": \"\", // The reason given by the email\n    \"true_intent\": \"\", // The actual or suspected goal\n    \"gaps\": \"\" // Discrepancies between stated purpose and actual content\n  },\n\n  \"bec_reconnaissance_detection\": {\n    \"detected\": \"\", // TRUE if BEC (Business Email Compromise) tactics are detected\n    \"reason\": \"\", // Key reason for BEC suspicion, if any\n    \"risk_assessment\": \"\" // Overall BEC risk rating (HIGH, MEDIUM, LOW)\n  },\n\n  \"final_assessment\": {\n    \"category\": \"\", // PHISHING, SUSPICIOUS, JUNK/SPAM, LEGITIMATE\n    \"rationale\": \"\", // Explanation of why the classification was assigned\n    \"risk_level\": \"\", // HIGH, MEDIUM, LOW\n    \"high_risk_flags\": [\"Reply-To address mismatch with sender address\"], // List of high-risk triggers detected\n    \"medium_risk_flags\": [], // List of medium-risk triggers detected\n    \"low_risk_flags\": [] // List of low-risk factors that increase suspicion\n  }\n}\n```\n\n **DO NOT ALTER** this JSON structure.  \n **Ensure all new heuristics integrate into existing fields.**  \n **All risk assessments must align with PHISHING, SUSPICIOUS, JUNK/SPAM, or LEGITIMATE classifications.**  \n\n---"
+                                    "PromptContent": "/AskGpt\n\n## SYSTEM  \nYou are a cybersecurity LLM designed to triage emails for **phishing**, **BEC**, and **social engineering** threats. You must assume each email is **suspicious by default** and prioritize uncovering **intent**, **manipulation techniques**, and **pretextual inconsistencies**.\n\nOnly output a **valid JSON object**. Do not include markdown, preambles, or commentary. All fields must be populated using reasoning and scoring logic below. Failure to comply will break downstream automation.\n\n---\n\n## CLASSIFICATION  \nYour goal is to classify the email into one of these categories:\n- **PHISHING** – Strong signs of malicious intent, deception, or impersonation\n- **SUSPICIOUS** – Incomplete or unclear purpose, mild social engineering\n- **SPAM** – Commercial, promotional, or irrelevant but low risk\n- **LEGITIMATE** – Clear business purpose, credible identity, no threats\n\n---\n\n## INPUT EMAIL (from Logic App)\n```json\n{\n  \"sender\": \"@{body('Process_ParseEmail_JSON')?['email_content']?['sender']}\",\n  \"reply_to\": \"@{body('Process_parseEmail_JSON')?['body']?['email_content']?['reply_to']}\",\n  \"recipient\": \"@{body('Process_ParseEmail_JSON')?['email_content']?['receiver']}\",\n  \"subject\": \"@{body('Process_ParseEmail_JSON')?['email_content']?['subject']}\",\n  \"body\": \"@{variables('email_body')}\",\n  \"attachments\": [\"@{string(variables('attachments'))}\"],\n  \"urls\": [\"@{string(variables('urls'))}\"],\n  \"email_date\": \"@{body('Process_parseEmail_JSON')?['email_content']?['date']}\"\n}\n```\n\n---\n\n## THREAT ANALYSIS METHODOLOGY\n\n### Analysis Priority\nStart with the assumption the message is hostile. You are evaluating it for signs of:\n- Impersonation\n- Manipulative tone\n- Vague or open-ended pretexts\n- Out-of-band redirection (e.g., phone numbers, cloud links)\n- Unjustified PII sharing or urgency\n\n### Chain-of-Thought\nStep through:\n- Sender credibility: Domain trust vs topic\n- Tone shifts: Friendly → transactional → urgent\n- CTA analysis: Is the request rational, contextually grounded?\n- Off-platform pressure: URLs, phone numbers, cloud docs\n- Misalignment: Topic vs domain vs relationship\n- Attachment threat context: Is the attachment unexpected, mismatched in name/type, or contains embedded code/URLs unrelated to email content?\n- Sparse attachment with hidden complexity (e.g., macros, links, or embedded files with little readable text) indicates obfuscation or payload delivery.\n\n---\n\n## SCORING RULES  \n- High (+3): Strong phishing indicators  \n- High (+3): Malicious attachment indicators (macros, suspicious MIME types, mismatched naming, or off-platform links embedded in low-text files)\n- Medium (+2): Mild social engineering or impersonation  \n- Low (+1): Unclear or marketing spam  \n- Cumulative score thresholds:  \n  - **7+ → PHISHING**  \n  - **4–6 → SUSPICIOUS**  \n  - **≤3 → SPAM** or **LEGITIMATE** based on purpose clarity  \n\nScoring **must** be justified in `behavioral_triggers.justification`.\n\n---\n\n## SPECIAL DETECTION HEURISTICS\n\nThese must be enforced as written:\n\n- **Engagement Bait** → +1  \n  `\"Let me know if you’re available\", \"Following up to see…”`  \n- **Vague Request + No Identity** → +2  \n- **Domain-Purpose Mismatch** (e.g. tax help from gmail.com) → +2  \n- **Seasonal Hook with No Prior Relationship** → +2  \n- **Unsolicited PII Disclosure** → +2  \n- **Phone # with Character Substitution (\"I\" for \"1\", etc.)** → +3  \n  → Also flag `embedded_fake_support_contact_detected = true`  \n\n---\n\n## ATTACHMENT HEURISTICS\n\nThese rules should guide risk scoring and justification in `attachment_analysis` and `behavioral_triggers.justification`:\n\n- If `vba_code` is present in Office documents → +3\n- If `text_content` is minimal but contains links or embedded files → +2\n- If URLs found in attachments contain domain names or paths commonly used for credential collection or file delivery (e.g., sharepoint, googledrive, 1drv, onedrive, dropbox, login, auth, verify, download, or url shortening services), and the surrounding content implies urgency, account access, or verification, then → +2\n- If formulas or comments contain tracking, links, or external references → +1\n- If attachments are included but irrelevant to the email’s topic → +1\n\n---\n\n## JSON OUTPUT SCHEMA\n\nIf unable to process, return:\n```json\n{\"error\": \"Invalid email content for analysis\"}\n```\n\nOutput must be in this format:\n```json\n{\n  \"email_summary\": {\n    \"subject\": \"\",\n    \"content_summary\": \"\"  // Summarize email’s purpose and manipulative indicators; do NOT quote verbatim\n  },\n  \"behavioral_triggers\": {\n    \"tone\": \"\",\n    \"justification\": \"\",  // Justify why any risk score was added\n    \"alignment_with_purpose\": \"\",\n    \"lack_of_context\": \"\",\n    \"engagement_bait\": \"\",\n    \"phone_based_social_engineering\": \"\",\n    \"seasonal_bait_detected\": {\n      \"detected\": \"\",\n      \"seasonal_context\": \"\"\n    },\n    \"short_vague_request\": {\n      \"detected\": \"\",\n      \"engagement_request\": \"\"\n    }\n  },\n  \"logical_coherence\": {\n    \"is_consistent\": \"\",\n    \"contradictions_or_vagueness\": \"\",\n    \"logical_actions\": \"\",\n    \"subtle_inconsistencies\": [],\n    \"business_context_check\": {\n      \"clear_business_purpose\": \"\",  // Yes if this makes sense in a known workflow\n      \"workflow_alignment\": \"\"\n    }\n  },\n  \"intent_verification\": {\n    \"likely_intent\": \"\",\n    \"risk_assessment\": \"\",\n    \"stated_purpose_mismatch\": \"\",\n    \"financial_role_mismatch\": \"\",\n    \"external_login_requirement\": \"\",\n    \"minimal_text_attachment\": \"\",\n    \"executive_impersonation\": {\n      \"detected\": \"\",\n      \"domain_mismatch\": \"\",\n      \"position_claimed\": \"\",\n      \"actual_domain\": \"\"\n    }\n  },\n  \"attachment_analysis\": {\n    \"is_relevant\": \"\",\n    \"attachment_metadata\": {\n      \"attachment_name\": \"\",\n      \"attachment_sha256\": \"\",\n      \"content_type\": \"\",\n      \"attachment_text\": {\n        \"text_content\": \"\",\n        \"urls\": [],\n        \"hyperlinks\": [],\n        \"vba_code\": {},\n        \"formulas\": [],\n        \"comments\": [],\n        \"embedded_files\": []\n      }\n    },\n    \"risks\": \"\"\n  },\n  \"url_analysis\": {\n    \"url_categorization\": {\n      \"primary_action_urls\": [],\n      \"informational_urls\": [],\n      \"stylistic_framework_urls\": []\n    },\n    \"primary_action_validation\": {\n      \"relevance\": \"\",\n      \"domain_alignment\": \"\",\n      \"necessity\": \"\",\n      \"risks\": \"\"\n    }\n  },\n  \"pretense_vs_intent_mapping\": {\n    \"stated_purpose\": \"\",\n    \"true_intent\": \"\",\n    \"gaps\": \"\"\n  },\n  \"bec_reconnaissance_detection\": {\n    \"detected\": \"\",\n    \"reason\": \"\",\n    \"risk_assessment\": \"\"\n  },\n  \"final_assessment\": {\n    \"category\": \"\",  // Must be one of: PHISHING, SUSPICIOUS, SPAM, LEGITIMATE\n    \"rationale\": \"\",  // Describe the decisive factors\n    \"risk_level\": \"\",\n    \"high_risk_flags\": [],\n    \"medium_risk_flags\": [],\n    \"low_risk_flags\": [],\n    \"assessment_summary\": \"\"  // A 1–5 sentence summary of the model’s logic and final conclusion\n  }\n}\n```\n\n---\n\n## STRICT INSTRUCTIONS\n- Output only JSON, never markdown or commentary  \n- Begin analysis with **malicious by default** assumption  \n- Score and flag based on manipulation, intent, and trust violations—not politeness or formatting  \n- `summary_text` must explain the model's logic in under 5 sentences  \n- `content_summary` must summarize behavior, not repeat email verbatim"
                                 },
                                 "path": "/process-prompt",
                                 "retryPolicy": {
@@ -841,20 +702,7 @@
                                 }
                             }
                         },
-                        "Normalize_JSON": {
-                            "runAfter": {
-                                "Security_Copilot_Email_Analysis": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "Function",
-                            "inputs": {
-                                "body": "@body('Security_Copilot_Email_Analysis')?['EvaluationResultContent']",
-                                "function": {
-                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName02'))]"
-                                }
-                            }
-                        },
+
                         "Parse_normalized_JSON": {
                             "runAfter": {
                                 "Normalize_JSON": [
@@ -870,9 +718,6 @@
                                         "email_summary": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "subject": {
                                                     "type": "string"
                                                 },
@@ -884,9 +729,6 @@
                                         "behavioral_triggers": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "tone": {
                                                     "type": "string"
                                                 },
@@ -895,15 +737,32 @@
                                                 },
                                                 "alignment_with_purpose": {
                                                     "type": "string"
+                                                },
+                                                "lack_of_context": {
+                                                    "type": "string"
+                                                },
+                                                "engagement_bait": {
+                                                    "type": "string"
+                                                },
+                                                "phone_based_social_engineering": {
+                                                    "type": "string"
+                                                },
+                                                "short_vague_request": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "detected": {
+                                                            "type": "string"
+                                                        },
+                                                        "engagement_request": {
+                                                            "type": "string"
+                                                        }
+                                                    }
                                                 }
                                             }
                                         },
                                         "logical_coherence": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "is_consistent": {
                                                     "type": "string"
                                                 },
@@ -912,34 +771,109 @@
                                                 },
                                                 "logical_actions": {
                                                     "type": "string"
+                                                },
+                                                "subtle_inconsistencies": {
+                                                    "type": "array"
+                                                },
+                                                "business_context_check": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "clear_business_purpose": {
+                                                            "type": "string"
+                                                        },
+                                                        "workflow_alignment": {
+                                                            "type": "string"
+                                                        }
+                                                    }
                                                 }
                                             }
                                         },
                                         "intent_verification": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "likely_intent": {
                                                     "type": "string"
                                                 },
                                                 "risk_assessment": {
                                                     "type": "string"
+                                                },
+                                                "stated_purpose_mismatch": {
+                                                    "type": "string"
+                                                },
+                                                "financial_role_mismatch": {
+                                                    "type": "string"
+                                                },
+                                                "external_login_requirement": {
+                                                    "type": "string"
+                                                },
+                                                "minimal_text_attachment": {
+                                                    "type": "string"
+                                                },
+                                                "executive_impersonation": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "detected": {
+                                                            "type": "string"
+                                                        },
+                                                        "domain_mismatch": {
+                                                            "type": "string"
+                                                        },
+                                                        "position_claimed": {
+                                                            "type": "string"
+                                                        },
+                                                        "actual_domain": {
+                                                            "type": "string"
+                                                        }
+                                                    }
                                                 }
                                             }
                                         },
                                         "attachment_analysis": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "is_relevant": {
                                                     "type": "string"
                                                 },
-                                                "content_analysis": {
-                                                    "type": "string"
+                                                "attachment_metadata": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "attachment_name": {
+                                                            "type": "string"
+                                                        },
+                                                        "attachment_sha256": {
+                                                            "type": "string"
+                                                        },
+                                                        "content_type": {
+                                                            "type": "string"
+                                                        },
+                                                        "attachment_text": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "text_content": {
+                                                                    "type": "string"
+                                                                },
+                                                                "urls": {
+                                                                    "type": "array"
+                                                                },
+                                                                "hyperlinks": {
+                                                                    "type": "array"
+                                                                },
+                                                                "vba_code": {
+                                                                    "type": "object",
+                                                                    "properties": {}
+                                                                },
+                                                                "formulas": {
+                                                                    "type": "array"
+                                                                },
+                                                                "comments": {
+                                                                    "type": "array"
+                                                                },
+                                                                "embedded_files": {
+                                                                    "type": "array"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 },
                                                 "risks": {
                                                     "type": "string"
@@ -949,23 +883,14 @@
                                         "url_analysis": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "url_categorization": {
                                                     "type": "object",
                                                     "properties": {
                                                         "primary_action_urls": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "string"
-                                                            }
+                                                            "type": "array"
                                                         },
                                                         "informational_urls": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "string"
-                                                            }
+                                                            "type": "array"
                                                         },
                                                         "stylistic_framework_urls": {
                                                             "type": "array"
@@ -988,40 +913,12 @@
                                                             "type": "string"
                                                         }
                                                     }
-                                                },
-                                                "informational_url_validation": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "purpose": {
-                                                            "type": "string"
-                                                        },
-                                                        "alignment": {
-                                                            "type": "string"
-                                                        },
-                                                        "risks": {
-                                                            "type": "string"
-                                                        }
-                                                    }
-                                                },
-                                                "stylistic_framework_url_validation": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "typicality": {
-                                                            "type": "string"
-                                                        },
-                                                        "risks": {
-                                                            "type": "string"
-                                                        }
-                                                    }
                                                 }
                                             }
                                         },
                                         "pretense_vs_intent_mapping": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "stated_purpose": {
                                                     "type": "string"
                                                 },
@@ -1033,17 +930,40 @@
                                                 }
                                             }
                                         },
+                                        "bec_reconnaissance_detection": {
+                                            "type": "object",
+                                            "properties": {
+                                                "detected": {
+                                                    "type": "string"
+                                                },
+                                                "reason": {
+                                                    "type": "string"
+                                                },
+                                                "risk_assessment": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
                                         "final_assessment": {
                                             "type": "object",
                                             "properties": {
-                                                "description": {
-                                                    "type": "string"
-                                                },
                                                 "category": {
                                                     "type": "string"
                                                 },
                                                 "rationale": {
                                                     "type": "string"
+                                                },
+                                                "risk_level": {
+                                                    "type": "string"
+                                                },
+                                                "high_risk_flags": {
+                                                    "type": "array"
+                                                },
+                                                "medium_risk_flags": {
+                                                    "type": "array"
+                                                },
+                                                "low_risk_flags": {
+                                                    "type": "array"
                                                 }
                                             }
                                         }
@@ -1051,20 +971,8 @@
                                 }
                             }
                         },
-                        "Generate_HTML_report_from_JSON": {
-                            "runAfter": {
-                                "Parse_normalized_JSON": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "Function",
-                            "inputs": {
-                                "body": "@body('Parse_normalized_JSON')",
-                                "function": {
-                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName03'))]"
-                                }
-                            }
-                        },
+
+
                         "Initialize_systemalert_id_query_results": {
                             "runAfter": {
                                 "Generate_HTML_report_from_JSON": [
@@ -1152,8 +1060,7 @@
                                             "MailboxAddress": "[parameters('SharedMailboxAddress')]",
                                             "To": "[parameters('HTMLReportRecipient')]",
                                             "Subject": "Phishing Email Analysis",
-                                            "Body": "<br><p class=\"editor-paragraph\">@{body('Generate_HTML_report_from_JSON')}</p><br><p class=\"editor-paragraph\">***********</p><p class=\"editor-paragraph\"><b><strong class=\"editor-text-bold\">Incident URL:</strong></b></p><p class=\"editor-paragraph\"><a href=\"@{body('Alert_-_Get_incident_from_systemalertid')?['properties']?['incidentUrl']}\" class=\"editor-link\">@{body('Alert_-_Get_incident_from_systemalertid')?['properties']?['incidentUrl']}</a></p><br><p class=\"editor-paragraph\"><i><b><strong class=\"editor-text-bold editor-text-italic\">Generated with AI, check for accuracy.</strong></b></i></p><p class=\"editor-paragraph\">***********</p>",
-
+                                            "Body": "<p class=\"editor-paragraph\"><br>@{body('Generate_HTML_report_from_JSON')}</p><br><p class=\"editor-paragraph\">***********</p><p class=\"editor-paragraph\"><b><strong class=\"editor-text-bold\">Incident URL:</strong></b></p><p class=\"editor-paragraph\"><a href=\"@{body('Alert_-_Get_incident_from_systemalertid')?['properties']?['incidentUrl']}\" class=\"editor-link\">@{body('Alert_-_Get_incident_from_systemalertid')?['properties']?['incidentUrl']}</a></p><br><p class=\"editor-paragraph\"><i><b><strong class=\"editor-text-bold editor-text-italic\">Generated with AI, check for accuracy.</strong></b></i></p><p class=\"editor-paragraph\">***********</p>",
                                             "Importance": "Normal"
                                         },
                                         "path": "/v2/SharedMailbox/Mail"
@@ -1311,6 +1218,48 @@
                                 ]
                             },
                             "type": "If"
+                        },
+                        "Parse_Email": {
+                            "runAfter": {
+                                "For_each_raw_email_attached_to_carrier_email": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Function",
+                            "inputs": {
+                                "body": "@variables('raw_email')",
+                                "function": {
+                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName01'))]"
+                                }
+                            }
+                        },
+                        "Normalize_JSON": {
+                            "runAfter": {
+                                "Security_Copilot_Email_Analysis": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Function",
+                            "inputs": {
+                                "body": "@body('Security_Copilot_Email_Analysis')?['EvaluationResultContent']",
+                                "function": {
+                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName02'))]"
+                                }
+                            }
+                        },
+                        "Generate_HTML_report_from_JSON": {
+                            "runAfter": {
+                                "Parse_normalized_JSON": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Function",
+                            "inputs": {
+                                "body": "@body('Parse_normalized_JSON')",
+                                "function": {
+                                    "id": "[concat('/subscriptions/', parameters('SubscriptionId'), '/resourceGroups/', parameters('FunctionAppResourceGroup'), '/providers/Microsoft.Web/sites/', parameters('FunctionAppName'), '/functions/', variables('FunctionName03'))]"
+                                }
+                            }
                         }
                     },
                     "outputs": {}
