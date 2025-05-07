@@ -13,8 +13,13 @@
 
 ## Setup Parameters
 
+    The following parameters must be configured for the plugin to function correctly:
 
+    - **1Password Connect Server URL**: The URL of your 1Password Connect server. This is required for the plugin to communicate with 1Password.
+    - **1Password API Token**: A valid API token with permissions to access the necessary vaults and items in your 1Password account.
+    - **Vault and Item Identifiers**: The identifiers for the vaults and items you wish to query. These can be specified in your prompts or workflows.
 
+    Ensure these parameters are correctly set up in the plugin's configuration file or environment variables before use.
 ## Usage
 
     Once installed and configured, use Security Copilot prompts or workflows to query secrets from 1Password.
