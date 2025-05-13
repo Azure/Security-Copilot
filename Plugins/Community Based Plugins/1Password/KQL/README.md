@@ -2,7 +2,9 @@
 
 ## Overview
 
-    The 1Password plugin enables Microsoft Security Copilot to securely access and retrieve secrets, credentials, and other sensitive information stored in 1Password vaults. This integration allows security analysts and automation workflows to leverage 1Password as a trusted source for secrets management within the Security Copilot environment.
+    The 1Password plugin enables Microsoft Security Copilot to securely access and retrieve secrets, credentials,  
+    and other sensitive information stored in 1Password vaults.  
+    This integration allows security analysts and automation workflows to leverage 1Password as a trusted source for secrets management within the Security Copilot environment.
 
 ## Installation
 
