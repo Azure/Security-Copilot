@@ -442,7 +442,7 @@ SkillGroups:
 
       - Name: DEX-TeamsActivityAfterSuspiciousRMM
         DisplayName: Teams Activity After Suspicious RMM
-        Description: Detects Teams activity followed by suspiciouse Remote Monitoring and Management
+        Description: Detects Teams activity followed by suspicious Remote Monitoring and Management
         Inputs:
           - Name: days
             Description: Look back x amount of days, for example 10, 20, 30.
