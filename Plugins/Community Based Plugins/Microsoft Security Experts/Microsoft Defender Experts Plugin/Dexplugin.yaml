@@ -1,3 +1,4 @@
+---
 Descriptor:
   Name: MicrosoftDefenderExpertsPlugin
   DisplayName: Microsoft Defender Experts Security Copilot Plugin
@@ -7,6 +8,7 @@ Descriptor:
 SkillGroups:
   - Format: KQL
     Skills:
+
       - Name: DEX-SuspiciousUseOfAzureHound
         DisplayName: Suspicious Use of AzureHound
         Description: Detects potential suspicious usage of AzureHound on devices.
@@ -21,7 +23,6 @@ SkillGroups:
             | where TimeGenerated > ago({{days}}d)
             | where FileName has "azurehound.exe"
             | where ProcessCommandLine has "azurehound" and ProcessCommandLine has_any ("az-rm", "az-ad", "list", "Invoke-azurehound")
-
       - Name: DEX-ReconnaissanceActivityUsingNetworkLogs
         DisplayName: Reconnaissance Activity Using Network Logs
         Description: Detects reconnaissance activity leveraging network logs and specific URLs.
@@ -42,7 +43,7 @@ SkillGroups:
 
       - Name: DEX-RoadreconAndRoadtxActivity
         DisplayName: ROADrecon and ROADtx Activity
-        Description: Detects known filenames and command line activity associated with ROADrecon and ROADtx tools.
+        Description: Detects known filenames and command line activity associated with ROADrecon and roadtx tools.
         Inputs:
           - Name: days
             Description: Look back x amount of days, for example 10, 20, 30.
@@ -269,8 +270,8 @@ SkillGroups:
           Template: |-
             DeviceFileEvents
             | where TimeGenerated > ago({{days}}d)
-            | where InitiatingProcessFileName =~ 'ping.exe' and InitiatingProcessCommandLine == 'ping.exe -t 127.0.0.1'
-            and InitiatingProcessParentFileName in~('msra.exe', 'mobsync.exe') and FolderPath endswith ".eml"
+            | where InitiatingProcessFileName =~ "ping.exe" and InitiatingProcessCommandLine == "ping.exe -t 127.0.0.1"
+            and InitiatingProcessParentFileName in~ ("msra.exe", "mobsync.exe") and FolderPath endswith ".eml"
 
       - Name: DEX-QakbotReconnaissanceActivities
         DisplayName: Qakbot Reconnaissance Activities Detection
@@ -286,8 +287,8 @@ SkillGroups:
             | where TimeGenerated > ago({{days}}d)
             | where InitiatingProcessFileName == InitiatingProcessCommandLine
             | where ProcessCommandLine has_any (
-            "whoami /all","cmd /c set","arp -a","ipconfig /all","net view /all","nslookup -querytype=ALL -timeout=10",
-            "net share","route print","netstat -nao","net localgroup")
+              "whoami /all", "cmd /c set", "arp -a", "ipconfig /all", "net view /all", "nslookup -querytype=ALL -timeout=10",
+              "net share", "route print", "netstat -nao", "net localgroup")
             | summarize dcount(FileName), make_set(ProcessCommandLine) by DeviceId, bin(Timestamp, 1d), InitiatingProcessFileName, InitiatingProcessCommandLine
             | where dcount_FileName >= 8
 
@@ -333,13 +334,13 @@ SkillGroups:
           Template: |-
             DeviceProcessEvents
             | where TimeGenerated > ago({{days}}d)
-            | where InitiatingProcessFileName =~ 'wmiprvse.exe'
-            | where FileName =~ 'powershell.exe'
-            and (ProcessCommandLine hasprefix '-e' or ProcessCommandLine contains 'frombase64')
-            | where ProcessCommandLine matches regex '[A-Za-z0-9+/]{50,}[=]{0,2}'
-            | where ProcessCommandLine !has 'Windows\\CCM\\'
+            | where InitiatingProcessFileName =~ "wmiprvse.exe"
+            | where FileName =~ "powershell.exe"
+            and (ProcessCommandLine hasprefix "-e" or ProcessCommandLine contains "frombase64")
+            | where ProcessCommandLine matches regex "[A-Za-z0-9+/]{50,}[=]{0,2}"
+            | where ProcessCommandLine !has "Windows\\CCM\\"
             | project DeviceId, Timestamp, InitiatingProcessId, InitiatingProcessFileName, ProcessId, FileName, ProcessCommandLine
-
+      
       - Name: DEX-AutomatedEmailNotificationsAndSuspiciousSignInActivity
         DisplayName: Automated Email Notifications and Suspicious Sign-In Activity Detection
         Description: Correlates automated email notifications with suspicious sign-in activity to identify potential compromises.
@@ -439,6 +440,202 @@ SkillGroups:
             | summarize dcount(UserSharedWith) by FileShared, AccountObjectId
             | where dcount_UserSharedWith >= 20
 
+      - Name: DEX-TeamsActivityAfterSuspiciousRMM
+        DisplayName: Teams Activity After Suspicious RMM
+        Description: Detects Teams activity followed by suspicious Remote Monitoring and Management
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let interestingUsers = DeviceProcessEvents
+            | where Timestamp > ago(1h)
+            | where isnotempty(InitiatingProcessAccountObjectId)
+            | where FileName has_any ("quickassist.exe", "anydesk.exe", "teamviewer_service.exe")    // Multiple RMM tools can be abused here
+            | project InitiatingProcessAccountUpn;
+            CloudAppEvents
+            | where Timestamp > ago(1d)
+            | where Application == "Microsoft Teams"
+            | where ActionType == "ChatCreated"
+            | where isempty(AccountObjectId)
+            | where RawEventData.ParticipantInfo.HasForeignTenantUsers == true
+            | where RawEventData.CommunicationType == "OneOnOne"
+            | where RawEventData.ParticipantInfo.HasGuestUsers == false
+            | where RawEventData.ParticipantInfo.HasOtherGuestUsers == false
+            | where AccountId has "@"
+            | extend TargetUPN = tolower(tostring(RawEventData.Members[1].UPN))
+            | where TargetUPN in (interestingUsers)
+            | extend VictimTenant = tostring(RawEventData.OrganizationId)
+            | extend AttackerTenant = RawEventData.Members[0].OrganizationId
+            | extend AttackerUPN = RawEventData.Members[0].UPN
+            | extend AttackerName = RawEventData.Members[0].DisplayName
+
+      - Name: DEX-TeamsPhishingviaUrlClickEvents
+        DisplayName: Teams Phishing via Url Click Events
+        Description: Correlate suspicious device alerts with URL click events in MS Teams.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let alertedDevices = AlertEvidence
+            | where Timestamp > ago(1h)
+            | where isnotempty(DeviceId)
+            | distinct DeviceId;
+            let interestedUsers = DeviceProcessEvents
+            | where Timestamp > ago(1h)
+            | where DeviceId in (alertedDevices)
+            | where isnotempty(InitiatingProcessAccountUpn)
+            | distinct InitiatingProcessAccountUpn;
+            UrlClickEvents
+            | where Timestamp > ago(1d)
+            | where ActionType == "ClickAllowed" or IsClickedThrough != "0"
+            | where Workload has "Teams"
+            | where AccountUpn in (interestedUsers)
+
+      - Name: DEX-TeamsAdversary-in-The-Middle(AiTM)
+        DisplayName: TeamsAdversary-in-The-Middle(AiTM)
+        Description: Correlate risky sign-in attempts with Teams phishing from external tenants to identify AiTM.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let usersWithRiskySignIn = AADSignInEventsBeta
+            | where Timestamp > ago(1h)
+            | where RiskLevelDuringSignIn == 100
+            | project AccountUpn;
+            CloudAppEvents
+            | where Timestamp > ago(1d)
+            | where Application == "Microsoft Teams"
+            | where ActionType == "ChatCreated"
+            | where isempty(AccountObjectId)
+            | where RawEventData.ParticipantInfo.HasForeignTenantUsers == true
+            | where RawEventData.CommunicationType == "OneOnOne"
+            | where RawEventData.ParticipantInfo.HasGuestUsers == false
+            | where RawEventData.ParticipantInfo.HasOtherGuestUsers == false
+            | where AccountId has "@"
+            | extend TargetUPN = tolower(tostring(RawEventData.Members[1].UPN))
+            | where TargetUPN in (usersWithRiskySignIn)
+            | extend TargetTenant = tostring(RawEventData.OrganizationId)
+            | extend AttackerTenant = RawEventData.Members[0].OrganizationId
+            | where TargetTenant != AttackerTenant
+            | extend AttackerUPN = RawEventData.Members[0].UPN
+            | extend AttackerName = RawEventData.Members[0].DisplayName
+            | project-reorder Timestamp, AttackerTenant, AttackerUPN, AttackerName, TargetUPN
+
+      - Name: DEX-SuspiciousFileDownloadsviaLOLBINs
+        DisplayName: Suspicious File Downloads via LOLBINs
+        Description: Detects Living-off-the-Land Binaries (LOLBINs) commonly used by adversaries to download additional payloads.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceNetworkEvents
+            | where TimeGenerated > ago({{days}}d)
+            | where InitiatingProcessFileName in~ ("curl.exe", "powershell.exe", "certutil.exe", "bitsadmin.exe")
+            | where RemoteIPType == "Public"
+            | where RemoteUrl endswith ".exe" or RemoteUrl endswith ".dll" or RemoteUrl endswith ".zip"
+            | project Timestamp, DeviceId, InitiatingProcessFileName, RemoteIP, RemoteUrl
+            | extend AlertType = "Suspicious file download from unknown IP address"
+
+      - Name: DEX-CSVDEDownloadandADEnumeration
+        DisplayName: CSVDE Download and AD Enumeration
+        Description: Detects the download and execution of Csvde, a command-line tool that can be exploited by adversaries to extract sensitive data from AD DS or introduce malicious entries.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Detect curl downloading csvde.exe
+            let csvde_download = DeviceProcessEvents
+            | where InitiatingProcessFileName =~ "cmd.exe"
+            | where ProcessCommandLine has_all ("curl", "-o", "csvde.exe", "http:")
+            | project DeviceId, Timestamp, CurlCommandLine = ProcessCommandLine, CurlProcessId = ProcessId;
+            // Detect execution of csvde.exe with specific parameters
+            let csvde_execution = DeviceProcessEvents
+            | where FileName =~ "csvde.exe"
+            | where ProcessCommandLine has_all ("-r", "objectClass=Computer")
+            | where ProcessCommandLine has_all ("-l", "samAccountName", "description", "info", "operatingSystem")
+            | where ProcessCommandLine contains "-f"
+            | project DeviceId, Timestamp, CsvdeCommandLine = ProcessCommandLine, CsvdeProcessId = ProcessId;
+            // Join the two events and look for them occurring within 5 minutes
+            csvde_download
+            | join kind=inner (csvde_execution) on DeviceId
+            | where Timestamp between (Timestamp1 .. Timestamp1 + 5m)
+            | extend AlertType = "Potential Active Directory Enumeration", Details = strcat("curl.exe was used to download csvde.exe, which was then executed to enumerate AD computers.")
+            
+      - Name: DEX-DataCompressionandExfiltration
+        DisplayName: Data Compression and Exfiltration
+        Description: Detects the use of 7-Zip for extracting files with a password and joins that process with network events to identify exfiltration of data.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Detect potential data compression and exfiltration
+            let compress_exfil = DeviceProcessEvents
+            | where FileName =~ "7z.exe"
+            | where ProcessCommandLine contains "x -p"
+            | project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessId
+            | join kind=inner (
+                DeviceNetworkEvents
+                | where InitiatingProcessId != 0
+            ) on $left.ProcessId == $right.InitiatingProcessId
+            | project Timestamp, DeviceId, FileName, ProcessCommandLine, RemoteIP, RemotePort
+            | extend AlertType = "Potential data compression and exfiltration";
+
+      - Name: DEX-PersistenceThroughStartupOperations
+        DisplayName: Persistence Through Startup Operations
+        Description: Detects adversary payloads used to create persistence via ASEP Registry Keys, Startup Folder, or Scheduled Tasks.
+        Inputs:
+          - Name: days
+            Description: Look back x amount of days, for example 10, 20, 30.
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            // Persistence through Startup operations
+            let regKeys = pack_array(@"CurrentVersion\Run",
+              @"CurrentVersion\RunOnce",
+              @"CurrentVersion\RunOnceEx",
+              @"Programs\Startup",
+              @"CurrentVersion\RunServicesOnce",
+              @"CurrentVersion\RunServices",
+              @"CurrentVersion\Policies\Explorer\Run",
+              @"Windows NT\CurrentVersion\Windows",
+              @"System\CurrentControlSet\Control\Session Manager");
+            let startUpOperations = DeviceFileEvents
+            | where FolderPath has @"Start Menu\Programs\Startup\"
+            | where ActionType in ("FileCreated", "FileModified", "FileRenamed");
+            // Persistence through Registry Tampering
+            let regOperations = DeviceRegistryEvents
+            | where hasAlertDevices
+            | where Timestamp between (startTime .. endTime)
+            | where DeviceId in (alertedDevices)
+            | where RegistryKey has_any (regKeys)
+            | where ActionType in ("SetValue", "CreateKey", "RenameKey");
+            // Persistence through Scheduled task creation
+            let scheduledOperations = DeviceProcessEvents
+            | where Timestamp between (startTime .. endTime)
+            | where DeviceId in (alertedDevices)
+            | where (InitiatingProcessCommandLine has "schtasks" and InitiatingProcessCommandLine has_any ("run", "create", "change"));
+            union startUpOperations, regOperations, scheduledOperations
+            | summarize arg_min(Timestamp, *) by DeviceId
+      
       - Name: DEX-PossibleAiTMPhishingAttemptAgainstEntraID
         DisplayName: Possible AiTM Phishing Attempt Against Entra ID
         Description: |
@@ -566,3 +763,157 @@ SkillGroups:
             | extend UEBARiskScore = IPInvestigationPriority
             | where UEBARiskScore > {{riskScoreCutoff}}
             | sort by UEBARiskScore desc
+      - Name: DEX-BrowserRemoteDebugging
+        DisplayName: Browser Remote Debugging
+        Description: Identifies AutoIT scripts launching Chromium-based browsers (e.g., chrome.exe, msedge.exe, brave.exe) in remote debugging mode.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h", "4h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where TimeGenerated > ago({{timeframe}})
+            | where InitiatingProcessVersionInfoInternalFileName == "AutoIt3.exe"
+            | where ProcessCommandLine has "--remote-debugging-port"
+            | project DeviceId, Timestamp, InitiatingProcessParentFileName, InitiatingProcessFileName, InitiatingProcessFolderPath, InitiatingProcessVersionInfoInternalFileName, InitiatingProcessCommandLine, FileName, ProcessCommandLine
+
+      - Name: DEX-DPAPI-AutoIT
+        DisplayName: DPAPI Decryption via AutoIT
+        Description: Identifies DPAPI decryption activity originating from AutoIT scripts.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp > ago({{timeframe}})
+            | where ActionType == "DpapiAccessed"
+            | where InitiatingProcessVersionInfoInternalFileName == "AutoIt3.exe"
+            | where (AdditionalFields has_any ("Google Chrome", "Microsoft Edge") and AdditionalFields has_any ("SPCryptUnprotect"))
+            | extend json = parse_json(AdditionalFields)
+            | extend dataDesp = tostring(json.DataDescription.PropertyValue)
+            | extend opType = tostring(json.OperationType.PropertyValue)
+            | where (dataDesp in~ ("Google Chrome", "Microsoft Edge") and opType =~ "SPCryptUnprotect")
+            | project Timestamp, ReportId, DeviceId, ActionType, InitiatingProcessParentFileName, InitiatingProcessFileName, InitiatingProcessVersionInfoInternalFileName, InitiatingProcessCommandLine, AdditionalFields, dataDesp, opType
+
+      - Name: DEX-DPAPI-LOLBAS
+        DisplayName: DPAPI Decryption via LOLBAS Binaries
+        Description: Identifies DPAPI decryption activity originating from LOLBAS binaries such as RegAsm.exe and MSBuild.exe.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp > ago({{timeframe}})
+            | where ActionType == "DpapiAccessed"
+            | where InitiatingProcessFileName has_any ("RegAsm.exe", "MSBuild.exe")
+            | where (AdditionalFields has_any ("Google Chrome", "Microsoft Edge") and AdditionalFields has_any ("SPCryptUnprotect"))
+            | extend json = parse_json(AdditionalFields)
+            | extend dataDesp = tostring(json.DataDescription.PropertyValue)
+            | extend opType = tostring(json.OperationType.PropertyValue)
+            | where (dataDesp in~ ("Google Chrome", "Microsoft Edge") and opType =~ "SPCryptUnprotect")
+            | project Timestamp, ReportId, DeviceId, ActionType, InitiatingProcessParentFileName, InitiatingProcessFileName, InitiatingProcessVersionInfoInternalFileName, InitiatingProcessCommandLine, AdditionalFields, dataDesp, opType
+
+      - Name: DEX-SensitiveBrowserAccessAutoIT
+        DisplayName: Sensitive Browser File Access via AutoIT
+        Description: Identifies AutoIT scripts (renamed or otherwise) accessing sensitive browser files.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let browserDirs = pack_array(@"\Google\Chrome\User Data\", @"\Microsoft\Edge\User Data\", @"\Mozilla\Firefox\Profiles\");
+            let browserSensitiveFiles = pack_array("Web Data", "Login Data", "key4.db", "formhistory.sqlite", "cookies.sqlite", "logins.json", "places.sqlite", "cert9.db");
+            DeviceEvents
+            | where Timestamp > ago({{timeframe}})
+            | where AdditionalFields has_any ("FileOpenSource")
+            | where InitiatingProcessVersionInfoInternalFileName == "AutoIt3.exe"
+            | where (AdditionalFields has_any (browserDirs) or AdditionalFields has_any (browserSensitiveFiles))
+            | extend json = parse_json(AdditionalFields)
+            | extend File_Name = tostring(json.FileName.PropertyValue)
+            | where (File_Name has_any (browserDirs) and File_Name has_any (browserSensitiveFiles))
+            | project Timestamp, ReportId, DeviceId, InitiatingProcessParentFileName, InitiatingProcessFileName, InitiatingProcessVersionInfoInternalFileName, InitiatingProcessCommandLine, File_Name
+
+      - Name: DEX-SensitiveBrowserAccessLOLBAS
+        DisplayName: Sensitive Browser File Access via LOLBAS
+        Description: Identifies LOLBAS binaries (e.g., RegAsm.exe, MSBuild.exe) accessing sensitive browser files.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let browserDirs = pack_array(@"\Google\Chrome\User Data\", @"\Microsoft\Edge\User Data\", @"\Mozilla\Firefox\Profiles\");
+            let browserSensitiveFiles = pack_array("Web Data", "Login Data", "key4.db", "formhistory.sqlite", "cookies.sqlite", "logins.json", "places.sqlite", "cert9.db");
+            DeviceEvents
+            | where Timestamp > ago({{timeframe}})
+            | where AdditionalFields has_any ("FileOpenSource")
+            | where InitiatingProcessFileName has_any ("RegAsm.exe", "MSBuild.exe")
+            | where (AdditionalFields has_any (browserDirs) or AdditionalFields has_any (browserSensitiveFiles))
+            | extend json = parse_json(AdditionalFields)
+            | extend File_Name = tostring(json.FileName.PropertyValue)
+            | where (File_Name has_any (browserDirs) and File_Name has_any (browserSensitiveFiles))
+            | project Timestamp, ReportId, DeviceId, InitiatingProcessParentFileName, InitiatingProcessFileName, InitiatingProcessVersionInfoInternalFileName, InitiatingProcessCommandLine, File_Name
+
+      - Name: DEX-Node.jsInfostealerActivity
+        DisplayName: Node.js-based infostealer activity
+        Description: Detect malicious access to sensitive credentials using Windows DPAPI.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp > ago({{timeframe}})
+            | where isnotempty(DeviceId)
+            | where ActionType == "DpapiAccessed"
+            | where InitiatingProcessParentFileName endswith "powershell.exe"
+            | where InitiatingProcessFileName =~ "node.exe"
+            | where InitiatingProcessCommandLine  has_all ("-r", ".js") and InitiatingProcessCommandLine endswith ".jsc"
+            | where AdditionalFields has "SPCryptUnprotect"
+
+      - Name: DEX-SuspiciousInlineJavaScriptExecution
+        DisplayName: Suspicious inline JavaScript execution
+        Description: Identify suspicious inline JavaScript.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where Timestamp > ago({{timeframe}})
+            | where isnotempty(DeviceId)
+            | where ProcessVersionInfoOriginalFileName == 'node.exe'
+            | where ProcessCommandLine has_all ('http', 'execSync', 'spawn', 'fs', 'path', 'zlib')
+
+      - Name: DEX-SuspiciousJSCFile
+        DisplayName: Suspicious JSC file
+        Description: Identify execution of suspicious JSC file.
+        Inputs:
+          - Name: timeframe
+            Description: Time frame to search (e.g., "1h", "2h").
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceProcessEvents
+            | where Timestamp > ago({{timeframe}})
+            | where isnotempty(DeviceId)
+            | where ProcessVersionInfoOriginalFileName == 'node.exe'
+            | where (ProcessCommandLine has_all (".jsc", ".js") and ProcessCommandLine matches regex @"\\\w*.jsc")
+
+...
