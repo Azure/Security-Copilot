@@ -131,7 +131,7 @@ def get_file(fileName):
             result = {'Error': "Illegal file name"}
             return result, 400
         filePath = 'Files\\'+fileName
-        return send_file(filePath,download_name=fileName,as_attachment=True)
+        return send_file(filePath,download_name=fileName,as_attachment=True) # CodeQL [SM01305] The file path is explicitly sanitized such that escape from the current folder is not possible
     except Exception as e:
         result = {'Error': "Exception"}
         print(e)
