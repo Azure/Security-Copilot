@@ -1,0 +1,39 @@
+Descriptor:
+  Name: OpenText Core Threat Detection and Response
+  DisplayName: OpenText Core Threat Detection and Response
+  Description: |
+    Plugin for OpenText Core Threat Detection and Response designed to:
+    - GET Risky Users: Identify risky users within the organization
+    - GET Risky Devices: Identify risky devices within the organization
+    - GET Risky Rare Processes: Identify rare processes with security risks across the organization
+    - GET Summary of Risky User: Retrieve summary of a user's security risks
+    - GET Summary of Risky Device: Retrieve summary of a device's security risks
+    - GET Summary of Rare Process: Retrieve summary of a risky rare process execution
+    - GET Summary of Organization: Retrieve an overview of the organization's security threats and risks
+    - For the API responses:
+      - You **should always** show the ID present in the response to the user. This ID will be required to act on the alert in future prompts
+  DescriptionDisplay: Advanced threat-detection tool that uses user and entity behavior analytics (UEBA) and 100%-online, unsupervised machine learning (ML) to detect behavioral anomalies across the organization and empower threat hunters.
+  Icon: https://www.opentext.com/assets/images/favicon.png
+
+  Settings:
+    - Description: The URL of the OpenText instance to connect to.
+      Name: OpenTextInstanceUrl
+      HintText: e.g., https://data-insights-api.dev.interset.cloud/
+      Label: Instance URL
+      SettingType: String
+      Required: true
+
+  SupportedAuthTypes:
+    - ApiKey
+
+  Authorization:
+    Type: APIKey
+    Key: X-API-KEY
+    Location: Header
+    AuthScheme: ""
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://tdr1.eu.tdrservice.com/openapi.json
+      EndpointUrlSettingName: OpenTextInstanceUrl
