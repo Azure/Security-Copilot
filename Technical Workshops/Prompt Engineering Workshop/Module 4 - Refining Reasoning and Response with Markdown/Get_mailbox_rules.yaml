@@ -1,0 +1,49 @@
+Descriptor:
+  Name: Get mailbox rules
+  DisplayName: Get mailbox rules
+  Description: This plugin provides a KQL query to assist with mailbox rule investigations.
+  DescriptionForModel: |
+    This query analyzes user mailbox activities within the past 30 days, focusing on potentially malicious mailbox operations which are commonly associated with unauthorized access and attacker behavior. 
+    It filters out system-generated events to reduce false positives and helps identify abnormal mailbox permission and rule changes, often indicative of malicious activity.
+
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetMailboxRulesForAllUsers
+        DisplayName: Gets mailbox rules for all users within the last 30 days (GetMailboxRulesForAllUsers)
+        Description: Gets mailbox rules for all users within the last 30 days
+        DescriptionForModel: |-
+          This query analyzes user mailbox activities within the past 30 days, focusing on potentially malicious mailbox operations which are commonly associated with unauthorized access and attacker behavior. It filters out system-generated events to reduce false positives and helps identify abnormal mailbox permission and rule changes, often indicative of malicious activity.
+        ExamplePrompts:
+          - Get all mailbox rules using over the past 30 days
+          - Get all mailbox rules for every user recently
+          - Show me all mailbox rules in the last 30 days
+          - Show me everyones mailbox rules in the last month
+        Settings:
+          Target: Defender
+          Template: |-
+            let TimePeriod = 30d; 
+            OfficeActivity
+            | where TimeGenerated >= ago(TimePeriod)
+            | where UserId !contains "NT AUTHORITY\\SYSTEM" 
+            // The above line excludes 'NT AUTHORITY\SYSTEM' due to the high number of false positives from tooling actions such as eDiscovery. Note that when investigating advanced threat actors you will want to include these records.
+            | extend EST = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+            | where Operation in (
+                "Add-MailboxPermission", 
+                "New-InboxRule", 
+                "Set-InboxRule", 
+                "Set-Mailbox", 
+                "New-TransportRule", 
+                "Set-TransportRule", 
+                "Add-MailboxFolderPermission", 
+                "New-ManagementRoleAssignment"
+            )
+            // Operations more commonly used by attackers: "Add-MailboxPermission", "New-InboxRule", "Set-InboxRule"
+            // Noisy Operations less commonly used by attackers: "Set-Mailbox", "New-TransportRule", "Set-TransportRule"
+            // Noisy Operations rarely used by attackers: "Add-MailboxPermission", "New-ManagementRoleAssignment"
+            | extend Parameters_reformated = replace(@"\[|\]", "", tostring(Parameters)) // Remove square brackets from Parameters field to ensure propper JSON formatting
+            | extend ClientIP_reformated = replace(@"\[|\]", "", tostring(extract("^(.*):.*$", 1, ClientIP))) // Drop everything after the last colon and remove square brackets on IPv6 addresses
+            | project TimeGenerated, UserId, Operation, Parameters_reformated, ClientIP_reformated
