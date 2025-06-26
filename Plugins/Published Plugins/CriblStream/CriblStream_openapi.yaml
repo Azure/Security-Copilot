@@ -1,0 +1,173 @@
+openapi: 3.0.3
+info:
+  title: Cribl Stream API
+  description: OpenAPI definition for a subset of the Cribl Stream API on Cribl.Cloud.
+  version: "1.0.0"
+servers:
+  - url: https://{instance}.cribl.cloud/api/v1
+    variables:
+      instance:
+        default: main-instanceid
+        description: Your Cribl.Cloud instance ID
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ProductParam:
+      name: product
+      in: query
+      description: Product name (e.g., "stream")
+      required: false
+      schema:
+        type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /master/groups:
+    get:
+      summary: Get a list of Worker Groups
+      description: Returns a list of ConfigGroup objects (worker groups) for the specified product.
+      parameters:
+        - $ref: '#/components/parameters/ProductParam'
+      responses:
+        '200':
+          description: List of worker groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+        '401':
+          description: Unauthorized
+
+  /master/workers:
+    get:
+      summary: List all Workers and their Status
+      description: Returns a list of all Cribl Workers and Edge Nodes connected to the Leader.
+      responses:
+        '200':
+          description: List of workers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        info:
+                          type: object
+                          properties:
+                            hostname:
+                              type: string
+                            cribl:
+                              type: object
+                              properties:
+                                startTime:
+                                  type: integer
+                        status:
+                          type: string
+        '401':
+          description: Unauthorized
+
+  /m/{group}/system/inputs/{input}:
+    get:
+      summary: Get Input Configuration
+      description: Retrieves the configuration for a specific input in a worker group.
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: input
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Input configuration
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+
+    patch:
+      summary: Update Input Configuration
+      description: Updates the configuration for a specific input in a worker group.
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: input
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Updated input configuration
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+
+  /auth/login:
+    post:
+      summary: Authenticate (Self-Hosted Only)
+      description: Obtain a bearer token by providing username and password (for self-managed deployments).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Bearer token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
