@@ -1,0 +1,23 @@
+Descriptor:
+  Name: CriblStreamAPI 
+  DisplayName: Cribl Stream API
+  DescriptionDisplay: Cribl Stream is an AI-powered data pipeline platform that enables security teams to collect, transform, and route telemetry data from any source to any destination, delivering clean, analytics-ready data for faster threat detection and investigationis an AI-powered data pipeline platform that enables security teams to collect, transform, and route telemetry data from any source to any destination, delivering clean, analytics-ready data for faster threat detection and investigation
+  Description: |-
+    Use this skill-set to call the Cribl Stream API to see what sources and destinations are configured. Additionally, it will determine if there are gaps in your telemetry data collection strategy.
+    - This skill only invokes the Cribl Stream API.
+    - Classifies the source as necessary or not required for the detections.
+    - Published by Microsoft and Cribl Stream
+  Category: Other
+  Icon: 
+  SupportedAuthTypes:
+    - ApiKey
+  Authorization:
+    Type: APIKey
+    Key: Key
+    Location: Header
+    AuthScheme: ''
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: 'https://gist.githubusercontent.com/amiracle/9329c74a9986f8319e18fef99690cc04/raw/73cde5a488b45ff303be6bf5469724beb091f011/criblstreamapi.yaml'
