@@ -20,7 +20,7 @@ The 1Password plugin for Microsoft Copilot for Security leverages audit data col
 
 ## Prerequisites
 Before implementing the 1Password plugin for Microsoft Copilot for Security, ensure you have:
-- A 1Password Enterprise subscription (Teams, Business, or Enterprise plan)
+- A 1Password Enterprise subscription (Business or Enterprise plan)
 - Microsoft Sentinel deployed and configured in your environment
 - Microsoft Sentinel data connector for 1Password properly configured and ingesting data
 - Administrative access to your Microsoft Copilot for Security environment
