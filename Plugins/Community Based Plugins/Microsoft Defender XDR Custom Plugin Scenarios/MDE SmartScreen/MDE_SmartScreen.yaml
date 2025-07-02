@@ -1,0 +1,185 @@
+Descriptor:
+  Name: MDESmartScreen
+  DisplayName: MDE SmartScreen
+  Description: Skills to query MDE device tables to get insights about SmartScreen events
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenEvents
+        DisplayName: Get SmartScreen Events
+        Description: Summarises SmartScreen events over a specified timeframe
+        ExamplePrompt:
+        - 'SmartScreen Events'
+        - 'Get a list of SmartScreen events from the past 24 hours'
+        - 'Get a list of SmartScreen events from the past 7 days'
+        - 'Fetch a list of SmartScreen events from the past 24 hours'
+        - 'Fetch a list of SmartScreen events from the past 7 days'
+        - 'List the SmartScreen events from the past 24 hours'
+        - 'List the SmartScreen events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType contains "Smartscreen"
+            | project DeviceName, ActionType, RemoteUrl, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountUpn, InitiatingProcessParentFileName, AdditionalFields
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenWarningEvents
+        DisplayName: Get SmartScreen Warning Events
+        Description: Summarises SmartScreen warning events over a specified timeframe
+        ExamplePrompt:
+        - 'SmartScreen Warning Events'
+        - 'Get a list of SmartScreen warning events from the past 24 hours'
+        - 'Get a list of SmartScreen warning events from the past 7 days'
+        - 'Fetch a list of SmartScreen warning events from the past 24 hours'
+        - 'Fetch a list of SmartScreen warning events from the past 7 days'
+        - 'List the SmartScreen warning events from the past 24 hours'
+        - 'List the SmartScreen warning events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == @"SmartScreenUrlWarning"
+            | project DeviceName, ActionType, RemoteUrl, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountUpn, InitiatingProcessParentFileName, AdditionalFields
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenBypassEvents
+        DisplayName: Get SmartScreen Bypass Events
+        Description: Summarises SmartScreen bypass events over a specified timeframe
+        ExamplePrompt:
+        - 'SmartScreen User Override'
+        - 'SmartScreen Bypass'
+        - 'Get a list of SmartScreen bypass events from the past 24 hours'
+        - 'Get a list of SmartScreen override events from the past 7 days'
+        - 'Fetch a list of SmartScreen override events from the past 24 hours'
+        - 'Fetch a list of SmartScreen bypass events from the past 7 days'
+        - 'List the SmartScreen override events from the past 24 hours'
+        - 'List the SmartScreen bypass events from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == @"SmartScreenUserOverride"
+            | project DeviceName, ActionType, RemoteUrl, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountUpn, InitiatingProcessParentFileName, AdditionalFields
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenEventsURL
+        DisplayName: Get SmartScreen Events URL
+        Description: Fetches a count of SmartScreen events grouped by URL
+        ExamplePrompt:
+        - 'SmartScreen URLs'
+        - 'Get a list of URLs identified by SmartScreen from the past 24 hours'
+        - 'Get a list of URLs identified by SmartScreen from the past 7 days'
+        - 'Fetch a list of URLs identified by SmartScreen from the past 24 hours'
+        - 'Fetch a list of URLs identified by SmartScreen from the past 7 days'
+        - 'List the URLs identified by SmartScreen from the past 24 hours'
+        - 'List the URLs identified by SmartScreen from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType contains "SmartScreen"
+            | project ActionType, RemoteUrl
+            | summarize count() by ActionType, RemoteUrl
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenWarningEventsURL
+        DisplayName: Get SmartScreen Warning Events URL
+        Description: Fetches a count of SmartScreen warning events grouped by URL
+        ExamplePrompt:
+        - 'SmartScreen URLs Warning'
+        - 'Get a list of URLs marked with a warning by SmartScreen from the past 24 hours'
+        - 'Get a list of URLs marked with a warning by SmartScreen from the past 7 days'
+        - 'Fetch a list of URLs marked with a warning by SmartScreen from the past 24 hours'
+        - 'Fetch a list of URLs marked with a warning by SmartScreen from the past 7 days'
+        - 'List the URLs marked with a warning by SmartScreen from the past 24 hours'
+        - 'List the URLs marked with a warning by SmartScreen from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == @"SmartScreenUrlWarning"
+            | project ActionType, RemoteUrl
+            | summarize count() by ActionType, RemoteUrl
+  - Format: KQL
+    Skills:
+      - Name: GetSmartScreenBypassEventsURL
+        DisplayName: Get SmartScreen Bypass Events URL
+        Description: Fetches a count of SmartScreen bypass events grouped by URL
+        ExamplePrompt:
+        - 'SmartScreen URLs User Override'
+        - 'SmartScreen URLs Bypass'
+        - 'Get a list of URLs where the user has overridden SmartScreen from the past 24 hours'
+        - 'Get a list of URLs where the user has bypassed SmartScreen from the past 7 days'
+        - 'Fetch a list of URLs where the user has overridden SmartScreen from the past 24 hours'
+        - 'Fetch a list of URLs where the user has bypassed SmartScreen from the past 7 days'
+        - 'List the URLs where the user has bypassed SmartScreen from the past 24 hours'
+        - 'List the URLs where the user has overridden SmartScreen from the past 7 days'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == @"SmartScreenUserOverride"
+            | project ActionType, RemoteUrl
+            | summarize count() by ActionType, RemoteUrl

@@ -1,0 +1,110 @@
+Descriptor:
+  Name: MDEPlugandPlay
+  DisplayName: MDE Plug and Play
+  Description: Skills to query MDE device tables to get insights about plug and play (PnP) events
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetPnPEventsFromDevice
+        DisplayName: Get PnP Events From Device
+        Description: Summarises the PnP connection events from a specific device over a set timeframe
+        ExamplePrompt:
+        - 'PnP Events'
+        - 'Plug and Play Events'
+        - 'Get PnP events from device DEVICENAME from the last 7 days'
+        - 'Get PnP events from device DEVICENAME from the past 24 hours'
+        - 'Fetch PnP events from device DEVICENAME from the past 7 days'
+        - 'Fetch PnP events from device DEVICENAME from the past 24 hours'
+        - 'List PnP events from device DEVICENAME from the past 7 days'
+        - 'List PnP events from device DEVICENAME from the past 24 hours'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 7
+          - Name: devicename
+            Description: device name or id
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let Device = "{{devicename}}";
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where DeviceName =~ Device or DeviceId =~ Device
+            | where ActionType == "PnpDeviceConnected"
+            | extend ClassName=parse_json(AdditionalFields).ClassName, ClassId=parse_json(AdditionalFields).ClassId, PnPDeviceId=parse_json(AdditionalFields).DeviceId, DeviceDescription=parse_json(AdditionalFields).DeviceDescription, VendorIds=parse_json(AdditionalFields).VendorIds
+            | project Timestamp, DeviceName, InitiatingProcessAccountDomain, InitiatingProcessAccountName, ClassName, ClassId, PnPDeviceId, DeviceDescription, VendorIds
+  - Format: KQL
+    Skills:
+      - Name: GetPnPTop25Devices
+        DisplayName: Get PnP Top 25 Devices
+        Description: Fetches a count of the top 25 PnP devices across the estate
+        ExamplePrompt:
+        - 'PnP Devices'
+        - 'Plug and Play Devices'
+        - 'Get a list of the top 25 PnP devices from the last 24 hours'
+        - 'Get a list of the top 25 PnP devices from the last 1 day'
+        - 'Fetch a list of the top 25 PnP devices from the last 24 hours'
+        - 'Fetch a list of the top 25 PnP devices from the last 1 day'
+        - 'List the top 25 PnP devices from the last 24 hours'
+        - 'List the top 25 PnP devices from the last 1 day'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == "PnpDeviceConnected"
+            | extend ClassName=parse_json(AdditionalFields).ClassName, ClassId=parse_json(AdditionalFields).ClassId, PnPDeviceId=parse_json(AdditionalFields).DeviceId, DeviceDescription=parse_json(AdditionalFields).DeviceDescription, VendorIds=parse_json(AdditionalFields).VendorIds
+            | project ClassName, ClassId, PnPDeviceId, DeviceDescription, VendorIds
+            | summarize count() by tostring(ClassName), tostring(ClassId), tostring(PnPDeviceId), tostring(DeviceDescription), tostring(VendorIds)
+            | top 25 by count_
+  - Format: KQL
+    Skills:
+      - Name: GetPnPLeastCommonDevices
+        DisplayName: Get PnP Least Common Devices
+        Description: Fetches a count of the 25 least common PnP devices which could be anomalous
+        ExamplePrompt:
+        - 'PnP Devices'
+        - 'Plug and Play Devices'
+        - 'Anomalous PnP'
+        - 'Anomalous Plug and Play'
+        - 'Get a list of the 25 least common PnP devices from the last 24 hours'
+        - 'Get a list of the 25 least common PnP devices from the last 1 day'
+        - 'Fetch a list of the 25 least common PnP devices from the last 24 hours'
+        - 'Fetch a list of the 25 least common PnP devices from the last 1 day'
+        - 'List the 25 least common PnP devices from the last 1 day'
+        - 'List the 25 least common PnP devices from the last 24 hours'
+        Inputs:
+          - Name: hourorday
+            Description: hours (h) or days (d)
+            Required: false
+            DefaultValue: d
+          - Name: unit
+            Description: number of hours or days
+            Required: false
+            DefaultValue: 1
+        Settings:
+          Target: Defender
+          Template: |-
+            DeviceEvents
+            | where Timestamp >= ago({{unit}}{{hourorday}})
+            | where ActionType == "PnpDeviceConnected"
+            | extend ClassName=parse_json(AdditionalFields).ClassName, ClassId=parse_json(AdditionalFields).ClassId, PnPDeviceId=parse_json(AdditionalFields).DeviceId, DeviceDescription=parse_json(AdditionalFields).DeviceDescription, VendorIds=parse_json(AdditionalFields).VendorIds
+            | project ClassName, ClassId, PnPDeviceId, DeviceDescription, VendorIds
+            | summarize count() by tostring(ClassName), tostring(ClassId), tostring(PnPDeviceId), tostring(DeviceDescription), tostring(VendorIds)
+            | top 25 by count_ asc
