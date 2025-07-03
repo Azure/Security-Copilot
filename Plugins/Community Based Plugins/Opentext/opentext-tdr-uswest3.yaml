@@ -18,7 +18,7 @@ Descriptor:
   Settings:
     - Description: The URL of the OpenText instance to connect to.
       Name: OpenTextInstanceUrl
-      HintText: e.g., https://data-insights-api.dev.interset.cloud/
+      HintText: e.g., https://tdr.tdrservice.com/
       Label: Instance URL
       SettingType: String
       Required: true
@@ -35,5 +35,5 @@ Descriptor:
 SkillGroups:
   - Format: API
     Settings:
-      OpenApiSpecUrl: https://tdr1.us.tdrservice.com/openapi.json
+      OpenApiSpecUrl: https://tdr10.us.tdrservice.com/openapi.json
       EndpointUrlSettingName: OpenTextInstanceUrl
