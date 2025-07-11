@@ -19,10 +19,11 @@ Descriptor:
   Settings:
     - Description: The URL of the OpenText instance to connect to.
       Name: OpenTextInstanceUrl
-      HintText: i.e., https://tdr11.eu.tdrservice.com/
+      HintText: https://tdr10.us.tdrservice.com 
       Label: Instance URL
       SettingType: String
       Required: true
+ 
 
   SupportedAuthTypes:
     - ApiKey
@@ -36,5 +37,6 @@ Descriptor:
 SkillGroups:
   - Format: API
     Settings:
-      OpenApiSpecUrl: https://tdr11.eu.tdrservice.com/openapi.json
-      EndpointUrlSettingName: OpenTextInstanceUrl
+      OpenApiSpecUrl: https://tdr10.us.tdrservice.com/openapi.json
+      EndpointUrl: https://tdr10.us.tdrservice.com/
+
