@@ -19,7 +19,7 @@ Descriptor:
   Settings:
     - Description: The URL of the OpenText instance to connect to.
       Name: OpenTextInstanceUrl
-      HintText: https://tdr10.us.tdrservice.com 
+      HintText: e.g., https://tdr10.us.tdrservice.com  or  https://tdr11.eu.tdrservice.com/
       Label: Instance URL
       SettingType: String
       Required: true

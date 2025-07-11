@@ -19,23 +19,27 @@ occurring in your organization.:
 ## **Prerequisites**
 
 1. Log in to your OpenText Core Threat Detection and Response account  
-2. Generate an API token from your account settings  
-3. Save the token securely for plugin configuration  
+2. Make a note of the <Product_URL> used to log into your account (e.g., https://tdr10.us.tdrservice.com/). 
+Save this URL for plugin configuration.
+3. Generate an API token from your account settings. Save the token securely for plugin configuration.
 
 ---
 
 ## Select or upload the attached manifest file into your Security Copilot console
 
-1. Download the appropriate YAML manifest file for your region (US or Europe)
-2. **Verify the `Product_URL` field in the YAML file and update if needed. CONFIRM THIS STEP.**
-3. Sign in to Microsoft Security Copilot.
-4. Click the sources icon in the prompt bar. The **Manage sources** dialog box is displayed.
-5. Navigate to the **Custom** area, and then click **Add plugin**. The **Add a plugin** dialog box is displayed. 
-6. Select a value for **Who can use this plugin?**, select the **Security Copilot plugin** option, upload the YAML manifest 
-file from your machine, and then click **Add**. The **Set up OpenText Threat Detection and Response** dialog box is displayed.
-7. In the **Instance URL** box, enter the <Product_URL>.
-8. In the **Value** box, enter the access token value of the API token generated for you.
-9. Click **Set up**. The plugin is added and reflects as OpenText Core Threat Detection and Response in the Custom area of the Manage sources dialog box. 
+1. Download the appropriate YAML manifest file for your region (US or Europe).
+2. Sign in to Microsoft Security Copilot.
+3. Click the sources icon in the prompt bar. The **Manage sources** dialog box is displayed.
+4. Navigate to the **Custom** area, and then click **Add plugin**. The **Add a plugin** dialog box is displayed. 
+5. Select **Security Copilot plugin** option for the upload format.
+6. Click **Upload file**, select the YAML manifest file from your machine, and then click **Open**. 
+7. Navigate to the **Custom** area again, and click **Set up** for the plugin. The **OpenText Core Threat Detection and Response settings** 
+dialog box is displayed.
+8. In the **Instance URL** box, enter the <Product_URL> for your instance. (It should match the hint text shown in the UI.)
+9. In the **Value** box, enter the access token value of the API access token you downloaded. **Note** Do not include the quotation marks 
+when you copy the value of the API access token. 
+9. Click **Save**. The plugin is added and reflects as OpenText Core Threat Detection and Response in the Custom area of the Manage 
+sources dialog box. 
 
 
 ---
