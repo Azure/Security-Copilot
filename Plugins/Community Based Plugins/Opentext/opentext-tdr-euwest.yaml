@@ -15,14 +15,6 @@ Descriptor:
   DescriptionDisplay: Advanced threat-detection tool that uses user and entity behavior analytics (UEBA) and 100%-online, unsupervised machine learning (ML) to detect behavioral anomalies across the organization and empower threat hunters.
   Icon: https://www.opentext.com/assets/images/favicon.png
 
-  Settings:
-    - Description: The URL of the OpenText instance to connect to.
-      Name: OpenTextInstanceUrl
-      HintText: e.g., https://tdr.tdrservice.com/
-      Label: Instance URL
-      SettingType: String
-      Required: true
-
   SupportedAuthTypes:
     - ApiKey
 
@@ -36,4 +28,4 @@ SkillGroups:
   - Format: API
     Settings:
       OpenApiSpecUrl: https://tdr11.eu.tdrservice.com/openapi.json
-      EndpointUrlSettingName: OpenTextInstanceUrl
+      EndpointUrl: https://tdr11.eu.tdrservice.com/
