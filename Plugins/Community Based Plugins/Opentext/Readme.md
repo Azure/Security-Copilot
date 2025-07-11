@@ -18,7 +18,7 @@ occurring in your organization.:
 
 ## **Prerequisites**
 
-1. Log in to your OpenText Core Threat Detection and Response account  
+1. Log in to your OpenText Core Threat Detection and Response account.  
 2. Make a note of the <Product_URL> used to log into your account (e.g., https://tdr10.us.tdrservice.com/). 
 Save this URL for plugin configuration.
 3. Generate an API token from your account settings. Save the token securely for plugin configuration.
