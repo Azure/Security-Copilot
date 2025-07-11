@@ -1,6 +1,6 @@
 ![Security Copilot Overview](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
 
-# Security Copilot Guide to Create your Custom Plug-in
+# OpenText(TM) Core Threat Detection and Response Plugin for Microsoft Security Copilot
 
 **Name of Plugin: OpenText Core Threat Detection and Response**  
 **Author: OpenText**  
@@ -29,13 +29,13 @@ occurring in your organization.:
 1. Download the appropriate YAML manifest file for your region (US or Europe)
 2. **Verify the `Product_URL` field in the YAML file and update if needed. CONFIRM THIS STEP.**
 3. Sign in to Microsoft Security Copilot.
-4. Click the sources icon in the prompt bar. The Manage sources dialog box is displayed.
-5. Navigate to the Custom area, and then click Add plugin. The Add a plugin dialog box is displayed. 
-6. Select a value for Who can use this plugin?, select the Security Copilot plugin option, upload the YAML manifest 
-file from your machine, and then click Add. The Set up OpenText Threat Detection and Response dialog box is displayed.
-7. In the Instance URL box, enter the <Product_URL>.
-8. In the Value box, enter the access token value of the API token generated for you.
-9. Click Set up. The plugin is added and reflects as OpenText Core Threat Detection and Response in the Custom area of the Manage sources dialog box. 
+4. Click the sources icon in the prompt bar. The **Manage sources** dialog box is displayed.
+5. Navigate to the **Custom** area, and then click **Add plugin**. The **Add a plugin** dialog box is displayed. 
+6. Select a value for **Who can use this plugin?**, select the **Security Copilot plugin** option, upload the YAML manifest 
+file from your machine, and then click **Add**. The **Set up OpenText Threat Detection and Response** dialog box is displayed.
+7. In the **Instance URL** box, enter the <Product_URL>.
+8. In the **Value** box, enter the access token value of the API token generated for you.
+9. Click **Set up**. The plugin is added and reflects as OpenText Core Threat Detection and Response in the Custom area of the Manage sources dialog box. 
 
 
 ---
