@@ -1,0 +1,16 @@
+Descriptor:
+  Name: Trellix Detection as a Service
+  DisplayName: Trellix Detection as a Service
+  Description: Get detailed sandbox analysis reports from Trellix Detection as a Service
+  SupportedAuthTypes:
+    - ApiKey
+  Authorization:
+    Type: APIKey
+    Key: feye-auth-key
+    Location: Header
+    AuthScheme: ''
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/alfonso-greenbrook/Copilot-For-Security-Fork/main/Plugins/Community%20Based%20Plugins/Trellix%20Detection%20as%20a%20Service/OpenAPI/OpenAPI-TrellixDoD.yml
