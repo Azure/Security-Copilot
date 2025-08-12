@@ -1,0 +1,70 @@
+openapi: 3.0.0
+
+info:
+    title: Sentinel SOC Optimization
+    description: Skills to retrieve the recommendations provided by the "SOC Optimization" feature in Microsoft Sentinel.
+    version: "0.0.1"
+
+paths:
+    /recommendations?api-version=2024-01-01-preview:
+        get: 
+            operationId: GetSentinelSOCOptimizationRecommendations
+            summary: Gets a list of all recommendations made available by the "SOC Optimization" experience in Microsoft Sentinel.
+
+                There are two types of recommendations.
+
+                The recommedations of type "Precision_Coverage" are focused on the improvement of the coverage on threat detection against a 
+                specific threat or attack. The coverage refers to the quantity of defenses established in Sentinel to counteract that threat.
+                These defenses are usually artifacts, such as analytic rules, threat hunting queries, notebooks, workbooks, and so on, 
+                which can be identified as "solutions" in the Sentinel's Content Hub or can be created as custom solutions. 
+                The possibility to install and use these solutions depends on the availability of the data sources they refer to.
+                
+                The recommedations categorized as "Precision_DataValue" are aimed at enhancing the utilization of data that has been 
+                ingested into a particular table in the Log Analytics workspace, which serves as storage for the Sentinel workspace.
+
+                For each of the returned recommendations, the response include its type and a set of suggestions. Each suggestion related to 
+                a specific recommendation may include "additional properties". The list of these properties depends on the type of the 
+                related parent recommendation.
+
+                Suggestions related to recommendations of type "Precision_Coverage" inlude 
+                
+                    the list of "TemplateIds" (IDs of the artifacts that can be found in the Microsoft Sentinel Content Hub and that, if adopted, 
+                    could help for improving the coverage against the considered threat), 
+                    
+                    the list of "Tactics" (including the MITRE ATT&CK Tactics and Techniques involved in the threat considered by the analyzed coverage), 
+                    
+                    the list of "CoverageEntities" (including a list of artifacts, which are Templates in the Content Hub in Sentinel, - described in 
+                    terms of Identifier Id and Name plus MITRE ATT&CK Tactics and Techniques), 
+                    
+                    the list of "DataSources" (representing the names of the tables in Log Analytics that inlcude data that may be useful to improve 
+                    the coverage) 
+                    
+                    and the list of "ConnectorIds" (representing the names of the connectors that can be found in the Content Hub in Sentinel and 
+                    that, if activated, could ingest data that may be useful to improve that coverage)
+                
+                Suggestions related to recommendations of type "Precision_DataValue" inlude the list of of "TemplateIds" (IDs of the solutions, that  
+                can be found in the Microsoft Sentinel Content Hub, containing artifacts that can use the data collected in the considered table) 
+
+            responses:
+                200:
+                    description: Successful authentication. 
+                401:
+                    description: Unsuccessful authentication.
+
+
+    /contentPackages?api-version=2024-01-01-preview:
+        get: 
+            operationId: GetSentinelContentHubInstalledPackages
+            summary: Gets a list of all the "packages" (a.k.a. "solutions") available in the Content Hub in Microsoft Sentinel
+                and already installed in the referenced Sentinel workspace.
+
+                The result for each package includes a list of "dependecies" which are basically the artifacts included in the 
+                solution (analytic rules, threat hunting queries, notebooks, workbooks,...)
+
+            responses:
+                200:
+                    description: Successful authentication. 
+                401:
+                    description: Unsuccessful authentication.
+
+                    
