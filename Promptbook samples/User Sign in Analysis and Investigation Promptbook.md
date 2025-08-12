@@ -41,7 +41,7 @@ Does the user's sign-in satisfy the Multi-Factor Authentication (MFA) requiremen
 ```
 9. Accessing conditional access policies aligned to the user
 ```
-/What specific conditional access policies were applied during these sign-in events
+What specific conditional access policies were applied during these sign-in events
 ```
 10. Checking the last passwprd change for the user
 ```
