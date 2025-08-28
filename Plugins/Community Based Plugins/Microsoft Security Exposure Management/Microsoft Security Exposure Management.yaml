@@ -2,14 +2,14 @@ Descriptor:
   Name: Microsoft Exposure Management
   DisplayName: Microsoft Exposure Management
   Description: >
-  This KQL plugin integrates capabilities of Microsoft Security Exposure Management (MSEM) with Security Copilot to show exposed devices.
-  MSEM provides situational awareness, while Security Copilot (SCP) offers quick and consistent retrieval capabilities.
-  Together, MSEM and SCP empower SOC Engineers with a natural-language front door into exposure insights and attack paths.
-  This combination also enables the inclusion of MSEM content and reasoning over this content in Security Copilot prompts, prompt books, and automation scenarios that leverage Security Copilot.
-  The two skills of the plugin correspond to the following use cases - 
-  1) Obtain exposure of an asset hosted on a particular cloud platform by your organization.
-  2) Obtain exposure of an asset belonging to a specific user.
-  In each of the above use cases, you can also specify the exposure level for which you want to extract the data.
+    This KQL plugin integrates capabilities of Microsoft Security Exposure Management (MSEM) with Security Copilot to show exposed devices.
+    MSEM provides situational awareness, while Security Copilot (SCP) offers quick and consistent retrieval capabilities.
+    Together, MSEM and SCP empower SOC Engineers with a natural-language front door into exposure insights and attack paths.
+    This combination also enables the inclusion of MSEM content and reasoning over this content in Security Copilot prompts, prompt books, and automation scenarios that leverage Security Copilot.
+    The two skills of the plugin correspond to the following use cases - 
+    1) Obtain exposure of an asset hosted on a particular cloud platform by your organization.
+    2) Obtain exposure of an asset belonging to a specific user.
+    In each of the above use cases, you can also specify the exposure level for which you want to extract the data.
 
   SupportedAuthTypes:
     - None
