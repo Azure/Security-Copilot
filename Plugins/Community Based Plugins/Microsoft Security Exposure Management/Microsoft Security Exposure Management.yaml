@@ -1,7 +1,15 @@
 Descriptor:
   Name: Microsoft Exposure Management
   DisplayName: Microsoft Exposure Management
-  Description: This KQL plugin integrates capabilities of Microsoft Security Exposure Management (MSEM) with Security Copilot to show exposed devices. The situational awareness from MSEM and the quick and consistent retrieval capabilities of SCP, MSEM and SCP empower the SOC Engineers with a natural-language front door into exposure insights and attack paths, this combination also opens the door to include MSEM content, and the reasoning over this content in Security Copilot prompts, in prompt books and allows the use of this content in automation scenarios that leverage security copilot. The two skills of the plugins correspond to the following two use cases:1)	Obtain exposure of an asset hosted on a particular cloud platform by your organization ; 2)	Obtain exposure of an asset belonging to a specific user . As a user you could also specify the exposure level for which you want to extract the data, in each of the above use cases.
+  Description: >
+  This KQL plugin integrates capabilities of Microsoft Security Exposure Management (MSEM) with Security Copilot to show exposed devices.
+  MSEM provides situational awareness, while Security Copilot (SCP) offers quick and consistent retrieval capabilities.
+  Together, MSEM and SCP empower SOC Engineers with a natural-language front door into exposure insights and attack paths.
+  This combination also enables the inclusion of MSEM content and reasoning over this content in Security Copilot prompts, prompt books, and automation scenarios that leverage Security Copilot.
+  The two skills of the plugin correspond to the following use cases - 
+  1) Obtain exposure of an asset hosted on a particular cloud platform by your organization.
+  2) Obtain exposure of an asset belonging to a specific user.
+  In each of the above use cases, you can also specify the exposure level for which you want to extract the data.
 
   SupportedAuthTypes:
     - None
@@ -37,10 +45,10 @@ SkillGroups:
 
         Inputs:
             - Name: inputExposureLevel
-              Description: provide the exposure level you want to consider - e.g. High, Medium, Low (only one level)
+              Description: Provide the exposure level you want to consider - e.g. High, Medium, Low (only one level)
               Required: true
             - Name: inputCloudPlatforms
-              Description: provide the cloud platform of the device you want to consider - e.g. Azure or GCP or AWS
+              Description: Provide the cloud platform of the device you want to consider - e.g. Azure or GCP or AWS
               Required: false
           
         Settings:
@@ -71,10 +79,10 @@ SkillGroups:
 
         Inputs:
             - Name: inputExposureLevel
-              Description: provide the exposure level you want to consider - e.g. High, Medium, Low
+              Description: Provide the exposure level you want to consider - e.g. High, Medium, Low
               Required: false
             - Name: inputUPN
-              Description: provide the user primary name (UPN)
+              Description: Provide the user primary name (UPN)
               Required: true
         Settings:
           Target: Defender
@@ -86,7 +94,7 @@ SkillGroups:
             | project DeviceName = tolower(DeviceName)
             | join kind=inner  (
                 DeviceInfo
-                | where ExposureLevel == "Medium"
+                | where ExposureLevel == userExposureLevel or isempty(userExposureLevel)
                 | project DeviceName = tolower(DeviceName), DeviceId,ExposureLevel, CloudPlatforms, OSPlatform, OSArchitecture, TimeGenerated
             ) on DeviceName
 
