@@ -46,7 +46,6 @@ To enable audit logging in 1Password, follow the [Events Reporting documentation
 10. Configure the appropriate log retention policies
 11. Verify that user activities, authentication events, and admin actions are being logged
 
-
 For detailed configuration options and troubleshooting, refer to the [Events Reporting setup guide](https://support.1password.com/events-reporting/#step-1-set-up-an-events-reporting-integration).
 2. Navigate to the Security settings
 3. Ensure comprehensive audit logging is enabled
