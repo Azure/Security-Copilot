@@ -42,6 +42,14 @@ To enable audit logging in 1Password, follow the [Events Reporting documentation
    - **Choose vaults** to select specific vaults for event reporting
 7. Click **Add Integration**
 8. Save the bearer token that's displayed - you'll need this to configure the Microsoft Sentinel connector
+9. Follow the [1Password Sentinel integration guide](https://support.1password.com/1password-sentinel-integration/#step-2-activate-the-1password-serverless-connector) to activate the serverless connector
+10. Configure the appropriate log retention policies
+11. Verify that user activities, authentication events, and admin actions are being logged
+6. Choose between:
+   - **Send events from all vaults** to report events for your entire account
+   - **Choose vaults** to select specific vaults for event reporting
+7. Click **Add Integration**
+8. Save the bearer token that's displayed - you'll need this to configure the Microsoft Sentinel connector
 9. Configure the appropriate log retention policies
 10. Verify that user activities, authentication events, and admin actions are being logged
 
