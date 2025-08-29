@@ -30,7 +30,22 @@ Before implementing the 1Password plugin for Microsoft Copilot for Security, ens
 ## Implementation Steps
 
 ### Step 1: Configure 1Password Audit Logging
-1. Log in to your 1Password account as an administrator
+To enable audit logging in 1Password, follow the [Events Reporting documentation](https://support.1password.com/events-reporting/) or complete these steps:
+
+1. Sign in to 1Password.com as an owner or administrator
+2. Click **Integrations** in the sidebar
+3. Click **Directory** at the top of the page
+4. Find the **Microsoft Sentinel** integration and click **Set Up**
+5. Enter a name for your integration (e.g., "Microsoft Sentinel Connector")
+6. Choose between:
+   - **Send events from all vaults** to report events for your entire account
+   - **Choose vaults** to select specific vaults for event reporting
+7. Click **Add Integration**
+8. Save the bearer token that's displayed - you'll need this to configure the Microsoft Sentinel connector
+9. Configure the appropriate log retention policies
+10. Verify that user activities, authentication events, and admin actions are being logged
+
+For detailed configuration options and troubleshooting, refer to the [Events Reporting setup guide](https://support.1password.com/events-reporting/#step-1-set-up-an-events-reporting-integration).
 2. Navigate to the Security settings
 3. Ensure comprehensive audit logging is enabled
 4. Configure the appropriate log retention policies
