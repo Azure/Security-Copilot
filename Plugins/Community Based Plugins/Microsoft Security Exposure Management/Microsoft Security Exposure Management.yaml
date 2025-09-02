@@ -57,7 +57,7 @@ SkillGroups:
             let userExposureLevel='{{inputExposureLevel}}';
             let userCloudPlatform='{{inputCloudPlatforms}}';
             DeviceInfo
-            | where ExposureLevel in (userExposureLevel)
+            | where ExposureLevel == userExposureLevel
             | where
               (CloudPlatforms == '' and isempty(userCloudPlatform)) or
               (CloudPlatforms != '' and CloudPlatforms contains userCloudPlatform)
