@@ -90,7 +90,7 @@ SkillGroups:
             let userExposureLevel='{{inputExposureLevel}}';
             let userUPN='{{inputUPN}}';
             IntuneDevices
-            | where UPN contains userUPN
+            | where UPN == userUPN
             | project DeviceName = tolower(DeviceName)
             | join kind=inner  (
                 DeviceInfo
