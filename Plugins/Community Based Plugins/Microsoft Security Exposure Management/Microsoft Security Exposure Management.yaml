@@ -1,0 +1,99 @@
+Descriptor:
+  Name: Microsoft Exposure Management
+  DisplayName: Microsoft Exposure Management
+  Description: >
+    This KQL plugin integrates capabilities of Microsoft Security Exposure Management (MSEM) with Security Copilot to show exposed devices.
+    MSEM provides situational awareness, while Security Copilot (SCP) offers quick and consistent retrieval capabilities.
+    Together, MSEM and SCP empower SOC Engineers with a natural-language front door into exposure insights and attack paths.
+    This combination also enables the inclusion of MSEM content and reasoning over this content in Security Copilot prompts, prompt books, and automation scenarios that leverage Security Copilot.
+    The two skills of the plugin correspond to the following use cases - 
+    1) Obtain exposure of an asset hosted on a particular cloud platform by your organization.
+    2) Obtain exposure of an asset belonging to a specific user.
+    In each of the above use cases, you can also specify the exposure level for which you want to extract the data.
+
+  SupportedAuthTypes:
+    - None
+
+#####################################################################################
+# SkillGroups can be a single type (KQL, GPT, API) or contain a mix
+#####################################################################################
+    
+SkillGroups:
+  - Format: KQL
+    
+    Skills:
+      - Name: GetExposedDevicesByCloudPlatform
+        DisplayName: Get exposed Devices by Cloud Platform and exposure level. 
+        Description: For a specific cloud platform (aka "Azure" or "GCP" or "AWS") or a list of cloud platform of the device separated by commas, semi-colons, or using the word 'or', get a list of devices 
+          based on the exposure level specified by the user (aka "Low" or "Medium" or "High") or a list of exposures separated by commas.
+        DescriptionForModel: For a specific cloud platform of the device (aka "Azure" or "GCP" or "AWS") or a list of cloud platform of the device separated by commas, get a list of devices based on the exposure level specified by the user (aka "Low" or "Medium" or "High") or a list of exposures separated by commas.          The results will be returned as a response to the query containing multiple entries, the user needs to be shown the below details from the response about each device DeviceName, DeviceId, ExposureLevel, CloudPlatforms, OSPlatform, OSArchitecture.
+          VERY IMPORTANT - Never truncate the list of devices retrieved by launching the KQL query related to this skill. Also if the user wants to search on premises then the value for CloudPlatforms should be blank in the query  
+        
+        ExamplePrompts:
+          - Get all the devices exposed on Azure platform 
+          - Get all the devices exposed on AWS platform 
+          - Get all the devices exposed on GCP platform 
+          - Get all the devices with exposure level High on Azure platform
+          - Get all the devices with exposure level Medium on Azure platform
+          - Get all the devices with exposure level Low on Azure platform
+          - Get all the devices with exposure level High on AWS platform
+          - Get all the devices with exposure level Medium on AWS platform
+          - Get all the devices with exposure level Low on AWS platform
+          - Get all the devices with exposure level High on GCP platform
+          - Get all the devices with exposure level Medium on GCP platform
+          - Get all the devices with exposure level Low on GCP platform
+
+        Inputs:
+            - Name: inputExposureLevel
+              Description: Provide the exposure level you want to consider - e.g. High, Medium, Low (only one level)
+              Required: true
+            - Name: inputCloudPlatforms
+              Description: Provide the cloud platform of the device you want to consider - e.g. Azure or GCP or AWS
+              Required: false
+          
+        Settings:
+          Target: Defender
+          Template: |-
+            let userExposureLevel='{{inputExposureLevel}}';
+            let userCloudPlatform='{{inputCloudPlatforms}}';
+            DeviceInfo
+            | where ExposureLevel == userExposureLevel
+            | where
+              (CloudPlatforms != '' and (CloudPlatforms contains userCloudPlatform or isempty(userCloudPlatform)))
+            | project DeviceName, DeviceId, ExposureLevel, CloudPlatforms, OSPlatform, OSArchitecture, TimeGenerated    
+      
+      - Name: GetExposedDevicesByUser
+        DisplayName: Get exposed devices by UPN and optionally exposure level
+        Description: For a specific user UPN (aka "user" or "UPN") or a list of users separated by commas, get a list of devices 
+          based on the exposure level specified by the user (aka "Low" or "Medium" or "High") or a list of exposures separated by commas.
+        DescriptionForModel: For a specific user UPN (aka "user" or "UPN") or a list of users separated by commas, get a list of devices
+          based on the exposure level specified by the user (aka "Low" or "Medium" or "High") or a list of exposures separated by commas.
+          The results will be returned as a response to the query containing multiple entries, the user needs to be shown the below details from the response about each device UPN, DeviceName, DeviceId, ExposureLevel, CloudPlatforms, OSPlatform, OSArchitecture.
+          VERY IMPORTANT - Never truncate the list of devices retrieved by launching the KQL query related to this skill. Also if the user wants to search on premises then the value for CloudPlatforms should be blank in the query.
+
+        ExamplePrompts:
+          - Get all the devices with exposure level High belonging to user john.doe@contoso.com
+          - Get all the devices with exposure level Medium belonging to user john.doe@contoso.com
+          - Get all the devices with exposure level Low belonging to user john.doe@contoso.com
+
+        Inputs:
+            - Name: inputExposureLevel
+              Description: Provide the exposure level you want to consider - e.g. High, Medium, Low
+              Required: false
+            - Name: inputUPN
+              Description: Provide the user primary name (UPN)
+              Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            let userExposureLevel='{{inputExposureLevel}}';
+            let userUPN='{{inputUPN}}';
+            IntuneDevices
+            | where UPN == userUPN
+            | project DeviceName = tolower(DeviceName)
+            | join kind=inner  (
+                DeviceInfo
+                | where ExposureLevel == userExposureLevel or isempty(userExposureLevel)
+                | project DeviceName = tolower(DeviceName), DeviceId,ExposureLevel, CloudPlatforms, OSPlatform, OSArchitecture, TimeGenerated
+            ) on DeviceName
+
