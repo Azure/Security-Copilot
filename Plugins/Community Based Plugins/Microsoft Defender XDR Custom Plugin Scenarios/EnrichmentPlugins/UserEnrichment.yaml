@@ -88,7 +88,7 @@ SkillGroups:
             | extend TargetResourcesJson = parse_json(tostring(TargetResources))
             | mv-expand TargetResource = TargetResourcesJson
             | extend userPrincipalName = tostring(TargetResource.userPrincipalName)
-            | where userPrincipalName == upn
+            | where userPrincipalName =~ upn
             | summarize PasswordChangeCount = count() by bin(TimeGenerated, 1d), userPrincipalName
             | project TimeGenerated, PasswordChangeCount, userPrincipalName
             | order by TimeGenerated desc
@@ -334,26 +334,37 @@ SkillGroups:
         Description: Identify failed sign-in attempts for a specific user over a defined lookback period. Provides detailed insights into failed attempts, including timestamps, IP addresses, locations, and result descriptions, to detect potential unauthorized access or sign-in issues.
         Inputs:
           - Name: upn
-            Description: User principal name. i.e., mscott@woodgrove.ms
+            Description: User principal name (e.g., mscott@woodgrove.ms)
             Required: true
-          - Name: lookback_period
-            Description: The time range to look back. i.e., 1d, 7d, 30d (default is 1d)
-            Required: false
+          - Name: date
+            Description: Calendar date to filter on (YYYY-MM-DD, UTC)
+            Required: true
           - Name: exclude_ip
-            Description: Any IP address that should be excluded from the results.
+            Description: Any IP address that should be excluded from the results
+            Default: ""
+            Required: false
+          - Name: user_context
+            Description: Additional context for tuning the output or investigation
             Default: ""
             Required: false
         Settings:
           Target: Defender
           Template: |-
+            // Query failed sign-in attempts for a specific user on a specific UTC date.
+            // user_context: {{user_context}}
+            let startDate = datetime("{{date}}");       // Parse the input date (YYYY-MM-DD, UTC)
+            let endDate = startDate + 1d;               // Compute the end of the day window (exclusive)
             SigninLogs
-            | where TimeGenerated >= ago(1d) // Specify the lookback_period, default 1d
-            | where IPAddress != "{{exclude_ip}}" // exclude_ip from query
-            | where ResultType != 0  // Filtering for failed sign-ins; 0 indicates success
-            | where UserPrincipalName == "{{upn}}"
-            | summarize FailedAttempts = count(), UniqueIPs = dcount(IPAddress), Locations = dcount(Location), ResultDescriptions = makeset(ResultDescription) by bin(TimeGenerated, 1d)
-            | project TimeGenerated, FailedAttempts, UniqueIPs, Locations, ResultDescriptions
-            | order by TimeGenerated desc
+            | where TimeGenerated >= startDate and TimeGenerated < endDate   // Only events within that calendar day (UTC)
+            | where UserPrincipalName =~ "{{upn}}"                           // Case-insensitive match on UPN
+            | where IPAddress != "{{exclude_ip}}"                            // Optionally exclude a specific IP address
+            | where ResultType != 0                                          // Only failed attempts (0 = success)
+            // Summarize for SOC: count, unique IPs, unique locations, reasons
+            | summarize
+                FailedAttempts = count(),                        // Total failed attempts for the user that day
+                UniqueIPs = dcount(IPAddress),                   // Number of distinct IP addresses used
+                Locations = dcount(Location),                    // Number of unique country codes/locations
+                ResultDescriptions = makeset(ResultDescription)  // All unique failure reasons seen
 
       - Name: EnhancedUserRiskAssessment
         DisplayName: Enhanced User Risk Assessment
@@ -373,7 +384,7 @@ SkillGroups:
             let TimeFrame = ago(7d);
             let upn = "{{upn}}";
             let UserRiskEvents = AADUserRiskEvents
-            | where TimeGenerated > TimeFrame and RiskLevel != "none" and RiskState != "remediated" and UserPrincipalName == upn
+            | where TimeGenerated > TimeFrame and RiskLevel != "none" and RiskState != "remediated" and UserPrincipalName =~ upn
             | project 
                 UserPrincipalName,
                 RiskLevel,
@@ -527,7 +538,7 @@ SkillGroups:
             | extend TimeDifferenceHours = datetime_diff('second', TimeGenerated, PreviousTime) / 3600.0
             | extend VelocityMph = DistanceMiles / TimeDifferenceHours
             | where VelocityMph > MaxVelocityMph
-            | where UserPrincipalName == "{{upn}}"
+            | where UserPrincipalName =~ "{{upn}}"
             | project UserPrincipalName, TimeGenerated, PreviousTime, IPAddress, PreviousIPAddress, DistanceMiles, TimeDifferenceHours, VelocityMph, Country, PreviousCountry
 
       - Name: SuspiciousMailboxActivities
@@ -657,3 +668,58 @@ SkillGroups:
             | where IPAddress == TargetIP // Filter events matching the specified IP
             | where ResultType == 0 // Keep only successful sign-in events
             | summarize SuccessCount = count() // Return the number of successful sign-ins
+
+      - Name: UserSigninActivityLast48h
+        DisplayName: User Sign-in Activity (Last 48 Hours)
+        DescriptionForModel: |-
+          Performs a KQL query on the `SigninLogs` table to retrieve all sign-in attempts (both successful and failed) for a specified user over the past 48 hours, using the current schema. Features:
+            - Provides a timeline of all sign-in activity for the user, including both interactive and non-interactive sign-ins.
+            - Includes ResultType and ResultDescription for error code analysis, helping SOC analysts rapidly triage common issues such as account lockouts, expired passwords, missing app assignments, and MFA/Conditional Access failures.
+            - Captures contextual details (IP, location, device, user agent, application) to support correlation and investigation.
+            - Facilitates rapid detection of brute force attempts, misconfiguration, new/unusual failure types, and compliance with MFA and Conditional Access policies.
+        Description: Retrieve all sign-in attempts—successful and failed—for a specific user in the past 48 hours, with key details and error context for SOC investigation.
+        Inputs:
+          - Name: upn
+            Description: User principal name (e.g., mscott@woodgrove.ms)
+            Required: true
+          - Name: exclude_ip
+            Description: Any IP address to exclude from results
+            Default: ""
+            Required: false
+          - Name: signin_context
+            Description: Additional context or investigation details
+            Default: ""
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            // User sign-in activity for the last 48 hours, both successful and failed.
+            // Additional context: {{signin_context}}
+            let UPN = "{{upn}}";
+            let TimeFrame = ago(48h);
+            SigninLogs
+            | where TimeGenerated > TimeFrame
+            | where UserPrincipalName =~ UPN
+            | where IPAddress != "{{exclude_ip}}"
+            // Project key fields for timeline and investigation
+            | project
+                TimeGenerated,                          // When the sign-in occurred
+                UserPrincipalName,                      // The user account (UPN)
+                UserDisplayName,                        // User's display name
+                UserId,                                 // User GUID
+                ResultType,                             // Numeric result code (0 = success; others = failure)
+                ResultDescription,                      // Human-readable description of failure/success
+                Status,                                 // Additional status info (JSON: errorCode, failureReason, details)
+                // Common codes: 0 (success), 50053 (locked), 50055 (password expired), 50126 (bad credentials), 
+                // 50074/50076/50079 (MFA/CA issues), 50105 (not assigned), 700016 (app not found), 70008 (token expired)
+                IPAddress,                              // Source IP of the sign-in
+                Location,                               // Country code (two-letter)
+                LocationDetails,                        // City, state, geo coordinates (dynamic)
+                DeviceDetail,                           // Device info (dynamic: deviceId, OS, browser)
+                UserAgent,                              // Raw user agent string
+                AppDisplayName,                         // Application/service name (e.g., Outlook, Graph Explorer)
+                AppId,                                  // Application's Azure AD AppId
+                ClientAppUsed,                          // Legacy client protocol type (e.g., Browser, Modern client)
+                SessionId,                              // Session GUID (useful for tracking multi-stage auth)
+                CorrelationId                           // Correlate multiple related sign-in events
+            | order by TimeGenerated desc
