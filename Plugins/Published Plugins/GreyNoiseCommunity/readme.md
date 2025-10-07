@@ -9,10 +9,10 @@ Product Information:
 https://www.greynoise.io/greynoise-product
 
 **Note**  
-This plugin uses the GreyNoise Community (free) API, but still requires a GreyNoise Community (free) account to be [created here](https://viz.greynoise.io/signup).
+This plugin uses the GreyNoise API, and requires a GreyNoise Community (free) account to be [created here](https://viz.greynoise.io/signup).
 
 ## **Pre-requisites**
-1. From the Plugin manager, locate the GreyNoise Enterprise Plugin and enable it
+1. From the Plugin manager, locate the GreyNoise Community Plugin and enable it
 ![Enable Plugin](images/GreyNoiseCommunity_plugin.png)
 
     ## Invoking the Plugin and Skills
@@ -24,9 +24,9 @@ This plugin uses the GreyNoise Community (free) API, but still requires a GreyNo
 
 
 ## Skills & Prompts
-1. Look up IP address noise: Ask GreyNoise about an IP 
-   - Example Prompt(s): Tell me about Ip address [IP] using the GreyNoise database
-   - Inputs: [IP]
+1. Look up IP in GreyNoise for additional context: Ask GreyNoise if this IP is an Internet Scanner
+   - Example Prompt(s): Tell me about Ip address [IP] using GreyNoise database, Find the GreyNoise IP Context for IP [IP]
+   - Inputs: [IP] 
 
 ## Frequently Asked Questions (FAQ)
 1. **Important**  
