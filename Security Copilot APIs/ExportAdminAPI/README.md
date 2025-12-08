@@ -159,6 +159,10 @@ The script includes robust error handling for:
 - **Empty responses**: Graceful termination
 - **Network errors**: Exception catching and reporting
 
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/ExportAdminBackOff.png" width="700"> </img>
+</div>
+
 ## Example Output
 
 ```
