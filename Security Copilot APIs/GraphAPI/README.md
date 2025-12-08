@@ -46,12 +46,20 @@ For delegated authentication, you can use the public client app registration or 
 4. Add redirect URI: `http://localhost` or `https://login.microsoftonline.com/common/oauth2/nativeclient`
 5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiRedirect.png" width="700"> </img>
+</div>
+
 ### 3. Configure API Permissions
 
 1. Go to **API permissions** > **Add a permission**
 2. Select **Microsoft Graph** > **Delegated permissions**
 3. Add `SecurityCopilotWorkspaces.ReadWrite.All`
 4. Grant admin consent if required by your organization
+
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiPermissions.png" width="700"> </img>
+</div>
 
 ### 4. Update Script Variables
 
