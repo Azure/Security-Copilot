@@ -47,7 +47,7 @@ For delegated authentication, you can use the public client app registration or 
 5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
 <div align="center">
-  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiRedirect.png" width="700"> </img>
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiRedirect.png"> </img>
 </div>
 
 ### 3. Configure API Permissions
@@ -58,7 +58,7 @@ For delegated authentication, you can use the public client app registration or 
 4. Grant admin consent if required by your organization
 
 <div align="center">
-  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiPermissions.png" width="700"> </img>
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphApiPermissions.png"> </img>
 </div>
 
 ### 4. Update Script Variables
@@ -296,3 +296,4 @@ Contributions, issues, and feature requests are welcome!
 - [Security Copilot Graph API Reference](https://learn.microsoft.com/en-us/graph/api/resources/security-copilot-api-overview)
 - [MSAL.PS Module](https://github.com/AzureAD/MSAL.PS)
 - [Entra ID Authentication](https://learn.microsoft.com/en-us/azure/active-directory/develop/)
+
