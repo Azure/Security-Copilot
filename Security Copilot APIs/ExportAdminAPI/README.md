@@ -43,15 +43,28 @@ This script demonstrates how to authenticate with Microsoft Security Copilot's A
 3. Register the application
 4. Note the **Application (client) ID** and **Directory (tenant) ID**
 
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/EnterpriseApp.png" width="700"> </img>
+</div>
+
+
 ### 2. Generate Client Secret
 
 1. Go to **Certificates & secrets** > **New client secret**
 2. Add a description and set expiration
 3. Copy the secret value (you won't be able to see it again)
 
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/EnterpriseAppSecret.png" width="700"> </img>
+</div>
+
 ### 3. Configure API Permissions
 
 1. Provide the **Security Copilot Owner role** to the application as described [here](https://learn.microsoft.com/en-us/copilot/security/activity-export-api#authenticating-with-a-service-principal)
+
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/EnterpriseAppGroup.png" width="700"> </img>
+</div>
 
 ### 4. Update Script Variables
 
