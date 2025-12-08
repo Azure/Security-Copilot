@@ -76,7 +76,8 @@ $clientId = "YOUR-CLIENT-ID"
 $clientSecret = "YOUR-CLIENT-SECRET"
 ```
 
-⚠️ **Security Warning**: Never commit credentials to version control. Consider using Azure Key Vault or environment variables for production use.
+⚠️ **Security Warning** <br>
+Never commit credentials to version control. Consider using Azure Key Vault or environment variables for production use.
 
 ## Usage
 
