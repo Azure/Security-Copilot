@@ -1,204 +1,273 @@
-# Security Copilot Export Admin APIs
+# Security Copilot Graph API
 
-A PowerShell script to export prompts and evaluations data from Microsoft Security Copilot using the Admin Export APIs.
+A PowerShell script to interact with Microsoft Security Copilot using the Microsoft Graph API for managing workspaces, sessions, prompts, and evaluations.
 
 ## Overview
 
-This script demonstrates how to authenticate with Microsoft Security Copilot's Admin APIs and export telemetry data including prompts and evaluations from your workspace. It's useful for auditing, compliance, analytics, and understanding usage patterns within your Security Copilot environment.
+This script demonstrates how to authenticate with Microsoft Security Copilot's Graph API using delegated user authentication and perform common operations such as listing plugins, creating sessions, submitting prompts, and evaluating responses. It's useful for automation, testing, and integrating Security Copilot capabilities into custom workflows.
 
 ## Features
 
-- **Authentication**: Uses Azure AD Enterprise Application credentials (Client ID/Secret) to obtain Bearer tokens
-- **Date Range Filtering**: Configurable time range for data export (default: last 365 days)
-- **Pagination Support**: Handles continuation tokens to retrieve all available data
-- **Rate Limiting**: Implements exponential back-off retry logic for HTTP 429 responses
-- **Formatted Console Output**: Color-coded display of exported data in real-time
-- **CSV Export**: Automatically exports data to CSV files for further analysis
-- **Two Resource Types**:
-  - **Prompts**: User queries, skills executed, and agent interactions
-  - **Evaluations**: Assessment results and metrics
+- **Delegated Authentication**: Uses interactive login with MSAL for user-based authentication
+- **Plugin Management**: Retrieve and display all available plugins and their status
+- **Session Management**: Create new Security Copilot sessions programmatically
+- **Prompt Submission**: Submit prompts to sessions and receive prompt IDs
+- **Evaluation Workflow**: Start evaluations and monitor their completion status
+- **Formatted Console Output**: Color-coded display with clear visual sections
+- **Real-time Monitoring**: Polls evaluation status until completion
+- **Response Display**: Shows the final evaluation results
 
 ## Prerequisites
 
 - PowerShell 5.1 or higher
+- MSAL.PS PowerShell module
 - Microsoft Security Copilot instance
-- Azure AD Enterprise Application with:
-  - Client ID
-  - Client Secret
-  - Tenant ID
-  - API permissions for `https://api.securitycopilot.microsoft.com/.default`
+- Entra ID account with appropriate permissions
+- Microsoft Graph API permissions:
+  - `SecurityCopilotWorkspaces.ReadWrite.All`
 
 ## Setup
 
-### 1. Create an Enterprise Application in Azure AD
+### 1. Install MSAL.PS Module
+
+Open PowerShell and install the MSAL.PS module:
+
+```powershell
+Install-Module -Name MSAL.PS -Scope CurrentUser
+```
+
+### 2. Register Application in Entra ID (Optional for Delegated Flow)
+
+For delegated authentication, you can use the public client app registration or create your own:
 
 1. Navigate to **Azure Active Directory** > **App registrations** > **New registration**
-2. Name your application (e.g., "Security Copilot Export")
-3. Register the application
-4. Note the **Application (client) ID** and **Directory (tenant) ID**
-
-### 2. Generate Client Secret
-
-1. Go to **Certificates & secrets** > **New client secret**
-2. Add a description and set expiration
-3. Copy the secret value (you won't be able to see it again)
+2. Name your application (e.g., "Security Copilot Graph Client")
+3. Set **Platform** to **Mobile and desktop applications**
+4. Add redirect URI: `http://localhost` or `https://login.microsoftonline.com/common/oauth2/nativeclient`
+5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
 ### 3. Configure API Permissions
 
 1. Go to **API permissions** > **Add a permission**
-2. Select **APIs my organization uses**
-3. Search for "Security Copilot" or use the scope: `https://api.securitycopilot.microsoft.com/.default`
-4. Grant admin consent for the permissions
+2. Select **Microsoft Graph** > **Delegated permissions**
+3. Add `SecurityCopilotWorkspaces.ReadWrite.All`
+4. Grant admin consent if required by your organization
 
 ### 4. Update Script Variables
 
 Edit the script and replace the following variables with your values:
 
 ```powershell
-$tenantId = "YOUR-TENANT-ID"
-$clientId = "YOUR-CLIENT-ID"
-$clientSecret = "YOUR-CLIENT-SECRET"
+$TenantId = "YOUR-TENANT-ID"
+$ClientId = "YOUR-CLIENT-ID"
+$WorkspaceId = "default"  # or your specific workspace ID
 ```
-
-⚠️ **Security Warning**: Never commit credentials to version control. Consider using Azure Key Vault or environment variables for production use.
 
 ## Usage
 
 Run the script in PowerShell:
 
 ```powershell
-.\SecurityCopilotExportAdminAPIs.ps1
+.\SecurityCopilotGraphApi.ps1
 ```
 
 The script will:
-1. Authenticate with Azure AD
-2. Fetch all prompts from the specified date range
-3. Fetch all evaluations from the specified date range
-4. Display formatted output in the console
-5. Export data to CSV files:
-   - `prompts_export.csv`
-   - `evaluations_export.csv`
+1. Prompt for interactive authentication (browser popup)
+2. Retrieve and display all available plugins with their status
+3. Create a new session named "Who am I"
+4. Submit the prompt "Who am I?"
+5. Start an evaluation of the prompt
+6. Monitor the evaluation status until completion
+7. Display the final response
 
 ## Configuration
 
-### Date Range
+### Workspace ID
 
-Modify the date range by adjusting these variables:
-
-```powershell
-$endDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-$startDate = (Get-Date).AddDays(-365).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-```
-
-### Retry Settings
-
-Adjust rate limiting behavior:
+By default, the script uses `"default"` as the workspace ID. To use a specific workspace:
 
 ```powershell
-Get-SecurityCopilotData -ResourceType "prompts" `
-    -BearerToken $bearerToken `
-    -StartDate $startDate `
-    -EndDate $endDate `
-    -MaxRetries 5 `
-    -InitialWaitTime 60
+$WorkspaceId = "your-workspace-guid"
 ```
 
-- `MaxRetries`: Maximum number of retry attempts for rate limiting (default: 5)
-- `InitialWaitTime`: Initial wait time in seconds before retrying (default: 60)
+### Authentication Scopes
 
-## Output Data Structure
+The script requests the following scope:
 
-### Prompts Export
-
-The prompts CSV includes fields such as:
-- `sessionId`: Unique session identifier
-- `promptId`: Unique prompt identifier
-- `source`: Origin of the prompt (e.g., immersive, LogicApp)
-- `promptType`: Type (Prompt or Skill)
-- `content`: The actual prompt text (for promptType="prompt")
-- `skillName`: Name of the skill executed (for promptType="skill")
-- `inputs`: Skill input parameters
-- `createdAt`: Timestamp of creation
-- `workspaceId`: Workspace identifier
-
-### Evaluations Export
-
-Contains evaluation metrics and assessment results for executed prompts.
-
-## API Endpoints
-
-The script uses the following Security Copilot Admin APIs:
-
-```
-GET https://api.securitycopilot.microsoft.com/exports/prompts?startDate={date}&endDate={date}
-GET https://api.securitycopilot.microsoft.com/exports/evaluations?startDate={date}&endDate={date}
+```powershell
+-Scopes "SecurityCopilotWorkspaces.ReadWrite.All"
 ```
 
-## Error Handling
+You can modify this based on your permission requirements.
 
-The script includes robust error handling for:
-- **HTTP 429 (Rate Limiting)**: Exponential back-off retry logic
-- **Authentication failures**: Clear error messages
-- **Empty responses**: Graceful termination
-- **Network errors**: Exception catching and reporting
+### Polling Interval
+
+Adjust the evaluation monitoring frequency:
+
+```powershell
+Start-Sleep -Milliseconds 500  # Check every 500ms
+```
+
+## API Operations
+
+The script demonstrates the following Graph API endpoints:
+
+### 1. List Plugins
+
+```
+GET https://graph.microsoft.com/beta/security/securityCopilot/workspaces/{workspaceId}/plugins
+```
+
+Returns all available plugins (skills) and their enabled status.
+
+### 2. Create Session
+
+```
+POST https://graph.microsoft.com/beta/security/securityCopilot/workspaces/{workspaceId}/sessions
+```
+
+Creates a new Security Copilot session with a display name.
+
+### 3. Submit Prompt
+
+```
+POST https://graph.microsoft.com/beta/security/securityCopilot/workspaces/{workspaceId}/sessions/{sessionId}/prompts
+```
+
+Submits a prompt to an existing session.
+
+### 4. Start Evaluation
+
+```
+POST https://graph.microsoft.com/beta/security/securityCopilot/workspaces/{workspaceId}/sessions/{sessionId}/prompts/{promptId}/evaluations
+```
+
+Initiates evaluation of a submitted prompt.
+
+### 5. Check Evaluation Status
+
+```
+GET https://graph.microsoft.com/beta/security/securityCopilot/workspaces/{workspaceId}/sessions/{sessionId}/prompts/{promptId}/evaluations/{evaluationId}
+```
+
+Retrieves the current state and results of an evaluation.
+
 
 ## Example Output
 
 ```
--------------------------------------------------------------
-[PROMPTS] Fetching data from 2023-12-08T00:00:00.000Z to 2024-12-08T00:00:00.000Z
--------------------------------------------------------------
-[API CALL] https://api.securitycopilot.microsoft.com/exports/prompts?startDate=...
+=============================================================
+   Microsoft Security Copilot API Demo
+=============================================================
 
-  -----------------------------------------------------------
-  | Session ID  : d3b69430-80bf-40fc-a9bf-109318330977
-  | Prompt ID   : ac156bf3-9a45-44c3-8bab-60402c2dea4c
-  | Source      : immersive
-  | Prompt Type : Skill
-  | Skill Name  : ExecuteADXQuery
-  | Inputs      : @{kqlquery=SigninLogs}
-  -----------------------------------------------------------
-
-[INFO] Fetched 50 prompts in this batch
-[PROGRESS] Total prompts fetched so far: 50
+[AUTH] Initiating delegated authentication...
+[SUCCESS] Authenticated as: user@contoso.com
 
 -------------------------------------------------------------
-[SUCCESS] Exported 828 prompts to prompts_export.csv
+[PLUGINS] Retrieving Plugin List
 -------------------------------------------------------------
+
+  - Microsoft Defender XDR
+    Status: Enabled
+    
+  - Microsoft Entra
+    Status: Enabled
+    
+  - Natural Language to KQL for Microsoft Sentinel
+    Status: Disabled
+
+-------------------------------------------------------------
+[SESSION] Creating Session: 'Who am I'
+-------------------------------------------------------------
+[SUCCESS] Session created with ID: d3b69430-80bf-40fc-a9bf-109318330977
+
+-------------------------------------------------------------
+[PROMPT] Submitting Prompt: 'Who am I?'
+-------------------------------------------------------------
+[SUCCESS] Prompt submitted with ID: ac156bf3-9a45-44c3-8bab-60402c2dea4c
+
+-------------------------------------------------------------
+[EVALUATION] Starting Prompt Evaluation
+-------------------------------------------------------------
+[SUCCESS] Evaluation submitted with ID: 7f8e9d2c-1b3a-4c5d-8e9f-1a2b3c4d5e6f
+
+[MONITOR] Checking evaluation status...
+  > Current state: running
+  > Current state: running
+  > Current state: completed
+
+[SUCCESS] Evaluation completed!
+
+-------------------------------------------------------------
+[RESPONSE] Result
+-------------------------------------------------------------
+You are user@contoso.com, authenticated with Microsoft Security Copilot 
+using delegated permissions...
+
+=============================================================
+   Demo Complete
+=============================================================
+```
+
+## Error Handling
+
+The script includes basic error handling. Common issues:
+
+- **Authentication Failures**: Check tenant ID, client ID, and permissions
+- **API Errors**: Ensure you have proper Graph API permissions
+- **Module Not Found**: Install MSAL.PS module
+- **Workspace Access**: Verify you have access to the specified workspace
+
+
+### Retrieving Session History
+
+Get all prompts from a session:
+
+```powershell
+$uri = "https://graph.microsoft.com/beta/security/securityCopilot/workspaces/$WorkspaceId/sessions/$sessionId/prompts"
+$response = Invoke-RestMethod -Uri $uri -Method GET -Headers @{ 
+    Authorization = "Bearer $accessToken" 
+}
 ```
 
 ## Security Best Practices
 
-1. **Credential Management**: 
-   - Use Azure Key Vault for production environments
-   - Rotate client secrets regularly
-   - Never commit secrets to source control
+1. **Token Management**: 
+   - MSAL.PS handles token caching automatically
+   - Tokens are stored securely in user profile
+   - Consider token lifetime for long-running scripts
 
 2. **Principle of Least Privilege**: 
-   - Grant only necessary API permissions
-   - Use dedicated service accounts
+   - Request only necessary scopes
+   - Use read-only scopes when modification isn't needed
 
 3. **Data Protection**: 
-   - Encrypt exported CSV files at rest
-   - Control access to export data
-   - Implement data retention policies
+   - Be cautious with sensitive data in prompts
+   - Implement logging controls for compliance
+   - Consider data residency requirements
+
 
 ## Troubleshooting
 
-### Authentication Errors
-- Verify client ID, secret, and tenant ID are correct
-- Ensure API permissions are granted and admin consent is provided
-- Check if the client secret has expired
+### Module Import Errors
+```powershell
+Import-Module MSAL.PS -Force
+```
 
-### Rate Limiting
-- Increase `InitialWaitTime` or `MaxRetries`
-- Reduce the date range to fetch less data per execution
-- Consider scheduling exports during off-peak hours
+### Authentication Popup Issues
+- Ensure your browser allows popups
+- Check if conditional access policies block the sign-in
+- Try using `-DeviceCode` parameter for MSAL authentication
 
-### Empty Results
-- Verify the date range includes activity
-- Check if you have access to the workspace
-- Ensure prompts/evaluations exist in the specified timeframe
+### Permission Errors
+- Verify the required permissions are granted
+- Ensure admin consent is provided if required
+- Check if the user has access to the workspace
+
+### API Version Issues
+- The script uses `/beta` endpoints
+- Some features may change; consult the latest documentation
+
 
 ## License
 
@@ -210,10 +279,12 @@ Contributions, issues, and feature requests are welcome!
 
 ## Author
 
-Created as part of the Tech Advent Calendar series.
+[Mario Cuomo](https://www.linkedin.com/in/mariocuomo/)
 
 ## References
 
 - [Microsoft Security Copilot Documentation](https://learn.microsoft.com/en-us/security-copilot/)
-- [Azure AD App Registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
-- [Security Copilot API Documentation](https://learn.microsoft.com/en-us/security-copilot/api-overview)
+- [Microsoft Graph API Documentation](https://learn.microsoft.com/en-us/graph/)
+- [Security Copilot Graph API Reference](https://learn.microsoft.com/en-us/graph/api/resources/security-copilot-api-overview)
+- [MSAL.PS Module](https://github.com/AzureAD/MSAL.PS)
+- [Entra ID Authentication](https://learn.microsoft.com/en-us/azure/active-directory/develop/)
