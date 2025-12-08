@@ -4,8 +4,8 @@ This folder provides sample implementations and usage examples for Microsoft Sec
 ### Overview
 Security Copilot APIs enable organizations to leverage AI-driven security insights and automation. This folder includes examples for two key APIs:
 
-- [Export Admin API](https://learn.microsoft.com/en-us/copilot/security/activity-export-api)
-- [Security Graph API](https://learn.microsoft.com/en-us/copilot/security/activity-export-api)
+- [Export Admin API](https://github.com/mariocuomo/Security-Copilot/tree/main/Security%20Copilot%20APIs/ExportAdminAPI)
+- [Security Graph API](https://github.com/mariocuomo/Security-Copilot/tree/main/Security%20Copilot%20APIs/GraphAPI)
 
 
 ### Export Admin API
@@ -23,4 +23,5 @@ The Security Graph API provides programmatic access to core Security Copilot res
 - **Evaluate prompt performance and accuracy**
 
 ### Contributing
+
 Contributions are welcome! Please submit a pull request or open an issue for any improvements or bug fixes.
