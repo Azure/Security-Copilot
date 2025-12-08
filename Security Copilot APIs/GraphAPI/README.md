@@ -163,59 +163,10 @@ Retrieves the current state and results of an evaluation.
 
 ## Example Output
 
-```
-=============================================================
-   Microsoft Security Copilot API Demo
-=============================================================
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/GraphAPIResponse.png"> </img>
+</div>
 
-[AUTH] Initiating delegated authentication...
-[SUCCESS] Authenticated as: user@contoso.com
-
--------------------------------------------------------------
-[PLUGINS] Retrieving Plugin List
--------------------------------------------------------------
-
-  - Microsoft Defender XDR
-    Status: Enabled
-    
-  - Microsoft Entra
-    Status: Enabled
-    
-  - Natural Language to KQL for Microsoft Sentinel
-    Status: Disabled
-
--------------------------------------------------------------
-[SESSION] Creating Session: 'Who am I'
--------------------------------------------------------------
-[SUCCESS] Session created with ID: d3b69430-80bf-40fc-a9bf-109318330977
-
--------------------------------------------------------------
-[PROMPT] Submitting Prompt: 'Who am I?'
--------------------------------------------------------------
-[SUCCESS] Prompt submitted with ID: ac156bf3-9a45-44c3-8bab-60402c2dea4c
-
--------------------------------------------------------------
-[EVALUATION] Starting Prompt Evaluation
--------------------------------------------------------------
-[SUCCESS] Evaluation submitted with ID: 7f8e9d2c-1b3a-4c5d-8e9f-1a2b3c4d5e6f
-
-[MONITOR] Checking evaluation status...
-  > Current state: running
-  > Current state: running
-  > Current state: completed
-
-[SUCCESS] Evaluation completed!
-
--------------------------------------------------------------
-[RESPONSE] Result
--------------------------------------------------------------
-You are user@contoso.com, authenticated with Microsoft Security Copilot 
-using delegated permissions...
-
-=============================================================
-   Demo Complete
-=============================================================
-```
 
 ## Error Handling
 
@@ -226,17 +177,6 @@ The script includes basic error handling. Common issues:
 - **Module Not Found**: Install MSAL.PS module
 - **Workspace Access**: Verify you have access to the specified workspace
 
-
-### Retrieving Session History
-
-Get all prompts from a session:
-
-```powershell
-$uri = "https://graph.microsoft.com/beta/security/securityCopilot/workspaces/$WorkspaceId/sessions/$sessionId/prompts"
-$response = Invoke-RestMethod -Uri $uri -Method GET -Headers @{ 
-    Authorization = "Bearer $accessToken" 
-}
-```
 
 ## Security Best Practices
 
@@ -293,7 +233,5 @@ Contributions, issues, and feature requests are welcome!
 
 - [Microsoft Security Copilot Documentation](https://learn.microsoft.com/en-us/security-copilot/)
 - [Microsoft Graph API Documentation](https://learn.microsoft.com/en-us/graph/)
-- [Security Copilot Graph API Reference](https://learn.microsoft.com/en-us/graph/api/resources/security-copilot-api-overview)
-- [MSAL.PS Module](https://github.com/AzureAD/MSAL.PS)
-- [Entra ID Authentication](https://learn.microsoft.com/en-us/azure/active-directory/develop/)
+
 
