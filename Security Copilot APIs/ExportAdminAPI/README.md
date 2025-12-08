@@ -2,14 +2,15 @@
 
 A PowerShell script to export prompts and evaluations data from Microsoft Security Copilot using the Admin Export APIs.
 
-<div align="center">
-  <img src="https://github.com/mariocuomo/Security-Copilot/Images/SecuirtyCopilotAPIs/ExportAdminSchema.png"> </img>
-</div>
-
 
 ## Overview
 
 This script demonstrates how to authenticate with Microsoft Security Copilot's Admin APIs and export telemetry data including prompts and evaluations from your workspace. It's useful for auditing, compliance, analytics, and understanding usage patterns within your Security Copilot environment.
+
+<div align="center">
+  <img src="https://github.com/mariocuomo/Security-Copilot/blob/main/Images/SecuirtyCopilotAPIs/ExportAdminSchema.png" width="700"> </img>
+</div>
+
 
 ## Features
 
@@ -218,3 +219,4 @@ Contributions, issues, and feature requests are welcome!
 - [Microsoft Security Copilot Documentation](https://learn.microsoft.com/en-us/security-copilot/)
 - [Entra ID Registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
 - [Security Copilot API Documentation](https://learn.microsoft.com/en-us/copilot/security/activity-export-api)
+
