@@ -1,159 +1,1122 @@
-openapi: "3.0.0"
+openapi: 3.0.0
+
 info:
-  title: GreyNoise Enterprise API
-  description: GreyNoise Enterprise API for IP noise analysis
-  version: "2.0"
+    title: GreyNoise Enterprsie API
+    description: GreyNoise Enterprise API for IP internet scanner analysis
+    version: "v3"
+
 servers:
     - url: https://api.greynoise.io
+
 paths:
-  /v2/noise/context/{ip}:
-    get:
-      operationId: Look up IP context
-      summary: Look up IP context from Greynoise database.
-      description: |
-        This endpoint allows you to check an IP context against the GreyNoise database.
-        #ExamplePrompts Tell me about Ip address "118.25.6.39" using GreyNoise database
-        #ExamplePrompts Find the GreyNoise IP Context for IP 183.221.243.13
-      parameters:
-        - name: ip
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The IP address to get context for.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
-  /v2/noise/quick/{ip}:
-    get:
-      operationId: Look up IP quick
-      summary: Check if an IP is "noise" or not.
-      description: |
-        This endpoint provides a quick way to check if an IP is "noise" or not.
-        #ExamplePrompts Use GreyNoise to do a quick check of IP 183.221.243.13
-        #ExamplePrompts Find the GreyNoise for IP 183.221.243.13 using a quick lookup
-      parameters:
-        - name: ip
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The IP address to check.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
-  /v2/noise/multi/quick:
-    post:
-      operationId: Look up multiple IPs
-      summary: Look up IP addresses in bulk.
-      description: |
-        This endpoint allows you to quickly lookup data on IPs in bulk
-        #ExamplePrompts Lookup Multiple IPs using GreyNoise 183.221.243.13 and 8.8.8.8
-        #ExamplePrompts I want to know about multiple IPs using GreyNoise. The IP addresses are 183.221.243.13 and 8.8.8.8.
-      requestBody:
-        content:
-          application/json:
+    /v3/ip/{ip}:
+        get:
+            operationId: Lookup IP in GreyNoise for additional context
+            description: |
+                This endpoint allows you to check an IP address against the GreyNoise database to determine if it is an internet scanner or part of a common business service.
+                #ExamplePrompts Tell me about IP address "118.25.6.39" using the GreyNoise database
+                #ExamplePrompts Use the GreyNoise database to provide info on "118.25.6.39"
+                #ExamplePrompts What does the GreyNoise database say about the IP address 180.126.219.127?
+                #ExamplePrompts I'm curious about any GreyNoise records for the IP address 180.126.219.127. Can you look that up for me?
+                #ExamplePrompts Can you provide me with information on any GreyNoise reports for the IP address 180.126.219.127?
+                #ExamplePrompts I'd like to know if there are any GreyNoise entries for the IP address 180.126.219.127. Can you check that for me?
+                #ExamplePrompts Could you give me an overview of the GreyNoise record for the IP address 180.126.219.127?
+            parameters:
+                - in: path
+                  name: ip
+                  schema:
+                      type: string
+                  required: true
+                  description: The IP address to lookup
+                - in: query
+                  name: quick
+                  description:
+                    If true, the response will only include the IP address and the
+                    classification or trust level.
+                  required: false
+                  schema:
+                    type: boolean
+                    default: false
+            responses:
+                "400":
+                    description: Bad Request
+                "401":
+                    description: Unauthorized
+                "404":
+                    description: Not Found
+                "429":
+                    description: Rate Limit Exceeded
+                "500":
+                    description: Internal Server Error
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                              oneOf:
+                                - '$ref': '#/components/schemas/IPResponseV3'
+                                - '$ref': '#/components/schemas/QuickIpProfile'
+    /v3/gnql/metadata:
+      get:
+        operationId: Perform a GreyNoise Query
+        description: |
+          This endpoint allows you to use the GreyNoise Query Language (GNQL) to make complex queries against the GreyNoise dataset.
+          #ExamplePrompts Use GreyNoise to check the GNQL information on tags:"RDP Scanner"
+          #ExamplePrompts Query GNQL for tags:"RDP Scanner"
+          #ExamplePrompts Search for all IPs scanning sensors located in Germany with GNQL GreyNoise Enterprise destination_country:"Germany"
+        parameters:
+          - name: query
+            in: query
+            description: GNQL query string
+            required: true
             schema:
+              type: string
+          - name: size
+            in: query
+            description:
+              The number of results provided per page for paginating through
+              all results of a query
+            required: false
+            schema:
+              type: integer
+              minimum: 1
+              maximum: 10000
+              default: 10000
+          - in: query
+            name: scroll
+            description: Scroll token to paginate through results
+            required: false
+            schema:
+              type: string
+          - in: query
+            name: quick
+            description:
+              If true, the response will only include the IP address and the
+              classification or trust level.
+            required: false
+            schema:
+              type: boolean
+              default: false
+          - in: query
+            name: exclude
+            description:
+              Comma-separated list of fields to exclude from the response.
+              The 'raw_data' field is automatically excluded and cannot be included.
+            required: false
+            schema:
+              type: string
+              example: "metadata.organization,metadata.city,metadata.rdns"
+        responses:
+          '200':
+            description: OK - request successful.
+            content:
+              application/json:
+                schema:
+                  oneOf:
+                    - '$ref': '#/components/schemas/GNQLV3Response'
+                    - '$ref': '#/components/schemas/QuickGNQLV3Response'
+          '206':
+            description: |
+              Partial content - request partially successful.
+              Due to plan limitations, your request only returned a subset of
+              fields and/or data. Contact sales@greynoise.io to upgrade your
+              plan and unlock full results.
+            content:
+              application/json:
+                schema:
+                  '$ref': '#/components/schemas/GNQLV3Response'
+          "400":
+              description: Bad Request
+          "401":
+              description: Unauthorized
+          "404":
+              description: Not Found
+          "429":
+              description: Rate Limit Exceeded
+          "500":
+              description: Internal Server Error
+    /v3/noise/ips/{ip}/timeline:
+      get:
+        operationId: Lookup IP Timeline for a given field
+        description: |
+          Retrieve an IP address' summary of noise activity for a specific field.  Valid fields are: Destination Port, HTTP Path, HTTP User Agent, Source ASN, Source Org, Source RDNS, Tag IDs, and Classification.
+          #ExamplePrompts What daily classification has 66.249.72.67 for the last 30 days?
+          #ExamplePrompts What ports has 66.249.72.67 been observed scanning for the last 7 days?
+          #ExamplePrompts What user agents has 66.249.72.67 been observed using for the last 7 days?
+        parameters:
+          - in: path
+            name: ip
+            description: IPv4 address to look up Noise time series activity timeline for
+            schema:
+              type: string
+              example: 36.32.2.102
+            required: true
+          - in: query
+            name: days
+            description: Number of days to show data for
+            schema:
+              type: string
+              example: 7
+              default: 1
+            required: false
+          - in: query
+            name: field
+            description: Field over which to show activity breakdown
+            schema:
+              type: string
+              enum:
+                - destination_port
+                - http_path
+                - http_user_agent
+                - source_asn
+                - source_org
+                - source_rdns
+                - tag_ids
+                - classification
+              example: classification
+              default: classification
+            required: true
+          - in: query
+            name: granularity
+            description: Granularity of activity date ranges. This can be in hours (e.g. Xh) or days (Xd). Valid hours are between 1 and 24. Valid days are between 1 and 90.
+            schema:
+              type: string
+              example: 8h
+              default: 1d
+            required: false
+        responses:
+          "200":
+            description: Success - returns activity data
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/IPTimelineResponse'
+          "400":
+              description: Bad Request
+          "401":
+              description: Unauthorized
+          "404":
+              description: Not Found
+          "429":
+              description: Rate Limit Exceeded
+          "500":
+              description: Internal Server Error
+    /v1/cve/{cve_id}:
+      get:
+        operationId: Look up CVE Information
+        description: |
+          Retrieve details about a specific Common Vulnerabilities and Exposures (CVE).  This endpoint returns detailed information about a specific CVE, including its details, timeline, exploitation details, and exploitation statistics.
+          #ExamplePrompts What is the details of CVE-2024-12345?
+          #ExamplePrompts What is the timeline of CVE-2024-12345?
+          #ExamplePrompts What is the exploitation details of CVE-2024-12345?
+          #ExamplePrompts What is the exploitation statistics of CVE-2024-12345?
+        parameters:
+          - name: cve_id
+            in: path
+            description: The CVE ID to query (e.g., CVE-2024-12345)
+            required: true
+            schema:
+              type: string
+              pattern: '^CVE-\d{4}-\d+$'
+        responses:
+          '200':
+            description: Successful response with CVE details based on entitlements.
+            content:
+              application/json:
+                schema:
+                  oneOf:
+                    - $ref: '#/components/schemas/CVEAdvancedResponse'
+                    - $ref: '#/components/schemas/CVEBasicResponse'
+          "400":
+              description: Bad Request
+          "401":
+              description: Unauthorized
+          "404":
+              description: Not Found
+          "429":
+              description: Rate Limit Exceeded
+          "500":
+              description: Internal Server Error
+components:
+  schemas:
+    IPResponseV3:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 8.8.8.8
+          description: |
+            IP address that the information is about.
+        business_service_intelligence:
+          '$ref': '#/components/schemas/BusinessServiceIntelligence'
+        internet_scanner_intelligence:
+          '$ref': '#/components/schemas/InternetScannerIntelligence'
+        request_metadata:
+          type: object
+          properties:
+            restricted_fields:
+              type: array
+              description: |
+                The fields that were restricted due to plan limitations.
+              items:
+                type: string
+              example:
+                - 'ip'
+                - 'cve'
+                - 'destination_cities'
+    QuickIpProfile:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 8.8.8.8
+          description: IP address that the information is about.
+        business_service_intelligence:
+          '$ref': '#/components/schemas/QuickBusinessServiceIntelligence'
+        internet_scanner_intelligence:
+          '$ref': '#/components/schemas/QuickInternetScannerIntelligence'
+    BusinessServiceIntelligence:
+          properties:
+            found:
+              type: boolean
+              description: |
+                Indicates if an IP is part of the RIOT dataset or not.
+              example: true
+            category:
+              type: string
+              description: |
+                RIOT category the provider belongs to, identifying the type of service provided.
+              example: hosting
+            name:
+              type: string
+              description: |
+                The name of the provider and/or service.
+              example: example.com
+            description:
+              type: string
+              description: |
+                A description of the provider and what they do.
+              example: example.com
+            explanation:
+              type: string
+              description: |
+                An explanation of the category type and what may be expected from this provider and category.
+            last_updated:
+              type: string
+              description: |
+                Date and time when this record was last updated from its source (format: YYYY-MM-DDTHH:MM:SSZ).
+              example: '2025-01-15T12:30:45Z'
+            reference:
+              type: string
+              description: |
+                Reference URL for information about this provider and/or service.
+              example: https://example.com
+            trust_level:
+              type: string
+              description: |
+                Defines the trust level assigned to this IP/provider. Additional information on trust levels can be found here.
+    InternetScannerIntelligence:
+      properties:
+        ip:
+          type: string
+          description: IP address that the information is about.
+          example: 71.6.135.131
+        seen:
+          type: boolean
+          description:
+            Whether or not the IP address has been observed by the GreyNoise
+            sensor network.
+          example: true
+        classification:
+          type: string
+          description:
+            The classification of the IP address, either "benign", "malicious",
+            or "unknown", based on the activity observed by GreyNoise.
+          enum:
+            - benign
+            - malicious
+            - unknown
+          example: benign
+        first_seen:
+          type: string
+          description:
+            The earliest date GreyNoise observed any activity from this
+            IP.
+          format: date
+          example: '2018-01-28'
+        last_seen:
+          type: string
+          description:
+            The most recent date GreyNoise observed any activity from this
+            IP.
+          format: date
+          example: '2018-2-28'
+        last_seen_timestamp:
+          type: string
+          description:
+            The timestamp of the last observed activity from this IP.
+          example:
+            - '2025-01-15T12:30:45Z'
+        found:
+          type: boolean
+          description:
+            Indicates if the IP was observed scanning the GreyNoise sensor network. Also referred to as 'noise'.
+          example: true
+        actor:
+          type: string
+          description: The overt actor this IP is associated with.
+          example: Shodan.io
+        bot:
+          type: boolean
+          description: Indicates whether the IP is associated with known bot activity.
+          example: false
+        spoofable:
+          type: boolean
+          description:
+            This IP address has been opportunistically scanning the Internet,
+            however has failed to complete a full TCP connection. Any reported
+            activity could be spoofed.
+          example: true
+        cves:
+          type: array
+          items:
+            type: string
+          description: A list of CVEs associate with this IP.
+          example:
+            - CVE-2020-1234
+            - CVE-2021-2345
+        tor:
+          type: boolean
+          description: Whether or not the device is a known Tor exit node.
+          example: false
+        vpn:
+          type: boolean
+          description:
+            This IP is associated with a VPN service. Activity, malicious
+            or otherwise, should not be attributed to the VPN service provider.
+          example: true
+        vpn_service:
+          type: string
+          description: Name of associated VPN Service.
+          example: IPVANISH_VPN
+        metadata:
+          '$ref': '#/components/schemas/MetadataV3'
+        tags:
+          '$ref': '#/components/schemas/IPResponseV3Tags'
+        raw_data:
+          type: object
+          description: Raw data observed directly by GreyNoise.
+          properties:
+            scan:
+              type: array
+              items:
+                type: object
+                properties:
+                  port:
+                    type: integer
+                    description: Port number
+                    example: 80
+                  protocol:
+                    type: string
+                    description: Protocol
+                    example: TCP
+            ja3:
+              type: array
+              items:
+                type: object
+                properties:
+                  fingerprint:
+                    type: string
+                    example: c3a6cf0bf2e690ac8e1ecf6081f17a50
+                    description: JA3 hash fingerprint string
+                  port:
+                    type: integer
+                    example: 443
+                    description:
+                      TCP port connection that the SSL/TLS communication
+                      occurred over
+            hassh:
+              type: array
+              items:
+                type: object
+                properties:
+                  fingerprint:
+                    type: string
+                    example: 51cba57125523ce4b9db67714a90bf6e
+                    description: HASSH hash fingerprint string
+                  port:
+                    type: integer
+                    example: 2222
+                    description: |
+                      TCP port connection where the HASSH hash was identified
+            http:
               type: object
               properties:
-                ips:
+                md5:
                   type: string
+                  description: |
+                    An MD5 hash of the body content. This compact,
+                    unique representation of the data allows for quick
+                    comparisons and deduplication of payloads without
+                    storing the raw content.
+                  example: 9764955b67107eeb9edfae76f429e783
+                cookie_keys:
+                  type: array
                   items:
                     type: string
-                  description: List of IP addresses to look up. i.e. ["1.2.3.4", "5.6.7.8", "8.8.8.8", "123.123.123.123"]
-              required:
-                - ips
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
-  /v2/riot/{ip}:
-    get:
-      operationId: Look up IP riot
-      summary: Look up commonly whitelisted IPs.
-      description: |
-        This endpoint provides information about commonly whitelisted IPs.
-        #ExamplePrompts Use GreyNoise to check the Riot information on IP 183.221.243.13
-        #ExamplePrompts I want to know the GreyNoise riot information on IP 8.8.8.8
-      parameters:
-        - name: ip
-          in: path
-          required: true
-          schema:
+                    description: |
+                      The keys or names of cookies exchanged in the communication.
+                      These can reveal session identifiers, tracking mechanisms,
+                      or other metadata used in web interactions,
+                      providing clues about application behavior or vulnerabilities.
+                    example:
+                      - expremotekey
+                request_authorization:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      The contents of the Authorization header in a request,
+                      which can include credentials, tokens, or other authentication
+                      information.
+                    example:
+                      - Bearer exampletoken
+                      - Basic username:password
+                request_cookies:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                     Key-value pairs stored in cookies sent with an HTTP request.
+                     These cookies often contain session identifiers, user preferences,
+                     or tracking data, which can be analyzed to detect unauthorized
+                     access or manipulation.
+                    example:
+                      - session_id=1234567890
+                request_header:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      Request Headers are the keys (names) of HTTP headers
+                      that a client sends to a server.
+                    example:
+                      - "Content-Type: application/json"
+                      - "Accept: application/json"
+                method:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      The HTTP method used in the request, such as GET, POST, PUT, or DELETE.
+                      Analyzing methods can reveal the intent of the request,
+                      such as retrieving or modifying resources,
+                      and identify unexpected or suspicious activity.
+                    example:
+                      - GET
+                      - POST
+                      - PUT
+                      - DELETE
+                request_origin:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      Indicates the origin of the request,
+                      typically used in cross-origin resource sharing (CORS)
+                      to specify where the request originated.
+                      This helps identify unauthorized or potentially
+                      malicious cross-origin requests.
+                    example:
+                      - 111.111.1.1
+                host:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      The host of the request, which can include the domain name
+                      and port number. These values can provide insight into the services or
+                      endpoints the actor may have been attempting to interact with.
+                    example:
+                      - example.com
+                      - example.com:8080
+                uri:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      The URI of the request, which can include the path and query parameters.
+                      This can provide insight into the specific resource or data being requested.
+                path:
+                  type: array
+                  items:
+                    type: string
+                    description: Observed scanning activity traversed this web path.
+                    example: '/robots.txt'
+                useragent:
+                  type: array
+                  items:
+                    type: string
+                    description: Observed scanning activity used these user agents.
+                    example: >
+                      Mozilla/5.0 (compatible; Googlebot/2.1;
+                      +http://www.google.com/bot.html)
+            tls:
+              type: object
+              properties:
+                cipher:
+                  type: string
+                  description: |
+                    The encryption algorithm or cipher suite used during the
+                    secure communication. Identifying the cipher helps assess
+                    the security of the connection, particularly in TLS/SSL traffic.
+                  example: TLS_AES_128_GCM_SHA256
+                ja4:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      List of JA4 TLS fingerprints observed in network traffic from the IP.
+                      JA4 is a modern fingerprinting method that captures distinctive
+                      characteristics of TLS client behavior,
+                      useful for identifying and clustering malicious or anomalous clients.
+                  example:
+                    - TLS_AES_128_GCM_SHA256
+                    - TLS_AES_256_GCM_SHA384
+                    - TLS_CHACHA20_POLY1305_SHA256
+
+            ssh:
+              type: object
+              properties:
+                key:
+                  type: array
+                  items:
+                    type: string
+                    description: |
+                      This is the SSH key used.
+                    example:
+                      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1234567890
+            source:
+              properties:
+                bytes:
+                  type: integer
+                  description: |
+                    The total amount of data transferred (in bytes) during the observed session or connection.
+                  example: 1024
+    QuickBusinessServiceIntelligence:
+      type: object
+      properties:
+        found:
+          type: boolean
+          description: |
+            Indicates if an IP is part of the RIOT dataset or not.
+        trust_level:
+          type: string
+          description: |
+            Defines the trust level assigned to this IP/provider. Additional information on trust levels can be found here.
+    QuickInternetScannerIntelligence:
+      type: object
+      properties:
+        found:
+          type: boolean
+          description: |
+            Indicates if the IP was observed scanning the GreyNoise sensor network. Also referred to as 'noise'.
+        classification:
+          type: string
+          description: |
+            The classification of the IP address, either "benign", "malicious",
+            or "unknown", based on the activity observed by GreyNoise.
+          enum:
+            - benign
+            - malicious
+            - suspicious
+            - unknown
+          example: benign
+    IPResponseV3Tags:
+      type: object
+      properties:
+        id:
+          type: string
+          example: ef0cc90d-d80c-436f-92c5-3d8f8665c9ac
+          description: |
+            The unique identifier for the tag.
+        slug:
+          type: string
+          example: mirai
+          description: |
+            The slugified version of the tag name.
+        name:
+          type: string
+          example: Mirai
+          description: |
+            The human-readable name for the tag.
+        category:
+          type: string
+          example: worm
+          description: |
+            Category of the IP address such as hosting or ISP.
+        intention:
+          type: string
+          example: malicious
+          description: |
+            The intent of the tag, either suspicious, malicious, benign, or unknown.
+        description:
+          type: string
+          example: This IP address exhibits behavior that indicates
+            it is infected with Mirai or a Mirai-like variant of malware.
+          description: |
+            A detailed description of the tag, including the observed activity
+            and any relevant context or details.
+        references:
+          type: array
+          items:
             type: string
-          description: The IP address to get information for.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
-  /v2/experimental/gnql:
-    get:
-      operationId: Look up GNQL
-      summary: Use the GreyNoise Query Language (GNQL) to query against the GreyNoise dataset.
-      description: |
-        This endpoint allows you to use the GreyNoise Query Language (GNQL) to make complex queries against the GreyNoise dataset.
-        #ExamplePrompts Use GreyNoise to check the GNQL information on tags:"RDP Scanner"
-        #ExamplePrompts Query GNQL for tags:"RDP Scanner"
-        #ExamplePrompts Search for all IPs scanning sensors located in Germany with GNQL GreyNoise Enterprise destination_country:"Germany"
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
+            example: https://en.wikipedia.org/wiki/Mirai_(malware)
+            description: |
+              A list of URLs or references that provide additional information
+              about the tag and its associated activity.
+        recommend_block:
+          type: boolean
+          example: false
+          description: |
+            A boolean value indicating whether the tag should be recommended
+            for blocking or filtering purposes.
+        cves:
+          type: array
+          items:
             type: string
-          description: The GNQL query to execute.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
-  /v2/experimental/gnql/stats:
-    get:
-      operationId: Look up CVE stats
-      summary: Use the GreyNoise Query Language (GNQL) stats to query against the GreyNoise dataset for CVE information.
-      description: |
-        This endpoint allows you to use the GreyNoise Query Language (GNQL) stats endpoint to query for CVE stats information
-        #ExamplePrompts Use GreyNoise to check stats on CVE-2017-17215
-        #ExamplePrompts What does GreyNoise know about CVE-2017-17215
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
+            example: CVE-2020-1234
+            description: |
+              A list of CVEs associated with the tag.
+        created_at:
+          type: string
+          example: '2020-04-07'
+          description: |
+            The date and time when the tag was created.
+        updated_at:
+          type: string
+          example: '2020-04-07'
+          description: |
+            The date and time when the tag was last updated.
+    MetadataV3:
+      properties:
+        mobile:
+          type: boolean
+          description: Defines if the IP is part of a known cellular network.
+          example: false
+        source_country:
+          type: string
+          description: Country where the IP address is registered or operates.
+          example: United States
+        source_country_code:
+          type: string
+          description:
+            Country code of the IP address based on ISO 3166-1 alpha-2.
+          example: US
+        source_city:
+          type: string
+          description: The city where the device is geographically located.
+          example: Seattle
+        region:
+          type: string
+          description: The region where the device is geographically located.
+          example: Seattle
+        organization:
+          type: string
+          description: The name of organization that owns the IP address.
+          example: DigitalOcean, LLC
+        rdns:
+          type: string
+          description: The reverse DNS pointer.
+          example: crawl-66-249-79-17.googlebot.com
+        asn:
+          type: string
+          description: The autonomous system identification number.
+          example: AS521
+        tor:
+          type: boolean
+          description: Whether or not the device is a known Tor exit node.
+          example: false
+        category:
+          type: string
+          description: The subset of network types the IP address belongs to.
+          enum:
+            - isp
+            - business
+            - hosting
+            - mobile
+            - education
+          example: education
+        os:
+          type: string
+          description:
+            An approximate guess of the operating system of the device,
+            based on the TCP stack fingerprint.
+          example: Windows 7/8
+        destination_countries:
+          type: array
+          items:
             type: string
-          description: The CVE.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json: {}
-        "400":
-          description: "400 response"
-          content:
-            application/json: {}
+            description: |
+              The full name or country code where GreyNoise sensor
+              is physically located.
+            example: Germany
+        destination_country_codes:
+          type: array
+          items:
+            type: string
+            description: |
+              The country codes where GreyNoise sensor is
+              physically located.
+            example: Germany
+        destination_cities:
+          type: array
+          items:
+            type: string
+            description: |
+              The city where the GreyNoise sensor is geographically located.
+            example: Berlin
+        destination_asns:
+          type: array
+          items:
+            type: string
+            description: |
+              The ASN associated with the destination IP address.
+            example: AS1234
+        single_destination:
+          type: boolean
+          description: |
+            A Boolean parameter indicating whether the source IP address
+            has only been observed in a single destination country.
+          example: true
+        carrier:
+          type: string
+          description: |
+            The Internet Service Provider (ISP) or telecommunications
+            carrier associated with the source IP address.
+          example: AIS
+        datacenter:
+          type: string
+          description: |
+            The datacenter or hosting provider from which the activity originates.
+            This could indicate the use of cloud services,
+            managed hosting, or enterprise datacenter infrastructure.
+          example: us-west-1
+        domain:
+          type: string
+          description: |
+            The domain name associated with the source IP address.
+          example: example.com
+        rdns_parent:
+          type: string
+          description: |
+            The parent domain retrieved through reverse DNS (RDNS)
+            lookup of the source IP address.
+          example: example.com
+        rdns_validated:
+          type: boolean
+          description: |
+            A validation status that confirms whether the reverse DNS (RDNS)
+            record correctly maps to the source domain.
+          example: true
+        latitude:
+          type: number
+          description: |
+            The geographic latitude of the source IP address.
+          example: 37.7749
+        longitude:
+          type: number
+          description: |
+            The geographic longitude of the source IP address.
+          example: -122.4194
+        sensor_count:
+          type: integer
+          description: |
+            Number of sensors with events observed.
+          example: 10
+        sensor_hits:
+          type: integer
+          description: |
+            Number of scanning events observed.
+          example: 10
+    QuickGNQLV3Response:
+      type: object
+      properties:
+        request_metadata:
+          '$ref': '#/components/schemas/GNQLV3ResponseMetadata'
+        data:
+          type: array
+          description: The relevant IP records requested by the user
+          items:
+            '$ref': '#/components/schemas/QuickIpProfile'
+    GNQLV3ResponseMetadata:
+      type: object
+      properties:
+        complete:
+          type: boolean
+          example: false
+          description: Whether all records have been delivered or not. `false`
+            means there's another page
+        scroll:
+          type: string
+          example: >
+            DnF1ZXJ5VGhlbkZldGNoBQAAAAAAeygtFkFKSExEdUc4VEtta2syaGg2R3kzNGcAAAAAAH
+            soLhZBSkhMRHVHOFRLbWtrMmhoNkd5MzRnAAAAAAB7KC8WQUpITER1RzhUS21razJoaDZH
+            eTM0ZwAAAAAAeygxFkFKSExEdUc4VEtta2syaGg2R3kzNGcAAAAAAHsoMBZBSkhMRHVHOF
+            RLbWtrMmhoNkd5MzRn
+          description: Scroll token to use for pagination
+        query:
+          type: string
+          example: last_seen:2019-07-28 classification:malicious
+          description: The GNQL query string the requester queried
+        adjusted_query:
+          type: string
+          example: last_seen:2019-07-28 classification:malicious
+          description: |
+            When certain query parameters are not specified or incompatible
+            with your current plan, GreyNoise automatically adjusts params on your
+            query prior to execution.
+        count:
+          type: integer
+          example: 1
+          description: The number of total results for the given GNQL query
+        message:
+          type: string
+          example: ok
+          description: A status message indicating if there were issues with the request
+        restricted_fields:
+          type: array
+          description: The fields that were restricted due to plan limitations
+          items:
+            type: string
+          example:
+            - 'ip'
+            - 'asn'
+            - 'organization'
+            - 'country'
+            - 'city'
+            - 'region'
+    GNQLV3Response:
+      type: object
+      properties:
+        request_metadata:
+          '$ref': '#/components/schemas/GNQLV3ResponseMetadata'
+        data:
+          type: array
+          description: The relevant IP records requested by the user
+          items:
+            '$ref': '#/components/schemas/GNQLIPContextV3'
+    GNQLIPContextV3:
+      properties:
+        ip:
+          type: string
+          description: IP address that the information is about.
+          example: 71.6.135.131
+        internet_scanner_intelligence:
+          '$ref': '#/components/schemas/InternetScannerIntelligence'
+        business_service_intelligence:
+          '$ref': '#/components/schemas/BusinessServiceIntelligence'
+    IPTimelineResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              data:
+                type: integer
+                description: Total traffic for IP
+                example: 1
+              label:
+                type: string
+                description: |
+                  A label that corresponds to a distinct value for the
+                  given field
+                example: 'unknown'
+              timestamp:
+                type: string
+                description: |
+                  Time range bucket based on granularity - the timestamp
+                  represents the start of the bucket
+                format: date-time
+                example: '2023-01-23T00:00:00Z'
+        metadata:
+          type: object
+          properties:
+            ip:
+              type: string
+              description: IP queried
+              example: '36.32.2.102'
+            field:
+              type: string
+              description: Field over which to show change
+              example: 'classification'
+            first_seen:
+              type: string
+              description: |
+                The earliest date GreyNoise observed any activity from this IP.
+              example: '2022-06-15'
+            start:
+              type: string
+              format: date-time
+              description: Start of time range for data
+              example: '2023-01-18T00:00:00Z'
+            end:
+              type: string
+              format: date-time
+              description: End of time range for data
+              example: '2023-01-25T21:55:18.486036894Z'
+            granularity:
+              type: string
+              description: Granularity at which to show data
+              example: '1d'
+            metric:
+              type: string
+              description: The metric used within the data field
+              example: 'count'
+    CVEAdvancedResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The CVE identifier.
+          example: CVE-2024-12345
+        details:
+          $ref: '#/components/schemas/CVEDetails'
+        timeline:
+          $ref: '#/components/schemas/CVETimeline'
+        exploitation_details:
+          $ref: '#/components/schemas/CVEExploitationDetails'
+        exploitation_stats:
+          $ref: '#/components/schemas/CVEExploitationStats'
+        exploitation_activity:
+          $ref: '#/components/schemas/CVEExploitationActivity'
+    CVEBasicResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The CVE identifier.
+          example: CVE-2024-12345
+        details:
+          $ref: '#/components/schemas/CVEDetails'
+        timeline:
+          $ref: '#/components/schemas/CVETimeline'
+        exploitation_details:
+          $ref: '#/components/schemas/CVEExploitationDetails'
+    CVEDetails:
+      type: object
+      properties:
+        vulnerability_name:
+          type: string
+          description: The name of the vulnerability.
+          example: Sample Vulnerability
+        vulnerability_description:
+          type: string
+          description: Description of the vulnerability.
+          example: This vulnerability allows remote attackers to execute arbitrary code.
+        cve_cvss_score:
+          type: number
+          description: The CVSS score of the CVE.
+          example: 7.5
+        product:
+          type: string
+          description: The product affected by the vulnerability.
+          example: Sample Product
+        vendor:
+          type: string
+          description: The vendor of the affected product.
+          example: Sample Vendor
+        published_to_nist_nvd:
+          type: boolean
+          description: Whether the CVE is published to the NIST National Vulnerability Database.
+          example: true
+    CVETimeline:
+      type: object
+      properties:
+        cve_published_date:
+          type: string
+          format: date
+          description: The date the CVE was published.
+          example: '2024-01-01'
+        cve_last_updated_date:
+          type: string
+          format: date
+          description: The date the CVE was last updated.
+          example: '2024-01-02'
+        first_known_published_date:
+          type: string
+          format: date
+          description: The first known published date of the CVE.
+          example: '2024-01-01'
+        cisa_kev_date_added:
+          type: string
+          format: date
+          description: The date the CVE was added to the CISA KEV list.
+          example: '2024-01-03'
+    CVEExploitationDetails:
+      type: object
+      properties:
+        attack_vector:
+          type: string
+          description: The attack vector for the CVE.
+          example: Network
+        exploit_found:
+          type: boolean
+          description: Whether an exploit has been found for this CVE.
+          example: true
+        exploitation_registered_in_kev:
+          type: boolean
+          description: Whether the exploitation is registered in KEV.
+          example: true
+        epss_score:
+          type: number
+          description: The EPSS score for the CVE.
+          example: 0.8
+    CVEExploitationStats:
+      type: object
+      properties:
+        number_of_available_exploits:
+          type: integer
+          description: The number of available exploits for the CVE.
+          example: 5
+        number_of_threat_actors_exploiting_vulnerability:
+          type: integer
+          description: The number of threat actors exploiting the vulnerability.
+          example: 3
+        number_of_botnets_exploiting_vulnerability:
+          type: integer
+          description: The number of botnets exploiting the vulnerability.
+          example: 2
+    CVEExploitationActivity:
+      type: object
+      properties:
+        activity_seen:
+          type: boolean
+          description: Whether exploitation activity has been observed.
+          example: true
+        benign_ip_count_1d:
+          type: integer
+          description: The count of benign IPs in the last day.
+          example: 100
+        benign_ip_count_10d:
+          type: integer
+          description: The count of benign IPs in the last 10 days.
+          example: 500
+        benign_ip_count_30d:
+          type: integer
+          description: The count of benign IPs in the last 30 days.
+          example: 1000
+        threat_ip_count_1d:
+          type: integer
+          description: The count of threat IPs in the last day.
+          example: 10
+        threat_ip_count_10d:
+          type: integer
+          description: The count of threat IPs in the last 10 days.
+          example: 50
+        threat_ip_count_30d:
+          type: integer
+          description: The count of threat IPs in the last 30 days.
+          example: 100

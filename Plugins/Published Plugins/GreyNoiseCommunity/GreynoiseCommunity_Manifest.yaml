@@ -1,13 +1,13 @@
 Descriptor:
   Name: GreyNoise Community
-  DisplayName: GreyNoise Community (Preview) Plugin
+  DisplayName: GreyNoise Community Plugin
   DescriptionDisplay: GreyNoise Community provides insight if an IP has been observed mass-scanning the internet or is part of a common business service.
   Description: |-
     Use this skill-set to call the GreyNoise API if the user provides a given IP and wants to know assess the likelihood of the IP address being associated with mass internet scanning.
-    - This skill only invokes the GreyNoise Community API.
-    - LookupIpAddressNoise: Gets noise information about an IP address (v4 only). Internet scanning activity is provided by GreyNoise if an IP has been observed scanning by the GreyNoise sensor network and is associated with malicious activities.
-    - Classifies the IP address as benign, suspicious, or malicious
-    - Presents the last time the IP address was observed
+    - This skill only invokes the GreyNoise API with the rate-limited responses.
+    - LookupIpAddressNoise: Gets internet scanning activity information about an IP address (v4 only). Internet scanning activity is provided by GreyNoise if an IP has been observed scanning by the GreyNoise sensor network and is associated with malicious activities.
+    - Classifies the IP address as benign, suspicious, unknown, or malicious
+    - Presents the last time the IP address was observed scanning the GreyNoise Global Observation Grid
     - Published by Microsoft and GreyNoise
   Category: Other
   Icon: https://info.greynoise.io/hubfs/greynoise_logo.png
@@ -22,4 +22,4 @@ Descriptor:
 SkillGroups:
   - Format: API
     Settings:
-      OpenApiSpecUrl: https://gist.githubusercontent.com/bradchiappetta/85e2a0da55292e59e1bbd684c7d10579/raw/bef0494698f6c4364f40fd942c6e2a23321a6b0b/GreynoiseCommunity_OpenAPI.yaml
+      OpenApiSpecUrl: https://gist.githubusercontent.com/bradchiappetta/85e2a0da55292e59e1bbd684c7d10579/raw/0c3640cb02b8ac0fde72242ff0d79edcb5e0c0fb/GreynoiseCommunity_OpenAPI.yaml
