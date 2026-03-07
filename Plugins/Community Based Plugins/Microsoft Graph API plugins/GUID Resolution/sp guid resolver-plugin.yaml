@@ -1,0 +1,13 @@
+Descriptor:
+  Name: EntraSpnGuidResolver
+  DisplayName: Entra SPN-App Resolver
+  Description: Resolves a GUID from alerts service principal ObjectId or appId) to Enterprise Application or service principal display name via Microsoft Graph.
+  SupportedAuthTypes:
+    - AADDelegated
+  Authorization:
+    Type: AADDelegated
+    EntraScopes: https://graph.microsoft.com/.default
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: < url to your spec file>
