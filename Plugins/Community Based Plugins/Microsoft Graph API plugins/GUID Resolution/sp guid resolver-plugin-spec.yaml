@@ -1,0 +1,84 @@
+openapi: 3.0.0
+info:
+  title: Entra Service Principal GUID Resolver
+  version: 1.0.0
+  description: >
+    Resolve a GUID from security alerts to the Microsoft Entra service principal (Enterprise Application)
+    display name and identifiers using Microsoft Graph.
+
+servers:
+  - url: https://graph.microsoft.com/v1.0
+
+paths:
+  /servicePrincipals/{id}:
+    get:
+      operationId: GetServicePrincipalByObjectId
+      summary: Resolve a service principal by Object ID (Caller GUID)
+      description: >
+        Retrieves Microsoft Entra service principal (Enterprise Application) details using the service principal
+        Object ID. Use when an alert "Caller" field contains a GUID that is the enterprise application's Object ID.
+        #ExamplePrompts Resolve this caller GUID to the enterprise application name: 9cb7b82d-55cd-4265-b8a7-8899a7376e5c
+        #ExamplePrompts Get the service principal name for ObjectId 9cb7b82d-55cd-4265-b8a7-8899a7376e5c
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Service principal Object ID (GUID)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service principal found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePrincipal"
+        "404":
+          description: Not found
+
+  "/servicePrincipals(appId='{appId}')":
+    get:
+      operationId: GetServicePrincipalByAppId
+      summary: Resolve a service principal by Application (Client) ID / appId
+      description: >
+        Retrieves Microsoft Entra service principal (Enterprise Application) details using the Application (Client) ID (appId).
+        Use when the GUID you have is the AppId rather than the service principal Object ID.
+        #ExamplePrompts Resolve this appId GUID to the enterprise application name: a12e8ccb-0fcd-46f8-b6a1-000000000000
+        #ExamplePrompts Get the service principal name for appId a12e8ccb-0fcd-46f8-b6a1-000000000000
+      parameters:
+        - name: appId
+          in: path
+          required: true
+          description: Application (Client) ID / appId (GUID)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service principal found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePrincipal"
+        "404":
+          description: Not found
+
+components:
+  schemas:
+    ServicePrincipal:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Service principal Object ID
+        appId:
+          type: string
+          description: Application (Client) ID
+        displayName:
+          type: string
+          description: Enterprise Application (service principal) display name
+        servicePrincipalType:
+          type: string
+        accountEnabled:
+          type: boolean
+        publisherName:
+          type: string
