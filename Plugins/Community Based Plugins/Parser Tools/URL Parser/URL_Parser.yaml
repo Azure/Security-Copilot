@@ -1,0 +1,81 @@
+Descriptor:
+  Name: URLParser
+  DisplayName: URL Parser
+  Description: Skill to parse a single URL
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: ParseURL
+        DisplayName: Parse URL
+        Description: Parse provided URL and return scheme, host, port, username and password, query parameters and fragments
+        ExamplePrompt:
+        - 'Parse URL'
+        - 'Parse the following URL:'
+        - 'Identify the scheme for this URL:'
+        - 'Identify the host name for this URL:'
+        - 'Identify the port in this URL:'
+        - 'Identify the username and password in this URL:'
+        - 'Identify the query parameters for this URL:'
+        - 'Identify the fragments for this URL:'
+        - 'Extract the scheme from this URL:'
+        - 'Extract the host name from this URL:'
+        - 'Extract the port from this URL:'
+        - 'Extract the username and password from this URL:'
+        - 'Extract the query parameters from this URL:'
+        - 'Extract the fragments from this URL:'
+        Inputs:
+          - Name: url
+            Description: An absolute URL, including its scheme, or the query part of the URL. For example, use the absolute https://bing.com instead of bing.com
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            print parse_url("{{url}}")
+            | extend Scheme = parse_json(print_0)["Scheme"]
+            | extend Host = parse_json(print_0)["Host"]
+            | extend Port = parse_json(print_0)["Port"]
+            | extend Path = parse_json(print_0)["Path"]
+            | extend Username = parse_json(print_0)["Username"]
+            | extend Password = parse_json(print_0)["Password"]
+            | extend QueryParameters = parse_json(print_0)["Query Parameters"]
+            | extend Fragment = parse_json(print_0)["Fragment"]
+            | project-away print_0
+  - Format: KQL
+    Skills:
+      - Name: ParseURLQuery
+        DisplayName: Parse URL Query
+        Description: Parse provided URL query parameters and return a dynamic object
+        ExamplePrompt:
+        - 'Parse URL query parameter'
+        - 'Parse the following URL query parameter:'
+        - 'Provide a dynamic object from this query parameter:'
+        Inputs:
+          - Name: query
+            Description: The query part of the URL. The format must follow URL query standards (key=value& ...)
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            print parse_urlquery("{{query}}")
+            | extend QueryParameters = parse_json(print_0)["Query Parameters"]
+            | project-away print_0
+  - Format: KQL
+    Skills:
+      - Name: DecodeURL
+        DisplayName: Decode URL
+        Description: Converts an encoded URL into a regular URL representation
+        ExamplePrompt:
+        - 'Decode URL'
+        - 'Decode the following URL:'
+        - 'Convert this encoded URL into a regular URL representation:'
+        Inputs:
+          - Name: encodedurl
+            Description: The encoded URL to decode
+            Required: true
+        Settings:
+          Target: Defender
+          Template: |-
+            print url_decode("{{encodedurl}}")
+            | extend DecodedURL = print_0
+            | project-away print_0
