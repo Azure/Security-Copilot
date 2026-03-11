@@ -86,7 +86,9 @@ IMPORTANT: After the download/upload is successful, please logout of your Securi
 
 - If you get a HTTP 401, please make sure the token is valid. It should not have expired or have any leading or trailing spaces when you paste it. Also make sure the URI in the PowerShell script has the correct region specified. 
 - If you get HTTP 400, please verify the correctness of the prompt JSON file. Specifically if you are using a variable, make sure it has the same name in your prompts and in the 'promptbookinputs' section. The variable is case sensitive, and the token name and its description cannot be the same text.
-- In case of HTTP 500, check the JSON format. A missing or extra ',' is not an acceptable JSON, and it is advised to run your JSON via a formatter to identify any issues. 
+- In case of HTTP 500, check the JSON format. A missing or extra ',' is not an acceptable JSON, and it is advised to run your JSON via a formatter to identify any issues.
+- If after running the upload promptbook script the new uploaded promptbooks are not visible on the webportal, make sure to the region URI is set up properly in the powershell script `https://api.securitycopilot.microsoft.com/geo/<region>/promptbooks` (4 regions are currently supported East US, West Europe, UK South, and Australia East)
+
 
 **Documentation**
 - [Using Promptbooks | Microsoft Learn](https://learn.microsoft.com/en-us/security-copilot/using-promptbooks)
