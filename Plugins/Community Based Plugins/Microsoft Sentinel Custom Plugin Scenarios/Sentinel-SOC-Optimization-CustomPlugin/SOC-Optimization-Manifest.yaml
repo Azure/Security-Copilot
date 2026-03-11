@@ -1,0 +1,32 @@
+Descriptor:
+  Name: SOC Optimization for Microsoft Sentinel  
+  DisplayName: SOC Optimization for Microsoft Sentinel (Community release)
+  Description: SOC Optimization is a feature of Microsoft Sentinel that provides the recommendations for optimal data utilization and attack detection.
+  DescriptionForModel: SOC Optimization is a feature of Microsoft Sentinel that provides three kind of recommendations. 
+    Firstly, it provides daily adaptive strategies for optimal data utilization and attack detection. 
+    Secondly, it provides actionable insights into data usage patterns for threat protection and cost optimization. 
+    Lastly, it provides threat-based recommendations using the MITRE ATT&CK framework.
+    The following are examples of recommendations provided by SOC Optimization
+    Low usage of <table_name> table (Table <table_name> wasn't queried in the last 30 days)
+    Coverage improvement against AiTM (Adversary in the Middle)
+    Coverage improvement against BEC (Financial Fraud)
+    Coverage improvement against ERP (SAP) Financial Process Manipulation
+    Coverage improvement against BEC (Mass Credential Harvest)
+    Coverage improvement against Human Operated Ransomware
+    Coverage improvement against IaaS Resource Theft
+  Settings:
+  - Name: SentinelApiUrl
+    Label: Microsoft Sentinel APIs URL
+    Description: ATTENTION! In the URL below, be sure to replace the placehoders SUBSCRIPTION-ID, RESOURCE-GROUP-NAME and SENTINEL-WORKSPACE-NAME with their correct values in your environment. Do not change the rest of the URL.
+    HintText: ATTENTION! In the URL below, be sure to replace the placehoders SUBSCRIPTION-ID, RESOURCE-GROUP-NAME and SENTINEL-WORKSPACE-NAME with their correct values in your environment. Do not change the rest of the URL.
+    DefaultValue: https://management.azure.com/subscriptions/SUBSCRIPTION-ID/resourceGroups/RESOURCE-GROUP-NAME/providers/Microsoft.OperationalInsights/workspaces/SENTINEL-WORKSPACE-NAME/providers/Microsoft.SecurityInsights
+    SettingType: String
+    Required: true
+  Authorization:
+    Type: AADDelegated
+    EntraScopes: https://management.azure.com/user_impersonation
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/Azure/Copilot-For-Security/main/Plugins/Community%20Based%20Plugins/Microsoft%20Sentinel%20Custom%20Plugin%20Scenarios/Sentinel-SOC-Optimization-CustomPlugin/SOC-Optimization-Specification.yaml
+      EndpointUrlSettingName: SentinelApiUrl
