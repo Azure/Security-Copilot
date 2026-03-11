@@ -1,0 +1,1729 @@
+openapi: 3.0.0
+info:
+  title: Detection On Demand
+  description: |
+    FireEye offers a best-in-class virtual execution engine in many of its core products, including our Network Security, Email Security, and File Analysis solutions. Now our customers can interact with and consume those capabilities directly via a scalable and performant web service. Use the new RESTful API to submit files for malware analysis, search hash values for past analysis results, get full reports for your file submissions, and integrate into your existing toolsets and workflows.
+    
+    [How to import this API into Postman](http://fireeye.dev/docs/detection-on-demand/postman/)  
+  termsOfService: "https://www.fireeye.com/company/legal.html"
+  contact:
+    name: "Developer Relations Team"
+    email: "developers@fireeye.com"
+  version: "1.4.1"
+servers:
+  - description: Detection On Demand Production Server
+    url: https://feapi.marketplace.apps.fireeye.com
+    variables: {}
+paths:
+  /reports/{report_id}:
+    get:
+      tags:
+        - Reports
+      summary: Get single report
+      description: This endpoint fetches the results of a single file submission, known as a report.
+      operationId: getReport
+      parameters:
+        - in: path
+          name: report_id
+          required: true
+          schema:
+            type: string
+          example: "992694b3-20ab-4245-9b4c-8f3a1b7ec3b6"
+          description: "The report ID returned after successfully submitting a file."
+        - in: query
+          name: extended
+          schema:
+            type: boolean
+            enum: [true, false]
+          example: false
+          description: "Setting extended to true will allow you to see all malware engine reports."
+      externalDocs:
+        description: "Learn more about reading reports below:"
+        url: "https://fireeye.dev/docs/detection-on-demand/#reports"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ReportNotExtended"
+                  - $ref: "#/components/schemas/ReportExtended"
+              example:
+                report_id: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                overall_status: DONE
+                is_malicious: true
+                started_at: '2020-07-06 18:15:13'
+                completed_at: '2020-07-06 18:17:54'
+                duration: 161
+                file_name: payment_2019.exe
+                file_size: 17920
+                file_extension: exe
+                name: payment_2019.exe
+                type: exe
+                size: 17920
+                md5: 968a89bf69338b6e0332a9d5d300cd5a
+                sha256: 105f7022adcfeec2cc698f500c2a83c3436822f7372177ffa2ed3d3ae7b3a80b
+                sha1: a68621e31c08a4fff8d4c4a49364b386acd769fa
+                magic: PE32 executable (GUI) Intel 80386, for MS Windows\012- data
+                extracted_objects:
+                - submission_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  name: payment_2019.exe
+                  type: exe
+                  complete_time: '2020-07-06 18:17:54.473953'
+                  analyses_start_time: '2020-07-06 18:15:13.540694'
+                  verdict: MALICIOUS
+                  md5: 968a89bf69338b6e0332a9d5d300cd5a
+                  sha256: 105f7022adcfeec2cc698f500c2a83c3436822f7372177ffa2ed3d3ae7b3a80b
+                  status: SUCCESS
+                  size: 17920
+                  is_malicious: true
+                results:
+                - object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  analysis_results:
+                  - engine: AVS LOOOKUP
+                    weight: 100
+                    signature_name: FireEye.Malware.exe
+                  - weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                    engine: 'Bale ENGINE '
+                    job_id: 2487
+                  - weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                    engine: 'Bale ENGINE '
+                    job_id: 2486
+                  - anomaly_types:
+                    - FEBETA
+                    os_info: Microsoft WindowsXP 32-bit 5.1 sp3 17.0112
+                    engine: Dynamic Analysis
+                    job_id: 2487
+                    weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                  - anomaly_types:
+                    - FEBETA
+                    os_info: Microsoft Windows7 64-bit 6.1 sp1 17.0112
+                    engine: Dynamic Analysis
+                    job_id: 2486
+                    weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                  - engine: Malware Guard
+                    weight: 100
+                    signature_name: fe_ml_heuristic
+                  - engine: Static Analysis
+                    weight: 100
+                    signature_name: fe_ml_heuristic
+                  - engine: Static Analysis - YARA
+                    weight: 0
+                    signature_name: fe_ml_heuristic
+                  - first_seen: '2019-09-17T00:34:00'
+                    last_seen: '2019-12-08T04:53:00'
+                    engine: global_cache
+                    signature_name: Trojan.Small.FEC3
+                    weight: 100
+                    scan_count: 31
+                    scan_match: 30
+                artifacts_info:
+                - object_artifact_details:
+                  - object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                    artifact_details:
+                    - video_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.flv
+                      dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                      memory_dump: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.zip
+                      pcap_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.pcap
+                      job_id: 2487
+                      profilename: Microsoft WindowsXP 32-bit 5.1 sp3 17.0112
+                    - video_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.flv
+                      dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                      memory_dump: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.zip
+                      pcap_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.pcap
+                      job_id: 2486
+                      profilename: Microsoft Windows7 64-bit 6.1 sp1 17.0112
+                  os_changes: true
+                  os_changes_type: json
+                  vm_artifacts_type: zip
+                  screenshot: true
+                  vm_artifacts: true
+                  artifact_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  screenshot_type: gif
+                engine_results:
+                  dynamic_analysis:
+                    uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                    is_malicious: true
+                    analysis_info: {}
+                    files_analyzed: 0
+                    overall_weight: 0
+                    total_duration: 0
+                  av_lookup:
+                    verdict: not_found
+                    signature_name: []
+                  avs_lookup:
+                    verdict: not_found
+                    signature_name: []
+                  dti_lookup:
+                    verdict: not_found
+                    signature_name: []
+                mitre_mapping:
+                - id: T1204.002
+                  name: Malicious File
+                  tactic:
+                  - execution
+                - id: T1566.001
+                  name: Spearphishing Attachment
+                  tactic:
+                  - initial_access
+                - id: T1203
+                  name: Exploitation for Client Execution
+                  tactic:
+                  - execution
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a report ID."
+                  message:
+                    type: string
+                    example: "Report ID not provided."
+                    description: "This means that you did not provide a report ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /reports/{hash}:
+    get:
+      tags:
+        - Reports
+      summary: Get single report by md5 or sha256 hash
+      description: This endpoint fetches the latest results for file submission with the provided md5 or sha256 hash.
+      operationId: getReportsMD5
+      parameters:
+        - in: path
+          name: hash
+          required: true
+          schema:
+            type: string
+          example: "a32a382b8a5a906e03a83b4f3e5b7a9b"
+          description: "MD5 or SHA256 hash of a submitted file"
+        - in: query
+          name: extended
+          schema:
+            type: boolean
+            enum: [true, false]
+          example: false
+          description: "Setting extended to true will allow you to see all malware engine reports."
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ReportNotExtended"
+                  - $ref: "#/components/schemas/ReportExtended"
+              example:
+                report_id: 1737d302-600e-431c-96eb-9c688ee0af98
+                overall_status: DONE
+                is_malicious: true
+                started_at: '2020-07-06 18:15:13'
+                completed_at: '2020-07-06 18:17:54'
+                duration: 161
+                file_name: payment_2019.exe
+                file_size: 17920
+                file_extension: exe
+                name: payment_2019.exe
+                type: exe
+                size: 17920
+                md5: a32a382b8a5a906e03a83b4f3e5b7a9b
+                sha256: 105f7022adcfeec2cc698f500c2a83c3436822f7372177ffa2ed3d3ae7b3a80b
+                sha1: a68621e31c08a4fff8d4c4a49364b386acd769fa
+                magic: PE32 executable (GUI) Intel 80386, for MS Windows\012- data
+                extracted_objects:
+                - submission_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  name: payment_2019.exe
+                  type: exe
+                  complete_time: '2020-07-06 18:17:54.473953'
+                  analyses_start_time: '2020-07-06 18:15:13.540694'
+                  verdict: MALICIOUS
+                  md5: 968a89bf69338b6e0332a9d5d300cd5a
+                  sha256: 105f7022adcfeec2cc698f500c2a83c3436822f7372177ffa2ed3d3ae7b3a80b
+                  status: SUCCESS
+                  size: 17920
+                  is_malicious: true
+                results:
+                - object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  analysis_results:
+                  - engine: AVS LOOOKUP
+                    weight: 100
+                    signature_name: FireEye.Malware.exe
+                  - weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                    engine: 'Bale ENGINE '
+                    job_id: 2487
+                  - weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                    engine: 'Bale ENGINE '
+                    job_id: 2486
+                  - anomaly_types:
+                    - FEBETA
+                    os_info: Microsoft WindowsXP 32-bit 5.1 sp3 17.0112
+                    engine: Dynamic Analysis
+                    job_id: 2487
+                    weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                  - anomaly_types:
+                    - FEBETA
+                    os_info: Microsoft Windows7 64-bit 6.1 sp1 17.0112
+                    engine: Dynamic Analysis
+                    job_id: 2486
+                    weight: 200
+                    signature_name: fe_ml_heuristic
+                    dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                  - engine: Malware Guard
+                    weight: 100
+                    signature_name: fe_ml_heuristic
+                  - engine: Static Analysis
+                    weight: 100
+                    signature_name: fe_ml_heuristic
+                  - engine: Static Analysis - YARA
+                    weight: 0
+                    signature_name: fe_ml_heuristic
+                  - first_seen: '2019-09-17T00:34:00'
+                    last_seen: '2019-12-08T04:53:00'
+                    engine: global_cache
+                    signature_name: Trojan.Small.FEC3
+                    weight: 100
+                    scan_count: 31
+                    scan_match: 30
+                artifacts_info:
+                - object_artifact_details:
+                  - object_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                    artifact_details:
+                    - video_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.flv
+                      dynamic_analysis_uuid: 17d6d69a-74d6-4b73-bc34-b610689b399c
+                      memory_dump: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.zip
+                      pcap_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/17d6d69a-74d6-4b73-bc34-b610689b399c.pcap
+                      job_id: 2487
+                      profilename: Microsoft WindowsXP 32-bit 5.1 sp3 17.0112
+                    - video_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.flv
+                      dynamic_analysis_uuid: 5c9237d4-759f-4183-91a8-08f191bdcf8f
+                      memory_dump: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.zip
+                      pcap_path: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe/5c9237d4-759f-4183-91a8-08f191bdcf8f.pcap
+                      job_id: 2486
+                      profilename: Microsoft Windows7 64-bit 6.1 sp1 17.0112
+                  os_changes: true
+                  os_changes_type: json
+                  vm_artifacts_type: zip
+                  screenshot: true
+                  vm_artifacts: true
+                  artifact_uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                  screenshot_type: gif
+                engine_results:
+                  dynamic_analysis:
+                    uuid: 4dfa1e0b-0e33-4ac7-ac24-e2680a0bcdbe
+                    is_malicious: true
+                    analysis_info: {}
+                    files_analyzed: 0
+                    overall_weight: 0
+                    total_duration: 0
+                  av_lookup:
+                    verdict: not_found
+                    signature_name: []
+                  avs_lookup:
+                    verdict: not_found
+                    signature_name: []
+                  dti_lookup:
+                    verdict: not_found
+                    signature_name: []
+                mitre_mapping:
+                - id: T1204.002
+                  name: Malicious File
+                  tactic:
+                  - execution
+                - id: T1566.001
+                  name: Spearphishing Attachment
+                  tactic:
+                  - initial_access
+                - id: T1203
+                  name: Exploitation for Client Execution
+                  tactic:
+                  - execution
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a report ID."
+                  md5:
+                    type: string
+                    example: "a32a382b8a5a906e03a83b4f3e5b7a9b"
+                    description: "This means that you did not provide a report ID."
+                  message:
+                    type: string
+                    example: "No data available"
+                    description: "This means that you did not provide a report ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /presigned-url/{report_id}:
+    get:
+      tags:
+        - Presigned-url
+      summary: Get a presigned URL
+      description: This endpoint fetches a presigned URL link to a browser viewable report.
+      operationId: getPresignedUrl
+      parameters:
+        - in: path
+          name: report_id
+          required: true
+          schema:
+            type: string
+          example: 874da611-f82a-4331-afde-5943f4facb92
+          description: "The report ID returned after successfully submitting a file."
+        - in: query
+          name: expiry
+          schema:
+            type: integer
+          example: 1
+          description: "Expiry (in hours) for browser viewable report presigned URL link. Default value is 72 hours.  Minimum is 1 hour, and maximum is 8760 hours (365 days)."
+      externalDocs:
+        description: "Learn more about generating presigned URLs below:"
+        url: "https://fireeye.dev/docs/detection-on-demand/#presigned-urls"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                    description: "This means the API was able to successfully generate a presigned URL for your report"
+                  presigned_report_url:
+                    type: string
+                    example: "https://public-feapi.marketplace.apps.fireeye.com/reports/874da611-f82a-4331-afde-5943f4facb92?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyZXBvcnup67QiOiJlZWE4NmM1Yi01YWJiLTQ3MmItYWEwYi0zYjY3NDkxM2MwZmIiLCJleHAiOjE1ODc5MjM4ODJ9.qVx5iTZKBPsbRLIc1iIiLj3BI9nzimPaSB087AHPn1Y"
+                    description: "Signed URL that will open the report in browser"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a report ID."
+                  message:
+                    type: string
+                    example: "Report ID not provided."
+                    description: "This means that you did not provide a report ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health status of service, subscription and API key
+      description: This endpoint provide health status of Service, subscription and API key
+      operationId: getHealth
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    enum: ["success", "failed"]
+                    example: "success"
+                    description: "Determines if the API key is valid and able to check the status of the service"
+                  service_status:
+                    type: string
+                    example: "RUNNING"
+                    enum: ["RUNNING","DOWN", "DEGRADED"]
+                    description: "The status of the Detection on Demand service"
+                  api_key_valid:
+                    type: boolean
+                    example: true
+                    enum: [true, false]
+                    description: "True if the API key is valid"
+                  subscription_start_date:
+                    type: string
+                    example: "2020-03-31 21:20:19"
+                    description: "Start date of subscription in UTC"
+                  subscription_end_date:
+                    type: string
+                    example: "2021-03-31 21:20:19"
+                    description: "End date of subscription in UTC"
+                  files_api_quota_total:
+                    type: integer
+                    example: 1000
+                    description: "Total number of file submissions allowed for the API key"
+                  files_api_quota_remaining:
+                    type: integer
+                    example: 1000
+                    description: "Remaining file submissions for the API key"
+                  files_api_quota_monthly:
+                    type: integer
+                    example: 300
+                    description: "Total file submissions allowed for each month for the API key. -1 if no limit on monthly submissions."
+                  files_api_quota_monthly_remaining:
+                    type: integer
+                    example: 100
+                    description: "Remaining file submissions allowed for the current month for the API key. -1 if no limit on monthly submissions."
+                  files_api_quota_daily:
+                    type: integer
+                    example: 300
+                    description: "Total file submissions allowed for each day for the API key. -1 if no limit on daily submissions."
+                  files_api_quota_daily_remaining:
+                    type: integer
+                    example: 100
+                    description: "Remaining file submissions allowed for the current day for the API key. -1 if no limit on daily submissions."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /hashes/{hash_id}:
+    get:
+      tags:
+        - Hashes
+      summary: Get hash analysis results
+      description: This endpoint fetches the results of a file submission by its MD5 hash.
+      operationId: getHashById
+      parameters:
+        - in: path
+          name: hash_id
+          required: true
+          schema:
+            type: string
+          example: "4ba739fd8c216809e485e7972597c995"
+          description: "The MD5 hash of a file you would like to request the malware analysis results for."
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  md5:
+                    type: string
+                    example: "4ba739fd8c216809e485e7972597c995"
+                    description: "This is an MD5 hash."
+                  is_malicious:
+                    type: boolean
+                    example: true
+                    enum: [true, false]
+                    description: "This is FireEye's final determination if the file is malicious or not."
+                  engine_results:
+                    type: object
+                    properties:
+                      dynamic_analysis:
+                        type: object
+                        properties:
+                          verdict:
+                            type: string
+                            enum: ["found", "not_found"]
+                            example: "not_found"
+                      av_lookup:
+                        type: object
+                        properties:
+                          first_seen:
+                            type: string
+                            example: "2019-08-31T20:36:39"
+                            description: "When this file was first seen by the av_lookup engine."
+                          last_seen:
+                            type: string
+                            example: "2019-09-18T15:46:00"
+                            description: "When this file was last seen by the av_lookup engine."
+                          signature_name:
+                            type: array
+                            items:
+                              type: string
+                              example:
+                                [
+                                  "Trojan.Grp.FEC3",
+                                  "Trojan.Genkryptik",
+                                  "fe_ml_heuristic",
+                                  "Trojan.Win.DYRE",
+                                ]
+                          verdict:
+                            type: string
+                            example: "malicious"
+                      dti_lookup:
+                        type: object
+                        properties:
+                          first_seen:
+                            type: string
+                            example: "N/A"
+                          industry:
+                            type: array
+                            items:
+                              type: string
+                          overall_weight:
+                            type: integer
+                            example: 100
+                          display_message:
+                            type: array
+                            items:
+                              type: string
+                              example: ["msg1", "msg2"]
+                          signature_name:
+                            type: array
+                            items:
+                              type: string
+                              example: ["Trojan.Grp.FEC3", "Trojan.Genkryptik"]
+                          verdict:
+                            type: string
+                            example: "malicious"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a hash ID."
+                  message:
+                    type: string
+                    example: "Hash not provided."
+                    description: "This means that you did not provide a hash ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /hashes/{hash}:
+    get:
+      tags:
+        - Hashes
+      summary: Get md5 or sha256 hash analysis results
+      description: This endpoint fetches the results of a file submission by its md5 or sha256 hash.
+      operationId: getSHA256HashById
+      parameters:
+        - in: path
+          name: hash
+          required: true
+          schema:
+            type: string
+          example: "75f12ea2f30d9c0d872dade345f30f562e6d93847b6a509ba53beec6d0b2c346"
+          description: "The MD5 or SHA256 hash of a file you would like to request the malware analysis results for."
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  sha256:
+                    type: string
+                    example: "75f12ea2f30d9c0d872dade345f30f562e6d93847b6a509ba53beec6d0b2c346"
+                    description: "This is an SHA256 hash."
+                  is_malicious:
+                    type: boolean
+                    example: true
+                    enum: [true, false]
+                    description: "This is FireEye's final determination if the file is malicious or not."
+                  engine_results:
+                    type: object
+                    properties:
+                      dynamic_analysis:
+                        type: object
+                        properties:
+                          verdict:
+                            type: string
+                            enum: ["found", "not_found"]
+                            example: "not_found"
+                      av_lookup:
+                        type: object
+                        properties:
+                          first_seen:
+                            type: string
+                            example: "2019-08-31T20:36:39"
+                            description: "When this file was first seen by the av_lookup engine."
+                          last_seen:
+                            type: string
+                            example: "2019-09-18T15:46:00"
+                            description: "When this file was last seen by the av_lookup engine."
+                          signature_name:
+                            type: array
+                            items:
+                              type: string
+                              example:
+                                [
+                                  "Trojan.Grp.FEC3",
+                                  "Trojan.Genkryptik",
+                                  "fe_ml_heuristic",
+                                  "Trojan.Win.DYRE",
+                                ]
+                          verdict:
+                            type: string
+                            example: "malicious"
+                      dti_lookup:
+                        type: object
+                        properties:
+                          first_seen:
+                            type: string
+                            example: "N/A"
+                          industry:
+                            type: array
+                            items:
+                              type: string
+                          overall_weight:
+                            type: integer
+                            example: 100
+                          display_message:
+                            type: array
+                            items:
+                              type: string
+                              example: ["msg1", "msg2"]
+                          signature_name:
+                            type: array
+                            items:
+                              type: string
+                              example: ["Trojan.Grp.FEC3", "Trojan.Genkryptik"]
+                          verdict:
+                            type: string
+                            example: "malicious"
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a hash ID."
+                  message:
+                    type: string
+                    example: "Hash not provided."
+                    description: "This means that you did not provide a hash ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /artifacts/{report_id}:
+    get:
+      tags:
+        - Artifacts
+      summary: Get artifacts for given report_id
+      description: This endpoint fetches artifacts, like a screenshot gif file, for the given report_id
+      operationId: getArtifacts
+      parameters:
+        - in: path
+          name: report_id
+          required: true
+          schema:
+            type: string
+          example: "992694b3-20ab-4245-9b4c-8f3a1b7ec3b6"
+          description: "The report ID returned after successfully submitting a file."
+        - in: query
+          name: artifact_uuid
+          schema:
+            type: string
+          example: "992694b3-20ab-4245-9b4c-8f3a1b7ec3b6"
+          description: "Submitted sample can have more that one artifacts each artifact will have its on artifact uuid which is reported as part of reports api. User need to grab artifacts uuid from reports endpoint."
+        - in : query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [screenshot,os_changes,vm_artifacts]
+          example: screenshot
+          description: "Type of artifact to download."
+      responses:
+        200:
+          description: "OK"
+          content:
+            binary/octet-stream:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that you did not provide a report ID."
+                  message:
+                    type: string
+                    example: "Report ID not provided."
+                    description: "This means that you did not provide a report ID."
+                  report_id:
+                    type: string
+                    example:  "371163d6-1c32-4467-9562-870d84150091"
+                    description: "The report ID you used when trying to get the artifact"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+  /telemetry:
+    get:
+      tags:
+        - Telemetry
+      summary: Pull results metadata in batches
+      description: This endpoint fetches metadata of completed submissions for given time interval. API also support pagination if number of records for given time period are more than 1000.
+      operationId: getTelemetry
+      parameters:
+        - in: query
+          name: size
+          schema:
+            type: integer
+          example: 100
+          description: "Count of records requested. Default value is 1000"
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [ malicious,non-malicious,all ]
+          example: malicious
+          description: "Type of submissions to fetch. Default value is 'malicious'"
+        - in: query
+          name: from
+          schema:
+            type: integer
+          example: 10
+          description: "Starting index. Default is 0"
+        - in: query
+          name: time_field
+          schema:
+            type: string
+            enum: [completed_at,started_at]
+          example: completed_at
+          description: "Field to use for start_time and end_time. Default is 'completed_at'"
+        - in: query
+          name: start_time
+          schema:
+            type: integer
+          example: 1599020028
+          description: "Epoch Timestamp for starting."
+        - in: query
+          name: end_time
+          schema:
+            type: integer
+          example: 1599192828
+          description: "Epoch Timestamp for ending."
+        - in: query
+          name: connector_type
+          schema:
+            type: string
+            enum: [box,slack,teams,s3,api,all]
+          example: box
+          description: "connector type specified, default is 'all', to get api submissions use 'api' "
+        - in: query
+          name: ioc
+          schema:
+            type: boolean
+            enum: [ true, false ]
+          example: false
+          description: "Return IOC information along with telemetry metadata"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                    description: "This is the status of response."
+                  count:
+                    type: integer
+                    example: 1
+                    description: "This is the count of overall records found for given conditions."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subscription_id:
+                          type: string
+                          example: "amkt-example"
+                          description: "Subscription id of customer."
+                        is_malicious:
+                          type: boolean
+                          example: true
+                          enum: [true, false]
+                          description: "This is FireEye's final determination if the file is malicious or not."
+                        completed_at:
+                          type: integer
+                          example: 1599128761
+                          description: "This is FireEye's time when analysis was completed for submission."
+                        urls:
+                          type: array
+                          items:
+                              type: string
+                              example:
+                                [
+                                    "example.com",
+                                ]
+                          description: "These are the urls in case of url submissions. Empty if no url"
+                        report_id:
+                          type: string
+                          example: "24b5b4c4-5877-453f-a9e7-88ad7dc94699"
+                          description: "This is the report id for submission"
+                        verdict:
+                          type: string
+                          example: "MALICIOUS"
+                          enum: ["NON-MALICIOUS", "MALICIOUS"]
+                          description: "This is the FireEye's final verdict for submission "
+                        overall_status:
+                          type: string
+                          example: "DONE"
+                          enum: [ "DONE", "RUNNING", "FAILED" ]
+                          description: "This is the FireEye's final status for submission "
+                        signature_name:
+                          type: array
+                          items:
+                              type: string
+                              example:
+                                [
+                                    "Trojan.Grp.FEC3",
+                                    "Trojan.Genkryptik",
+                                    "fe_ml_heuristic",
+                                    "Trojan.Win.DYRE",
+                                ]
+                          description: "These are the  FireEye's final signatures for submission "
+                        started_at:
+                          type: integer
+                          example: 1599128761
+                          description: "This is FireEye's time when analysis was started for submission."
+                        file_extension:
+                          type: string
+                          example: "exe"
+                          description: "This is extension of file submitted"
+                        file_name:
+                          type: string
+                          example: "sample.exe"
+                          description: "This is the name of file submitted"
+                        file_size:
+                          type: integer
+                          example: 100
+                          description: "This is the size of file submitted in bytes"
+                        md5:
+                          type: string
+                          example: "bc527343c7ffc103111f3a694b004e2f"
+                          description: "This is the md5 hash of file submitted"
+                        sha1:
+                          type: string
+                          example: "f6c32e81615adcd58786e45ba1031b2ae7c4da04"
+                          description: "This is the sha1 hash of file submitted"
+                        sha256:
+                          type: string
+                          example: "24e0b2bea368d3e9ac374a7ec05db6ded6e4f86e6a3652d9a709fccaa3e49daf"
+                          description: "This is the sha256 hash of file submitted"
+                        file_magic:
+                          type: string
+                          example: "PE32 executable (GUI) Intel 80386, for MS Windows\\012- data"
+                          description: "This is the lib magic of file submitted"
+                        connector_information:
+                          description: "This is meta information about the submitted sample, will be empty for api submissions"
+                          type: object
+                          properties:
+                            file_path:
+                              type: string
+                              example: "sample/folder1"
+                              description: "Path of file in cconenctor."
+                            file_name:
+                              type: string
+                              example: "sample.exe"
+                              description: "Name of submitted file."
+                            file_id:
+                              type: string
+                              example: "12345678"
+                              description: "Id of file, if provided by integration."
+                            connector_type:
+                              type: string
+                              example: "box"
+                              description: "Type of connector."
+        400:
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: "failed"
+                    description: "This means that some field is incorrect."
+                  message:
+                    type: string
+                    example: "invalid 'size'"
+                    enum: [ invalid 'size' ,invalid 'from', invalid 'start_time', invalid 'end_time']
+                    description: "This means that you did not provide a hash ID."
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forbidden"
+        429:
+          description: "Too Many Requests"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitExceeded"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+components:
+  securitySchemes:
+    FireEyeAPIKey:
+      type: apiKey
+      name: feye-auth-key
+      in: header
+      description: |
+        See the [docs](https://fireeye.dev/docs/detection-on-demand/#prerequisites) for information on generating an API key.
+  schemas:
+    RateLimitExceeded:
+      properties:
+        status:
+          type: string
+          example: "failed"
+          description: "You have hit the rate limit for the account containing your API key and your request has not gone through."
+        message:
+          type: string
+          example: "api key limit exhausted"
+          description: "You have hit the rate limit for the account containing your API key and your request has not gone through."
+    InternalServerError:
+      properties:
+        message:
+          type: string
+          example: "Internal server error."
+          description: "Something went wrong on our end."
+    Unauthorized:
+      properties:
+        status:
+          type: string
+          example: "failed"
+          description: "You did not provide an API key."
+        message:
+          type: string
+          example: "Internal server error."
+          description: "You did not provide an API key."
+    Forbidden:
+      properties:
+        status:
+          type: string
+          example: "failed"
+          description: "You provided an invalid API key."
+        message:
+          type: string
+          example: "Invalid api key"
+          description: "You provided an invalid API key."
+    UnsupportedMediaType:
+      properties:
+        status:
+          type: string
+          example: "failed"
+          description: "The input may have been empty or malformed"
+        message:
+          type: string
+          example: "url list is empty"
+          description: "The array of URLs is empty"
+    ReportNotExtended:
+      required:
+      - report_id
+      - overall_status
+      - is_malicious
+      - started_at
+      - completed_at
+      - duration
+      - md5
+      - sha256
+      properties:
+        report_id:
+          description: Unique identifier for a submission or an object
+          type: string
+        overall_status:
+          description: Status of submission FAILED/RUNNING/DONE
+          enum: [FAILED,RUNNING,DONE]
+          type: string
+        api_key_name:
+          description: Name of the key, which is used while submission
+          type: string
+        analysis_mode:
+          description: Analysis mode for submission (sandbox or live)
+          type: string
+        retro:
+          description: retro triggered for submission
+          type: boolean
+        is_malicious:
+          description: Malicious flag for submission
+          type: boolean
+        started_at:
+          description: Sample submitted time in UTC
+          type: string
+        completed_at:
+          description: Sample completed time in UTC
+          type: string
+        duration:
+          description: duration take by sample for submission
+          type: integer
+        file_name:
+          description: Sample name, for urls, it is complete url
+          type: string
+        file_size:
+          description: In case of file submission, it is the size of file in bytes
+          type: integer
+        file_extension:
+          description: File extension of a submitted sample, in case of urls, it is url
+          type: string
+        signatures:
+          description: Comma separated list of Signatures
+          type: string
+        type:
+          description: File extension of a submitted sample, in case of urls, it is url
+          type: string
+        name:
+          description: Sample name, for urls, it is complete url
+          type: string
+        size:
+          description: In case of file submission, it is the size of file in bytes
+          type: integer
+        md5:
+          description: md5sum of a submission object
+          type: string
+        sha256:
+          description: sha256 of a submission object
+          type: string
+        sha1:
+          description: sha1 of a submission object
+          type: string
+        magic:
+          description: lib magic of file submitted
+          type: string
+        verdict:
+          description: overall verdict of submission it can be - MALICIOUS, NON-MALICIOUS,
+            RISKWARE, CUSTOM MALICIOUS, CUSTOM RISKWARE
+          enum: [MALICIOUS,NON-MALICIOUS,RISKWARE,CUSTOM MALICIOUS,CUSTOM RISKWARE]
+          type: string
+        retro_by:
+          description: list of names of engines for which retro triggered
+          type: array
+          required:
+          - name
+          items:
+            type: string
+        connector_information:
+          description: connector information for connector submission
+          type: object
+          required:
+          - connector_type
+          - connector_registration_id
+          properties:
+            connector_type:
+              description: connector type of submission
+              type: string
+            connector_registration_id:
+              description: connector registration id for the submission
+              type: integer
+            file_name:
+              description: file name of submission
+              type: string
+            file_version_id:
+              description: file_version_id of the file. Applicable for box integration
+              type: string
+            urls:
+              description: urls of submission
+              type: array
+              required:
+              - url
+              items:
+                type: string
+        signature_name:
+          description: List of signatures extracted by all engines
+          type: array
+          required:
+          - name
+          items:
+            type: string
+        email_context:
+          description: email context for email submission
+          type: object
+          properties:
+            subject:
+              description: Subject of email
+              type: string
+            header_size:
+              description: size of header of email
+              type: integer
+            email_from:
+              description: email address of sender
+              type: string
+            email_to:
+              description: email address of receiver
+              type: string
+            extracted_urls:
+              description: Count of url extracted from email
+              type: integer
+            extracted_attachments:
+              description: Count of attachments extracted from email
+              type: integer
+            queue_id:
+              description: queueid of email
+              type: string
+            messageid:
+              description: message id of email
+              type: string
+    ReportExtended:
+      required:
+      - report_id
+      - overall_status
+      - is_malicious
+      - started_at
+      - completed_at
+      - duration
+      - md5
+      - sha256
+      properties:
+        report_id:
+          description: Unique identifier for a submission or an object
+          type: string
+        overall_status:
+          description: Status of submission FAILED/RUNNING/DONE
+          enum: [FAILED,RUNNING,DONE]
+          type: string
+        api_key_name:
+          description: Name of the key, which is used while submission
+          type: string
+        analysis_mode:
+          description: Analysis mode for submission (sandbox or live)
+          type: string
+        retro:
+          description: retro triggered for submission
+          type: boolean
+        is_malicious:
+          description: Malicious flag for submission
+          type: boolean
+        started_at:
+          description: Sample submitted time in UTC
+          type: string
+        completed_at:
+          description: Sample completed time in UTC
+          type: string
+        duration:
+          description: duration take by sample for submission
+          type: integer
+        file_name:
+          description: Sample name, for urls, it is complete url
+          type: string
+        file_size:
+          description: In case of file submission, it is the size of file in bytes
+          type: integer
+        file_extension:
+          description: File extension of a submitted sample, in case of urls, it is url
+          type: string
+        signatures:
+          description: Comma separated list of Signatures
+          type: string
+        type:
+          description: File extension of a submitted sample, in case of urls, it is url
+          type: string
+        name:
+          description: Sample name, for urls, it is complete url
+          type: string
+        size:
+          description: In case of file submission, it is the size of file in bytes
+          type: integer
+        md5:
+          description: md5sum of a submission object
+          type: string
+        sha256:
+          description: sha256 of a submission object
+          type: string
+        sha1:
+          description: sha1 of a submission object
+          type: string
+        magic:
+          description: lib magic of file submitted
+          type: string
+        verdict:
+          description: overall verdict of submission it can be - MALICIOUS, NON-MALICIOUS,
+            RISKWARE, CUSTOM MALICIOUS, CUSTOM RISKWARE
+          enum: [MALICIOUS,NON-MALICIOUS,RISKWARE,CUSTOM MALICIOUS,CUSTOM RISKWARE]
+          type: string
+        retro_by:
+          description: list of names of engines for which retro triggered
+          type: array
+          required:
+          - name
+          items:
+            type: string
+        connector_information:
+          description: connector information for connector submission
+          type: object
+          required:
+          - connector_type
+          - connector_registration_id
+          properties:
+            connector_type:
+              description: connector type of submission
+              type: string
+            connector_registration_id:
+              description: connector registration id for the submission
+              type: integer
+            file_name:
+              description: file name of submission
+              type: string
+            file_version_id:
+              description: file_version_id of the file. Applicable for box integration
+              type: string
+            urls:
+              description: urls of submission
+              type: array
+              required:
+              - url
+              items:
+                type: string
+        signature_name:
+          description: List of signatures extracted by all engines
+          type: array
+          required:
+          - name
+          items:
+            type: string
+        email_context:
+          description: email context for email submission
+          type: object
+          properties:
+            subject:
+              description: Subject of email
+              type: string
+            header_size:
+              description: size of header of email
+              type: integer
+            email_from:
+              description: email address of sender
+              type: string
+            email_to:
+              description: email address of receiver
+              type: string
+            extracted_urls:
+              description: Count of url extracted from email
+              type: integer
+            extracted_attachments:
+              description: Count of attachments extracted from email
+              type: integer
+            queue_id:
+              description: queueid of email
+              type: string
+            messageid:
+              description: message id of email
+              type: string
+        extracted_objects:
+          description: Extracted urls or child objects within a submission
+          type: array
+          items:
+            title: Analysis Object
+            description: Details about each extracted object or url within a submission
+            type: object
+            required:
+            - object_uuid
+            - md5
+            - sha256
+            - verdict
+            properties:
+              object_uuid:
+                description: Unique identifier for extracted object
+                type: string
+              analyses_start_time:
+                description: Sample submitted time in UTC
+                type: string
+              md5:
+                description: md5sum of an extracted object
+                type: string
+              sha256:
+                description: sha256 of an extracted object
+                type: string
+              verdict:
+                description: 'Analysis verdict of an object: it can be - MALICIOUS, NON-MALICIOUS,
+                  RISKWARE, CUSTOM MALICIOUS, CUSTOM RISKWARE'
+                type: string
+              url_normalized:
+                description: Normalized for of url
+                type: string
+              submission_uuid:
+                description: Unique identifier for submission
+                type: string
+              status:
+                description: 'Analysis status: FAILED, IN-PROGRESS, SUCCESS'
+                type: string
+              type:
+                description: File extension of an extracted object, for url - url
+                type: string
+              object_type:
+                description: File extension of an extracted object, for url - url
+                type: string
+              name:
+                description: File name of an extracted object
+                type: string
+              size:
+                description: File size in Bytes
+                type: integer
+              complete_time:
+                description: Timestamp in UTC when object analysis completed
+                type: string
+              signature_name:
+                description: Signature name derived from analysis results
+                type: string
+              is_malicious:
+                description: Malicious flag for extracted object
+                type: boolean
+              anomaly_types:
+                description: 'Anomalies triggered for an object during analysis: RISKWARE
+                  etc'
+                type: array
+                items:
+                  type: string
+                uniqueItems: true
+              additional_info:
+                description: Signature name derived based on all the results, from both
+                  Static Analysis and Dynamic Analysis of an extracted object , any other
+                  additional information about extracted object
+                type: object
+                properties: {}
+        results:
+          description: Static & Dynamic Analysis results for both extracted objects and
+            as well for submission in a form of JSON array
+          type: array
+          items:
+            title: Analysis Result
+            description: Each extracted object's analysis result
+            type: object
+            required:
+            - object_uuid
+            - analysis_results
+            properties:
+              object_uuid:
+                description: Analysis objects' unique identifier for which the results are
+                  generated for
+                type: string
+              analysis_results:
+                description: Both SA & DA analysis results
+                type: array
+                items:
+                  title: Analysis Result
+                  description: SA/DA Analysis result, along with BALE correlation results
+                  type: object
+                  required:
+                  - engine
+                  properties:
+                    object_uuid:
+                      description: Analysis objects' unique identifier for which the results
+                        are generated for
+                      type: string
+                    engine:
+                      description: 'Analysis engine name: yara, av-match, OSChanges, NetworkAnomaly,
+                        VmSigMatch and BALE etc'
+                      type: string
+                    signature_name:
+                      description: Signature that got triggered
+                      type: integer
+                    job_id:
+                      description: 'Dynamic Analysis job or result uuid: Usually will be
+                        present for OsChanges, NetworkAnomaly VmSigMatch and BALE engines'
+                      type: string
+                    dynamic_analysis_uuid:
+                      description: 'Dynamic Analysis job or result uuid: Usually will be
+                        present for OsChanges, NetworkAnomaly VmSigMatch and BALE engines'
+                      type: string
+                    weight:
+                      description: Assigned weight for a job. Any weight >=100 will be malicious,
+                        otherwise non-malicious
+                      type: integer
+                      minimum: 0
+                    signature_id:
+                      description: Signature Id defined for signature name. Mostly the field
+                        will be blank or null.
+                      type: integer
+                    os_info:
+                      description: OS name on which the dynamic analysis is performed (Profile)
+                      type: string
+                    channel:
+                      description: channel encoded in base64
+                      type: string
+                    anomaly_types:
+                      description: Anomalies triggered for an OSChange job
+                      type: array
+                      items:
+                        type: string
+                      uniqueItems: true
+                    additional_info:
+                      description: Additional details of a static or dynamic job
+                      type: object
+                      properties: {}
+        artifacts_info:
+          description: Details of artifacts generated for submission
+          type: array
+          items:
+            title: Object's Artifacts Info
+            description: Each object's Artifacts Info
+            type: object
+            properties:
+              artifact_uuid:
+                description: Artifact uuid of object to be used in artifacts api
+                type: string
+              os_changes:
+                description: Field to check if os_changes present
+                type: boolean
+              os_changes_type:
+                description: type of os changes file
+                type: boolean
+              vm_artifacts:
+                description: Field to check if vm_artifacts present
+                type: boolean
+              vm_artifacts_type:
+                description: 'type of vm_artifacts file '
+                type: boolean
+              screenshot:
+                description: Field to check if screenshot present
+                type: boolean
+              screenshot_type:
+                description: type of screenshot file
+                type: boolean
+              object_artifact_details:
+                title: Artifact object details
+                type: object
+                properties:
+                  object_uuid:
+                    description: unique identifier for object
+                    type: string
+                  artifact_details:
+                    title: Object's Artifacts Info
+                    description: Each object's Artifacts Info
+                    type: object
+                    properties:
+                      video_path:
+                        description: path of video file, NA if not present
+                        type: string
+                      dynamic_analysis_uuid:
+                        description: dynamic analysis unique id
+                        type: string
+                      memory_and_file_dump:
+                        description: path of memory dump file,NA if not present
+                        type: string
+                      pcap_path:
+                        description: path of pcap file , NA if not present
+                        type: string
+                      profilename:
+                        description: vm profile generating artifacts
+                        type: string
+        mitre_mapping:
+          description: Mitre mapping in a form of JSON array
+          type: array
+          items:
+            title: Mitre Attack Mapping
+            description: Names and Tactics from Mitre attack database
+            type: object
+            required:
+            - id
+            - name
+            - tactic
+            properties:
+              id:
+                description: ID of the Mitre attack tactic
+                type: string
+              name:
+                description: Name of the Mitre attack tactic
+                type: string
+              tactic:
+                description: Mitre attack tactic
+                type: array
+                items:
+                  type: string
+                  example:
+                    [
+                      "initial_access",
+                      "execution",
+                      "defense_evasion"
+                    ]
+security:
+  - FireEyeAPIKey: []
+tags:
+  - name: Files
+    description: Upload files to Detection On Demand
+  - name: Reports
+    description: Retrieve malware reports of your uploaded files
+  - name: Presigned-url
+    description: Retrieve presigned URL link to a browser viewable report
+  - name: Hashes
+    description: Retrieve malware results of a given MD5 hash
+  - name: Artifacts
+    description: Retrieve artifact for given report_id
