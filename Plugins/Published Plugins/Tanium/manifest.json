@@ -3,7 +3,8 @@
     "Name": "Tanium",
     "DisplayName": "Tanium (Preview)",
     "Icon": "https://www.tanium.com/wp-content/uploads/Tanium-LogoBug-FullColor-Positive.png",
-    "Description": "Provide analysts of all skill levels tools to make informed decisions and confidently take decisive actions using Tanium’s real-time endpoint data.",
+    "Description": "Provide analysts of all skill levels tools to make informed decisions and confidently take decisive actions using Tanium's real-time endpoint data.",
+    "DescriptionDisplay": "Provide analysts of all skill levels tools to make informed decisions and confidently take decisive actions using Tanium's real-time endpoint data.",
     "Settings": [
       {
         "Name": "TaniumInstanceUrl",
@@ -20,125 +21,135 @@
       "Key": "session",
       "Location": "Header",
       "AuthScheme": ""
-    }
+    },
+    "Category": "Other",
+    "PublishStatus": "Public",
+    "Version": "1.0.0"
   },
   "SkillGroups": [
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_child_processes_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_child_processes_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/count_endpoints_having_package_version_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/count_endpoints_having_package_version_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/get_vulnerability_test_results_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/get_vulnerability_test_results_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_endpoints_having_package_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_endpoints_having_package_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_endpoints_having_process_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_endpoints_having_process_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_endpoints_vulnerable_to_cve_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_endpoints_vulnerable_to_cve_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_process_hashes_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_process_hashes_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_processes_connected_to_ip_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_processes_connected_to_ip_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_processes_ran_as_user_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_processes_ran_as_user_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/fetch_sensor_results_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/fetch_sensor_results_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_file_operations_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_file_operations_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_service_module_details_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_hashes_of_file_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_service_process_details_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_service_module_details_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/get_logged_in_user_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_service_process_details_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_wmi_event_consumers_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/get_logged_in_user_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/get_process_view_url_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_wmi_event_consumers_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     },
     {
       "Format": "API",
       "Settings": {
-        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-03-26_14-59-14_1.1.2.0000/security-copilot/list_file_details_v1.json",
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/get_process_view_url_v2.json",
+        "EndpointUrlSettingName": "TaniumInstanceUrl"
+      }
+    },
+    {
+      "Format": "API",
+      "Settings": {
+        "OpenApiSpecUrl": "https://content.tanium.com/files/published/partner-integration/2024-11-19_14-33-44_1.4.32.0000/security-copilot/list_file_details_v2.json",
         "EndpointUrlSettingName": "TaniumInstanceUrl"
       }
     }
