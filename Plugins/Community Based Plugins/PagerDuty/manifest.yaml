@@ -1,0 +1,24 @@
+Descriptor:
+  Name: PagerDuty
+  DisplayName: PagerDuty (Preview)
+  DescriptionDisplay: Get access to PagerDuty to query incident and alerts
+  Description: |-
+    Use this skillset to call PagerDuty APIs to perform actions accross the PagerDuty platform.
+    - This skill invokes PagerDuty's REST API
+    - Query to get a list of incidents, return a list of incident details
+    - Query to get an incident detail information by its id
+    - Query to get all alerts related to an incident by incident id
+    - Query to get detail of an alert by alert id and incident id
+  Icon: https://raw.githubusercontent.com/truongphung12947/copilot-manifest/main/pagerduty/pagerduty_transparent.png
+  SupportedAuthTypes:
+    - APIKey
+  Authorization:
+    Type: APIKey
+    Key: Authorization
+    Location: Header
+    AuthScheme: ''
+
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://raw.githubusercontent.com/truongphung12947/copilot-manifest/main/pagerduty/api-specs.yaml
