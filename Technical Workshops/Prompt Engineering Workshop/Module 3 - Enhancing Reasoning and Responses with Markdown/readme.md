@@ -1,25 +1,26 @@
-<!-- Author Rick Kotlarz -->
-<!-- Last updated 2025-March-17 -->
+## Module 3 - Enhancing Reasoning and Response with Markdown - Security Copilot
 
-## Module 2 - Enhancing reasoning and formatting with Markdown
+![Security Copilot Logo](../../.././Images/ic_fluent_copilot_64_64%402x.png)
 
-![Security Copilot Logo](https://github.com/Azure/Copilot-For-Security/blob/main/Images/ic_fluent_copilot_64_64%402x.png)
+Authors: Rick Kotlarz & Craig Freyman<br>
+Updated: 2025-April-4
 
-#### ⌛ Estimated time to complete this lab: 15 minutes
-#### 🎓 Level: 200 (Intermediate)
+#### ⌛ Estimated time to complete this lab: 30 minutes
+#### 🎓 Level: 300 (Intermediate)
 
-The following example prompts demonstrate how users can enhance both the output and the reasoning behind that output by using Markdown. Large Language Models (LLMs) interpret context and follow instructions more effectively when prompts include delimiters and Markdown. While natural language can be used, it often requires more detailed explanations, which many users may not be willing to provide. By offering clear instructions and utilizing Markdown, as outlined in this module, users can reduce the likelihood of output inconsistencies.
+1. [Introduction](#introduction)
+2. [Large Language Model prompt engineering best practices](#large-language-model-prompt-engineering-best-practices)
+3. [Initial prompt](#initial-prompt)
+4. [Summarizing, reasoning, and recommendations](#summarizing-reasoning-and-recommendations)
+5. [Creating links from alert IDs](#creating-links-from-alert-ids)
+6. [Ensuring consistent formatting](#ensuring-consistent-formatting)
+7. [Leveraging Promptbooks](#leveraging-promptbooks)
 
-LLMs often aren't fine-tuned to fully understand the specific context of a user's query. While platforms like Security Copilot help improve prompting by including system prompts that emphasize Responsible AI (RAI) and the intended use of plugins or skills, these might not always meet the user's expectations. To bridge this gap, users should provide additional context and direction, aligning with both the [Security Copilot prompt engineering best practices](https://learn.microsoft.com/en-us/copilot/security/prompting-tips) and general LLM prompt engineering best practices.
+## Introduction
 
-This module illustrates how users can combine the referenced Security Copilot prompt engineering best practices with general LLM prompt engineering best practices.
+The following example prompts demonstrate how users can enhance both the output and the reasoning behind that output by using Markdown. Large Language Models (LLMs) interpret context and follow instructions more effectively when prompts include delimiters and Markdown. While natural language can be used, it often requires more - explanations, which many users may not be willing to provide. By offering clear instructions and utilizing Markdown, as outlined in this module, users can reduce the likelihood of output inconsistencies.
 
-1. [Large Language Model prompt engineering best practices](#large-language-model-prompt-engineering-best-practices)
-2. [Initial prompt](#initial-prompt)
-3. [Summarizing, reasoning, and recommendations](#summarizing-reasoning-and-recommendations)
-4. [Creating links from alert IDs](#creating-links-from-alert-ids)
-5. [Ensuring consistent formatting](#ensuring-consistent-formatting)
-6. [Leveraging Promptbooks](#leveraging-promptbooks)
+LLMs often aren't fine-tuned to fully understand the specific context of a user's query. While platforms like Security Copilot help improve prompting by including system prompts that emphasize Responsible AI (RAI) and the intended use of plugins or skills, these might not always meet the user's expectations. To bridge this gap, users should provide additional context and direction, aligning with both the [Security Copilot prompt engineering best practices](https://learn.microsoft.com/en-us/copilot/security/prompting-tips) and general prompt engineering best practices that apply to most LLMs.
 
 ### Large Language Model prompt engineering best practices
 
@@ -31,26 +32,23 @@ Effective prompting is key to obtaining accurate, relevant, and useful responses
 4. **Include Examples** - Provide one or more examples to show the desired pattern or style. This helps the model infer and replicate the expected response format.
 5. **Be Clear and Specific** - Craft precise, unambiguous prompts, supplying enough context to help the model understand and fulfill the request accurately.
 6. **Specify Tone** - If tone is important, specify it in the prompt. Review the model’s outputs iteratively and refine your prompts to improve the quality of responses.
-7. **Iterative Refinement** - Continuously review the model's outputs and adjust your prompts as needed to improve response quality.
+7. **Iterative Refinement** - Continuously review the model's outputs, adjust your prompts and iterate as needed to improve response quality.
 
 
 ### Initial prompt
 
-Running a prompt without specifying output expectations can lead to inconsistent formatting, such as alternating between tables and bullet points. When users don't provide detailed instructions on the desired output format, the skill will return all available data. 
-
-In this example, I prompt Security Copilot to use the Purview plugin and retrieve the 10 DLP alerts with a severity of high over the past 30 days:
+Running a prompt without specifying output expectations can lead to inconsistent formatting, such as output alternating between tables and bullet points. In this example, I prompt Security Copilot to use the Purview plugin and retrieve the 10 DLP alerts with a severity of high over the past 30 days:
 
 ```
 Using the Purview plugin, get the last 10 DLP alerts with a severity of high over the past 30 days. Format the output in a table.
 ```
 I can download the response output by selecting **"Export to Excel"** or simply view it from within the browser by selecting the icon to the right of the "Export to Excel" button.
 
-![Image](./images/001_module2_prompt_no_Markdown.png)
-
+![Image](./images/001_module3_prompt_no_Markdown.png)
 
 ### Summarizing, reasoning, and recommendations
 
-Looking over these alerts, I can see that it includes a few of the same users. Rather than viewing each alert line-by-line in a table and having to mentally group alerts, I'll use the **/AskGPT** skill, as illustrated in [Module 1 - Formatting with markdown](https://github.com/Azure/Security-Copilot/tree/main/Technical%20Workshops/Markdown%20Workshop/Module%201%20-%20Formatting%20with%20markdown), to instruct Security Copilot to:
+Looking over these alerts, I can see that it includes a few of the same users. Rather than viewing each alert line-by-line in a table and having to mentally group alerts, I'll reprompt Security Copilot and instruct it to:
 
 - Summarize all data, grouped by users.
 - Highlight significant trends, behaviors, or issues observed.
@@ -58,9 +56,10 @@ Looking over these alerts, I can see that it includes a few of the same users. R
 - Provide a summary with actionable recommendations to mitigate risk, prioritize incidents, and improve compliance.
 
 ```
-/AskGPT For each user, write a concise, actionable summary addressed to their manager. Begin the summary with the user's User Principal Name (UPN). Highlight significant trends, behaviors, or issues observed in their DLP alerts using chain-of-thought reasoning to identify patterns, similarities, or contributing factors across the alerts. Provide clear, actionable recommendations to mitigate risk, prioritize incidents, and improve compliance.
+Using the Purview plugin, get the last 10 DLP alerts with a severity of high over the past 30 days. For each user, write a concise, actionable summary addressed to their manager. Begin the summary with the user's User Principal Name (UPN). Highlight significant trends, behaviors, or issues observed in their DLP alerts using chain-of-thought reasoning to identify patterns, similarities, or contributing factors across the alerts. Provide clear, actionable recommendations to mitigate risk, prioritize incidents, and improve compliance.
 ```
-![Image](./images/002_module2_summarize_reason_and_recommend.png)
+![Image](./images/002_module3_summarize_reason_and_recommend.png)
+
 ### Creating links from alert IDs
 
 Being satisfied with the summarizing, reasoning, and recommendations output, I'd like to include clickable links that make it easier to view the actual alert. While the initial output does not include a clickable link, it does include the Alert ID.
@@ -75,35 +74,39 @@ To create a link, I simply need to ensure that the data required to support a gi
 
 Now that I have the Tenant ID, I can hardcode that part of the URL. From my experience working in Defender XDR and Purview, I know that alert IDs associated with Purview include a preceding 'dl' that I'll need to remove if I want to view these alerts from the Purview portal. 
 
-To generate this URL, I will again use the **/AskGPT** skill and prompt Security Copilot to:
+To generate this URL, I will prompt Security Copilot to perform the following:
 - Create a link for the alerts.
 - Provide it with the root URL that contains my Tenant ID.
 - Ask it to remove the first two characters of the alert ID.
 
-⚠️ Please read next prompt before executing and don't forget to insert your Tenant ID in the URL before pasting.
+⚠️ Don't forget to insert your Tenant ID in the prompt before pasting. Additionally only use this prompt if you prefer Purview portal links.
 
 ```
-/AskGPT For each user include a direct link to the alert in Microsoft Purview portal using the following URL format:  
+Using the Purview plugin, get the last 10 DLP alerts with a severity of high over the past 30 days. For each user, write a concise, actionable summary addressed to their manager. Begin the summary with the user's User Principal Name (UPN). Highlight significant trends, behaviors, or issues observed in their DLP alerts using chain-of-thought reasoning to identify patterns, similarities, or contributing factors across the alerts. Provide clear, actionable recommendations to mitigate risk, prioritize incidents, and improve compliance.
+
+For each user include a direct link to the alert in Microsoft Purview portal using the following URL format:  
 Purview: [{Alert Title}](https://purview.microsoft.com/datalossprevention/alertspage/fullpage?tid={Replace-with-your-tenant-ID-and-remove-curly-brackets}&alertsviewid=overview&id={alertId with the first two 'dl' characters of the AlertID removed})
 ```
 
 ⚠️ If I'd prefer working out of Defender XDR instead of Purview, I can leave the preceding 'dl' characters in the Alert ID and use the Defender XDR URL `https://security.microsoft.com/alerts/{alert ID}`, modifying the prompt accordingly. To avoid confusing the LLM, I'll choose either Purview or Defender XDR before pasting the prompt.
 
 ```
-/AskGPT For each user include a direct link to the alert in Defender XDR portal using the following URL format:  
+Using the Purview plugin, get the last 10 DLP alerts with a severity of high over the past 30 days. For each user, write a concise, actionable summary addressed to their manager. Begin the summary with the user's User Principal Name (UPN). Highlight significant trends, behaviors, or issues observed in their DLP alerts using chain-of-thought reasoning to identify patterns, similarities, or contributing factors across the alerts. Provide clear, actionable recommendations to mitigate risk, prioritize incidents, and improve compliance.
+
+For each user include a direct link to the alert in Defender XDR portal using the following URL format:  
 [{Alert Title}](https://security.microsoft.com/alerts/{alert Id})
 ```
 
 If the above prompt failed, verify that you updated the Tenant ID.
 
-![Image](./images/003_module2_creating_links_from_alert_IDs.png)
+![Image](./images/003_module3_creating_links_from_alert_IDs.png)
 
 
 ### Ensuring consistent formatting
 
 While I value the friendly, conversational, and non-repetitive nature that Generative AI provides, I need the output to be consistently formatted each time. To achieve this, I'll provide clear instructions that integrate my previous prompts, URL modifications, and additional format guidelines.
 
-Since large language models (LLMs) work best when using specific delimiters, and Markdown is a well-established language for such delimiters, I will combine both the [Security Copilot prompt engineering best practices](https://learn.microsoft.com/en-us/copilot/security/prompting-tips) and the [general best practices for effective prompting of LLMs](#general-best-practices-for-effective-prompting-llms) outlined at the top of this page. By leveraging both of these resources, I’ve not only harnessed the power of Security Copilot, but I will also ensure that the reasoning output is consistently formatted each time I run this prompt.
+Because large language models (LLMs) perform best with defined delimiters and Markdown is a widely accepted standard I’ll apply both the [Security Copilot prompt engineering best practices](https://learn.microsoft.com/en-us/copilot/security/prompting-tips) and the [general best practices for effective prompting of LLMs](#general-best-practices-for-effective-prompting-llms) outlined at the top of this page. By combining these approaches, I can fully leverage Security Copilot while ensuring the reasoning and output formating remains consistent with each run.
 
 ```
 Using the Purview plugin, get the last 10 DLP alerts with a severity of high. Assume the role of an expert **Data Loss Prevention (DLP) engineer** tasked with generating a **professional, manager-focused summary** of a DLP triage workflow for DLP alerts. 
@@ -136,7 +139,10 @@ https://purview.microsoft.com/datalossprevention/alertspage/fullpage?tid=0527ecb
 ---
 ```
 
-![Image](./images/004_module2_final_prompt_with_Markdown.png)
+![Image](./images/004_module3_final_prompt_with_Markdown.png)
+
+
+⚠️ Note: This prompt was created by applying the [Large Language Model prompt engineering best practices](#large-language-model-prompt-engineering-best-practices) discussed earlier in this module. It was refined through multiple iterations to achieve the desired format and output.
 
 ---
 
@@ -146,27 +152,28 @@ To make repeating the execution of this prompt easier, I'll create a promptbook.
 
 To create a promptbook from within a session, I simply need to click the checkbox on the top left corner of the prompt, and select the "Create promptbook" icon at the top. However, it's important to note that promptbooks use angle brackets`< >` to denote variables. As such, the existence of them must only be used for variables without spaces.
 
-![Image](./images/005_module2_promptbook_step_1.png)
+![Image](./images/005_module3_promptbook_step_1.png)
 
 Next, I'll provide a name, relevant tags (hit ENTER after each tag), and a description. After this, I'll hover my mouse over the prompt box and click the pencil icon to edit the prompt.
 
-![Image](./images/005_module2_promptbook_step_2.png)
+![Image](./images/005_module3_promptbook_step_2.png)
 
 Since I don't always want "10" alerts exactly, I'll make this a variable by replacing the number "10" with `<Number_of_DLP_alerts>` and surrounding it with angle brackets (like this `<Number_of_DLP_alerts>`), followed by the checkbox icon located where the pencil icon was previously.
 
-![Image](./images/005_module2_promptbook_step_3.png)
+![Image](./images/005_module3_promptbook_step_3.png)
 
 After scrolling down, I can see that the variable was accepted. Additionally, if I want to share this promptbook with others, I can do so here.
 
-![Image](./images/005_module2_promptbook_step_4.png)
+![Image](./images/005_module3_promptbook_step_4.png)
 
 Finally, I'll save it by selecting "Create" at the bottom left of the promptbook.
 
-![Image](./images/005_module2_promptbook_step_5.png)
+![Image](./images/005_module3_promptbook_step_5.png)
 
 I can now view and execute the promptbook from the Home screen by filtering on "Promptbooks" or from the Promptbook Library.
 
-![Image](./images/005_module2_promptbook_step_6.png)
+![Image](./images/005_module3_promptbook_step_6.png)
+
 ---
 
-For the official Markdown specification, visit [CommonMark](https://commonmark.org/help/)
+✈️ Continue to [Module 4 - Refining Reasoning and Response with Markdown](.././Module%204%20-%20Refining%20Reasoning%20and%20Response%20with%20Markdown)
