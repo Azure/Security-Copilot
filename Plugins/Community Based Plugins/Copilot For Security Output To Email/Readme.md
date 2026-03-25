@@ -23,7 +23,7 @@ To deploy the "Send Copilot Output to Email" plugin, follow these steps:
 
 2. **Deploy Logic App**: Deploy the Logic App included in the solution to your Azure environment. Ensure that it is properly configured and connected to Copilot.
 
-   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https://github.com/Azure/Copilot-For-Security/blob/main/Custom%20Plugins/Community%20Based%20Plugins/Copilot%20For%20Security%20Output%20To%20Email/SendCopilotOutputToEmail%20Logic%20App/azuredeploy.json" target="_blank">
+   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FSecurity-Copilot%2Frefs%2Fheads%2Fmain%2FPlugins%2FCommunity%2520Based%2520Plugins%2FCopilot%2520For%2520Security%2520Output%2520To%2520Email%2FSendCopilotOutputToEmail%2520Logic%2520App%2Fazuredeploy.json" target="_blank">
     <img src="https://aka.ms/deploytoazurebutton"/>
 </a>
 
@@ -38,8 +38,8 @@ To deploy the "Send Copilot Output to Email" plugin, follow these steps:
 - Copilot investigation and action using the Custom plugin to send an email of the output
 
 You can find a sample here :
-![Copilot Output to Email](https://github.com/Azure/Copilot-For-Security/blob/main/Custom%20Plugins/Community%20Based%20Plugins/Images/Copilotoutputtoemail1.png)
+![Copilot Output to Email](https://github.com/Azure/Security-Copilot/blob/main/Plugins/Community%20Based%20Plugins/Images/Copilotoutputtoemail1.png)
 
 The Eamil Output being received
-![Copilot Output to Email](https://github.com/Azure/Copilot-For-Security/blob/main/Custom%20Plugins/Community%20Based%20Plugins/Images/Copilotoutputtoemail2.png)
+![Copilot Output to Email](https://github.com/Azure/Security-Copilot/blob/main/Plugins/Community%20Based%20Plugins/Images/Copilotoutputtoemail2.png)
 
