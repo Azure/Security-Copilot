@@ -22,4 +22,7 @@ The plugin can monitor applications accessing sensitive content and provide deta
 ### Promptbooks
 These are valuable resources for implementing standard operating procedures for security incidents, helping to identify various dimensions of an incident and summarize outcomes.
 
+### Enhanced DLP Analytics (KQL_DLPEnhanced.yml)
+This companion plugin provides advanced DLP analytics capabilities including cross-workload correlation, false positive analysis, policy coverage gap detection, high-risk user scoring, alert trend analysis, sensitivity label compliance tracking, and policy health dashboards. See [KQL_DLPEnhanced_README.md](KQL_DLPEnhanced_README.md) for full documentation.
+
 [Learn more](https://techcommunity.microsoft.com/t5/security-compliance-and-identity/learn-how-to-customize-and-optimize-copilot-for-security-with/ba-p/4120147)
