@@ -3,16 +3,55 @@
 ## DESCRIPTION
 This plugin provides comprehensive Data Loss Prevention (DLP) and communication compliance skills for Microsoft Teams chat, channel messages, and meeting conversations. It enables Security Analysts to investigate sensitive data exposure in Teams communications, identify policy violations, track user override patterns, detect data exfiltration through chat channels, and assess DLP policy coverage for Teams workloads.
 
+### Intended Audience
+- **SOC Analysts** investigating DLP incidents involving Teams communications
+- **Data Security Administrators** monitoring Teams DLP policy effectiveness
+- **Compliance Officers** tracking communication compliance violations
+- **Incident Responders** building exfiltration timelines across Teams channels
+
+### Intended Uses
+- Investigate DLP policy violations in Teams private chats, channel messages, and meeting chats
+- Detect sensitive data shared with external or guest users through Teams
+- Identify users who override DLP policy warnings and analyze override patterns
+- Monitor communication compliance violations across Teams and Exchange
+- Build chronological exfiltration timelines to support incident investigations
+- Assess DLP policy coverage for Teams and identify protection gaps
+
+### Supported Microsoft Products
+- [Microsoft Security Copilot](https://learn.microsoft.com/en-us/security-copilot/)
+- [Microsoft Purview DLP for Teams](https://learn.microsoft.com/en-us/purview/dlp-microsoft-teams)
+- [Microsoft Purview Communication Compliance](https://learn.microsoft.com/en-us/purview/communication-compliance)
+- [Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/)
+
+### Limitations
+- Skills query the CloudAppEvents table in Microsoft Defender XDR; results are limited to the data retention period configured in your tenant
+- Communication compliance skills depend on communication compliance policies being configured in Microsoft Purview
+- DLP alerts are only available for workloads where DLP policies targeting the Microsoft Teams location are enabled
+- Meeting chat DLP detection requires DLP policies scoped to Teams chat — meeting recordings/transcripts are not analyzed
+- External/guest user detection relies on `#EXT#` identifiers in user records; federated tenant users may not be detected
+- This plugin provides read-only investigation capabilities — it does not block, modify, or remediate any content
+
 ---
 
 ## TYPE AND REQUIREMENTS
 **TYPE**: KQL (Defender) <br>
 **SOURCE**: _CloudAppEvents_ table (Microsoft Defender XDR) <br>
-**REQUIREMENTS**:
+
+### Pre-requisites
+
 - [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
 - [Access to upload custom plugins](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#managing-custom-plugins)
 - Microsoft Defender XDR with CloudAppEvents data ingestion enabled
-- DLP policies configured for Microsoft Teams workload
+- [DLP policies configured for Microsoft Teams workload](https://learn.microsoft.com/en-us/purview/dlp-microsoft-teams)
+- (Optional) [Communication Compliance policies](https://learn.microsoft.com/en-us/purview/communication-compliance-policies) configured for the CommunicationComplianceSummary skill
+
+### Instructions
+#### Upload the Custom Plugin
+
+1. Obtain the file [KQL_ChatProtection.yml](KQL_ChatProtection.yml) from this directory.
+2. [Upload the custom plugin](https://learn.microsoft.com/en-us/security-copilot/manage-plugins?tabs=securitycopilotplugin#add-custom-plugins) in Security Copilot.
+3. Verify the plugin is activated and the skills appear in the skill list.
+4. No additional authentication configuration is required — the plugin uses standard Defender XDR permissions.
 
 ---
 
