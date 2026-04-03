@@ -1,0 +1,286 @@
+Descriptor:
+  Name: ChatCommunicationProtection
+  DisplayName: Chat and Communication Protection plugin
+  Description: Data Security skills to query Teams chat DLP events, communication compliance violations, meeting transcript analysis, and cross-channel sensitive data exposure for investigation and response
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: ChatDLPGetTeamsChatAlerts
+        DisplayName: Get DLP alerts triggered in Teams chat messages
+        Description: Fetches all DLP policy violations that occurred in Teams chat messages, including private chats and group chats, with details on the policy matched, sensitive information types detected, and actions taken
+        Inputs:
+          - Name: User
+            Description: The user UPN associated with the Teams chat DLP alert
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to look back for alerts (default 7)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 7, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where isempty(user) or tolower(RawEventData.UserId) has tolower(user)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend MessageType = case(
+                RawEventData.MessageType == "Chat", "Private Chat",
+                RawEventData.MessageType == "Channel", "Channel Message",
+                RawEventData.MessageType == "Meeting", "Meeting Chat",
+                tostring(RawEventData.MessageType))
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend Recipients = tostring(RawEventData.Members)
+            | project Timestamp, UserId, MessageType, PolicyName, RuleName, Severity, SensitiveInfoType, Action, Recipients
+            | sort by Timestamp desc
+
+      - Name: ChatDLPGetChannelViolations
+        DisplayName: Get DLP violations in Teams channels
+        Description: Fetches DLP policy violations in Teams channel messages with details on the channel, team, policy triggered, and sensitive content detected
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to look back for violations (default 7)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 7, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where RawEventData.MessageType == "Channel"
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend TeamName = tostring(RawEventData.TeamName)
+            | extend ChannelName = tostring(RawEventData.ChannelName)
+            | project Timestamp, UserId, TeamName, ChannelName, PolicyName, Severity, SensitiveInfoType, Action
+            | summarize AlertCount = count(), LatestAlert = max(Timestamp) by TeamName, ChannelName, PolicyName, SensitiveInfoType
+            | sort by AlertCount desc
+
+      - Name: ChatDLPGetExternalSharingInTeams
+        DisplayName: Get sensitive data shared with external users in Teams
+        Description: Identifies instances where sensitive information was shared with external or guest users through Teams chats, channels, or file sharing
+        Inputs:
+          - Name: User
+            Description: The internal user UPN to investigate
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to look back (default 14)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 14, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where isempty(user) or tolower(RawEventData.UserId) has tolower(user)
+            | where RawEventData.Members has "#EXT#" or RawEventData.Members has "guest"
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend MessageType = tostring(RawEventData.MessageType)
+            | extend ExternalRecipients = RawEventData.Members
+            | extend HasDLPMatch = iff(ActionType has "DlpRuleMatch", "Yes", "No")
+            | extend PolicyName = iff(HasDLPMatch == "Yes", tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName), "N/A")
+            | extend SensitiveInfoType = iff(HasDLPMatch == "Yes", tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName), "N/A")
+            | project Timestamp, UserId, MessageType, ExternalRecipients, HasDLPMatch, PolicyName, SensitiveInfoType
+            | sort by Timestamp desc
+
+      - Name: ChatDLPGetMeetingChatViolations
+        DisplayName: Get DLP violations in Teams meeting chats
+        Description: Fetches DLP alerts that were triggered during Teams meeting chat sessions, helping analysts identify sensitive data disclosed during meetings
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to look back for meeting violations (default 7)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 7, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where RawEventData.MessageType == "Meeting"
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend MeetingId = tostring(RawEventData.MeetingId)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | project Timestamp, UserId, MeetingId, PolicyName, Severity, SensitiveInfoType, Action
+            | sort by Timestamp desc
+
+      - Name: ChatDLPGetUserOverrides
+        DisplayName: Get DLP policy overrides by users in Teams
+        Description: Identifies instances where users overrode DLP policy warnings in Teams, indicating potential intentional data sharing of sensitive content
+        Inputs:
+          - Name: User
+            Description: The user UPN to check for overrides
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to look back (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleUndo"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where isempty(user) or tolower(RawEventData.UserId) has tolower(user)
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Justification = tostring(RawEventData.Justification)
+            | extend MessageType = tostring(RawEventData.MessageType)
+            | project Timestamp, UserId, MessageType, PolicyName, RuleName, Justification
+            | summarize OverrideCount = count(), LatestOverride = max(Timestamp), Justifications = make_set(Justification) by UserId, PolicyName
+            | sort by OverrideCount desc
+
+      - Name: ChatDLPGetCommunicationComplianceSummary
+        DisplayName: Get communication compliance violation summary
+        Description: Provides a summary of communication compliance events across Teams, Exchange, and other communication channels including policy violations related to offensive language, regulatory compliance, and conflict of interest
+        Inputs:
+          - Name: User
+            Description: The user UPN to investigate
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to look back (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "SupervisoryReviewPolicyMatch" or ActionType has "CommunicationCompliancePolicyMatch"
+            | where isempty(user) or tolower(RawEventData.UserId) has tolower(user)
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend PolicyName = tostring(RawEventData.PolicyName)
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend MessageType = case(
+                Workload == "MicrosoftTeams", "Teams Message",
+                Workload == "Exchange", "Email",
+                Workload)
+            | extend ViolationType = tostring(RawEventData.ClassifierType)
+            | extend Severity = tostring(RawEventData.Severity)
+            | project Timestamp, UserId, Workload, MessageType, PolicyName, ViolationType, Severity
+            | summarize ViolationCount = count(), LatestViolation = max(Timestamp) by UserId, Workload, PolicyName, ViolationType
+            | sort by ViolationCount desc
+
+      - Name: ChatDLPGetSensitiveDataInChats
+        DisplayName: Get sensitive information types detected in Teams chats
+        Description: Identifies and summarizes the types of sensitive information detected in Teams chat messages, grouped by sensitive information type and user
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to look back (default 7)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 7, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Confidence = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].Confidence)
+            | extend Count = toint(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].Count)
+            | extend MessageType = tostring(RawEventData.MessageType)
+            | project Timestamp, UserId, MessageType, SensitiveInfoType, Confidence, Count, PolicyName
+            | summarize TotalDetections = sum(Count), UniqueUsers = dcount(UserId), LatestDetection = max(Timestamp) by SensitiveInfoType, PolicyName
+            | sort by TotalDetections desc
+
+      - Name: ChatDLPGetChatExfiltrationTimeline
+        DisplayName: Get timeline of potential data exfiltration via Teams chat
+        Description: Builds a chronological timeline of a user's sensitive data activities across Teams chat to help identify patterns of data exfiltration through chat channels
+        Inputs:
+          - Name: User
+            Description: The user UPN to investigate for exfiltration patterns
+            Required: true
+          - Name: LookbackDays
+            Description: Number of days to look back (default 14)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 14, toint('{{LookbackDays}}'));
+            let teamsDLP = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where tolower(RawEventData.UserId) has tolower(user)
+            | where ActionType has "DlpRuleMatch" or ActionType has "DlpRuleUndo"
+            | extend EventType = iff(ActionType has "DlpRuleUndo", "DLP Override", "DLP Match")
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend MessageType = tostring(RawEventData.MessageType)
+            | extend HasExternalRecipient = iff(RawEventData.Members has "#EXT#" or RawEventData.Members has "guest", "Yes", "No")
+            | project Timestamp, EventType, MessageType, PolicyName, SensitiveInfoType, HasExternalRecipient;
+            let teamsFileShare = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | where tolower(RawEventData.UserId) has tolower(user)
+            | where ActionType in ("FileUploaded", "FileShared", "FileDownloaded", "FileCopied")
+            | extend EventType = strcat("File: ", ActionType)
+            | extend FileName = tostring(RawEventData.SourceFileName)
+            | extend MessageType = "File Operation"
+            | extend PolicyName = ""
+            | extend SensitiveInfoType = ""
+            | extend HasExternalRecipient = iff(RawEventData.TargetUserOrGroupName has "#EXT#", "Yes", "No")
+            | project Timestamp, EventType, MessageType, PolicyName, SensitiveInfoType, HasExternalRecipient;
+            union teamsDLP, teamsFileShare
+            | sort by Timestamp asc
+
+      - Name: ChatDLPGetTeamsPolicyCoverage
+        DisplayName: Get Teams DLP policy coverage analysis
+        Description: Analyzes the current DLP policy coverage for Teams communications, identifying which policies are actively matching and potential coverage gaps
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to analyze for policy coverage (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where RawEventData.Workload == "MicrosoftTeams"
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend MessageType = case(
+                RawEventData.MessageType == "Chat", "Private Chat",
+                RawEventData.MessageType == "Channel", "Channel Message",
+                RawEventData.MessageType == "Meeting", "Meeting Chat",
+                tostring(RawEventData.MessageType))
+            | summarize 
+                TotalMatches = count(),
+                UniqueUsers = dcount(tostring(RawEventData.UserId)),
+                MessageTypes = make_set(MessageType),
+                SensitiveTypes = make_set(SensitiveInfoType),
+                Actions = make_set(Action),
+                FirstMatch = min(Timestamp),
+                LastMatch = max(Timestamp)
+              by PolicyName, RuleName, Severity
+            | sort by TotalMatches desc
