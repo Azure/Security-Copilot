@@ -1,0 +1,308 @@
+Descriptor:
+  Name: DLPEnhancedAnalytics
+  DisplayName: Enhanced DLP Analytics and Cross-Workload Correlation plugin
+  Description: Advanced DLP analytics skills for cross-workload correlation, false positive analysis, policy coverage assessment, adaptive protection integration, and DLP health monitoring across Exchange, Teams, SharePoint, OneDrive, and Endpoints
+
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: DLPCrossWorkloadCorrelation
+        DisplayName: Correlate DLP alerts for a user across all workloads
+        Description: Correlates a user's DLP policy violations across Exchange, Teams, SharePoint, OneDrive, and Endpoints in a single view to identify multi-platform data exfiltration patterns
+        Inputs:
+          - Name: User
+            Description: The user UPN to correlate across workloads
+            Required: true
+          - Name: LookbackDays
+            Description: Number of days to look back (default 14)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 14, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where tolower(RawEventData.UserId) has tolower(user)
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend FileName = coalesce(
+                tostring(parse_json(tostring(RawEventData.SharePointMetaData)).FileName),
+                tostring(parse_json(tostring(RawEventData.Item)).Attachments),
+                tostring(RawEventData.ObjectId))
+            | extend Subject = tostring(parse_json(tostring(RawEventData.ExchangeMetaData)).Subject)
+            | extend Target = case(
+                Workload == "Exchange", strcat("To:", RawEventData.ExchangeMetaData.To),
+                Workload == "MicrosoftTeams", tostring(RawEventData.Members),
+                Workload == "SharePoint" or Workload == "OneDrive", tostring(parse_json(tostring(RawEventData.SharePointMetaData)).SiteCollectionUrl),
+                Workload == "Endpoint", tostring(parse_json(tostring(RawEventData.EndpointMetaData)).TargetDomain),
+                "Unknown")
+            | project Timestamp, Workload, PolicyName, RuleName, Severity, SensitiveInfoType, Action, FileName, Subject, Target
+            | sort by Timestamp desc
+            | summarize
+                AlertCount = count(),
+                Policies = make_set(PolicyName),
+                SensitiveTypes = make_set(SensitiveInfoType),
+                Actions = make_set(Action),
+                Files = make_set(FileName, 10),
+                FirstAlert = min(Timestamp),
+                LastAlert = max(Timestamp)
+              by Workload
+            | extend DaysBetween = datetime_diff('day', LastAlert, FirstAlert)
+            | sort by AlertCount desc
+
+      - Name: DLPFalsePositiveAnalysis
+        DisplayName: Analyze DLP false positives and override patterns
+        Description: Identifies DLP alerts that are likely false positives by analyzing user override rates, repeated policy triggers on the same content, and low-severity matches across all workloads
+        Inputs:
+          - Name: PolicyName
+            Description: The DLP policy name to analyze for false positives (optional, analyzes all if empty)
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to analyze (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let policyFilter = '{{PolicyName}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            let dlpMatches = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where isempty(policyFilter) or tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName) has policyFilter
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend UserId = tostring(RawEventData.UserId)
+            | summarize MatchCount = count() by PolicyName, RuleName, Workload, Action;
+            let dlpOverrides = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleUndo"
+            | where isempty(policyFilter) or tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName) has policyFilter
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend RuleName = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].RuleName)
+            | extend Workload = tostring(RawEventData.Workload)
+            | summarize OverrideCount = count(), UniqueUsers = dcount(tostring(RawEventData.UserId)) by PolicyName, RuleName, Workload;
+            dlpMatches
+            | join kind=leftouter dlpOverrides on PolicyName, RuleName, Workload
+            | extend OverrideCount = coalesce(OverrideCount, 0)
+            | extend UniqueUsers = coalesce(UniqueUsers, 0)
+            | extend OverrideRate = round(todouble(OverrideCount) / todouble(MatchCount) * 100, 2)
+            | extend FalsePositiveRisk = case(
+                OverrideRate >= 70, "High - Likely False Positive",
+                OverrideRate >= 40, "Medium - Needs Review",
+                OverrideRate >= 10, "Low - Mostly Accurate",
+                "Minimal - Policy Working Well")
+            | project PolicyName, RuleName, Workload, Action, MatchCount, OverrideCount, OverrideRate, FalsePositiveRisk, UniqueUsers
+            | sort by OverrideRate desc
+
+      - Name: DLPPolicyCoverageGaps
+        DisplayName: Identify DLP policy coverage gaps across workloads
+        Description: Analyzes which workloads and sensitive information types have DLP policy coverage and identifies gaps where sensitive data may not be protected
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to analyze (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            let workloadCoverage = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | summarize
+                PolicyCount = dcount(PolicyName),
+                Policies = make_set(PolicyName),
+                SensitiveTypes = make_set(SensitiveInfoType),
+                TotalAlerts = count(),
+                SeverityDistribution = make_bag(pack(Severity, 1)),
+                UniqueUsers = dcount(tostring(RawEventData.UserId))
+              by Workload
+            | extend SensitiveTypeCount = array_length(SensitiveTypes);
+            let allWorkloads = datatable(Workload: string) ["Exchange", "MicrosoftTeams", "SharePoint", "OneDrive", "Endpoint"];
+            allWorkloads
+            | join kind=leftouter workloadCoverage on Workload
+            | extend PolicyCount = coalesce(PolicyCount, 0)
+            | extend TotalAlerts = coalesce(TotalAlerts, 0)
+            | extend UniqueUsers = coalesce(UniqueUsers, 0)
+            | extend SensitiveTypeCount = coalesce(SensitiveTypeCount, 0)
+            | extend CoverageStatus = case(
+                PolicyCount == 0, "NO COVERAGE - Critical Gap",
+                PolicyCount == 1, "Minimal Coverage - Needs Expansion",
+                PolicyCount <= 3, "Moderate Coverage",
+                "Good Coverage")
+            | project Workload, CoverageStatus, PolicyCount, TotalAlerts, UniqueUsers, SensitiveTypeCount, Policies, SensitiveTypes
+            | sort by PolicyCount asc
+
+      - Name: DLPHighRiskUsersAcrossWorkloads
+        DisplayName: Get high-risk users with DLP violations across multiple workloads
+        Description: Identifies users who have triggered DLP alerts across 2 or more workloads, indicating potential coordinated data exfiltration attempts
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to analyze (default 14)
+            Required: false
+          - Name: MinWorkloads
+            Description: Minimum number of workloads with violations to flag (default 2)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 14, toint('{{LookbackDays}}'));
+            let minWorkloads = iff(isempty('{{MinWorkloads}}'), 2, toint('{{MinWorkloads}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend SensitiveInfoType = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].ConditionsMatched)).SensitiveInformation))[0].SensitiveInformationTypeName)
+            | summarize
+                TotalAlerts = count(),
+                Workloads = make_set(Workload),
+                WorkloadCount = dcount(Workload),
+                Policies = make_set(PolicyName),
+                SensitiveTypes = make_set(SensitiveInfoType),
+                HighSeverityCount = countif(Severity == "High"),
+                FirstAlert = min(Timestamp),
+                LastAlert = max(Timestamp)
+              by UserId
+            | where WorkloadCount >= minWorkloads
+            | extend RiskScore = case(
+                WorkloadCount >= 4 and HighSeverityCount >= 3, "Critical",
+                WorkloadCount >= 3 or HighSeverityCount >= 2, "High",
+                WorkloadCount >= 2, "Medium",
+                "Low")
+            | project UserId, RiskScore, WorkloadCount, Workloads, TotalAlerts, HighSeverityCount, Policies, SensitiveTypes, FirstAlert, LastAlert
+            | sort by WorkloadCount desc, TotalAlerts desc
+
+      - Name: DLPAlertTrendAnalysis
+        DisplayName: Get DLP alert trend analysis over time
+        Description: Provides a time-based trend analysis of DLP alerts across all workloads to identify spikes, patterns, and anomalies in data loss prevention events
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to analyze trends (default 30)
+            Required: false
+          - Name: Workload
+            Description: Filter to a specific workload (Exchange, MicrosoftTeams, SharePoint, OneDrive, Endpoint)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            let workloadFilter = '{{Workload}}';
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | where isempty(workloadFilter) or tostring(RawEventData.Workload) has workloadFilter
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend UserId = tostring(RawEventData.UserId)
+            | summarize
+                TotalAlerts = count(),
+                HighSeverity = countif(Severity == "High"),
+                MediumSeverity = countif(Severity == "Medium"),
+                LowSeverity = countif(Severity == "Low"),
+                UniqueUsers = dcount(UserId),
+                UniquePolicies = dcount(PolicyName),
+                Workloads = make_set(Workload)
+              by Day = bin(Timestamp, 1d)
+            | extend DailyAvg = TotalAlerts
+            | sort by Day asc
+
+      - Name: DLPLabelDowngradeRemoval
+        DisplayName: Get sensitivity label downgrade and removal events
+        Description: Identifies events where users have downgraded or removed sensitivity labels from documents and emails, which may indicate attempts to bypass DLP protections
+        Inputs:
+          - Name: User
+            Description: The user UPN to investigate (optional, shows all users if empty)
+            Required: false
+          - Name: LookbackDays
+            Description: Number of days to look back (default 14)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let user = '{{User}}';
+            let lookback = iff(isempty('{{LookbackDays}}'), 14, toint('{{LookbackDays}}'));
+            CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType in ("SensitivityLabelRemoved", "SensitivityLabeledFileRenamed", "SensitivityLabelUpdated", "FileSensitivityLabelChanged", "MIPLabel")
+            | where isempty(user) or tolower(RawEventData.UserId) has tolower(user)
+            | extend UserId = tostring(RawEventData.UserId)
+            | extend FileName = coalesce(
+                tostring(RawEventData.SourceFileName),
+                tostring(RawEventData.ObjectId),
+                tostring(parse_json(tostring(RawEventData.SharePointMetaData)).FileName))
+            | extend OldLabel = tostring(RawEventData.OldSensitivityLabelId)
+            | extend NewLabel = tostring(RawEventData.SensitivityLabelId)
+            | extend Justification = tostring(RawEventData.Justification)
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend LabelAction = case(
+                ActionType == "SensitivityLabelRemoved", "Label Removed",
+                isempty(NewLabel) and isnotempty(OldLabel), "Label Removed",
+                "Label Changed")
+            | project Timestamp, UserId, FileName, Workload, LabelAction, OldLabel, NewLabel, Justification, ActionType
+            | sort by Timestamp desc
+
+      - Name: DLPPolicyHealthCheck
+        DisplayName: Get DLP policy health check summary
+        Description: Provides a comprehensive health check of all DLP policies including match rates, override rates, action distribution, and effectiveness metrics to guide policy tuning
+        Inputs:
+          - Name: LookbackDays
+            Description: Number of days to analyze (default 30)
+            Required: false
+        Settings:
+          Target: Defender
+          Template: |-
+            let lookback = iff(isempty('{{LookbackDays}}'), 30, toint('{{LookbackDays}}'));
+            let matches = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleMatch"
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | extend Workload = tostring(RawEventData.Workload)
+            | extend Severity = tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Severity)
+            | extend Action = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].Rules))[0].Actions))[0])
+            | extend UserId = tostring(RawEventData.UserId)
+            | summarize
+                TotalMatches = count(),
+                UniqueUsers = dcount(UserId),
+                Workloads = make_set(Workload),
+                WorkloadCount = dcount(Workload),
+                HighSev = countif(Severity == "High"),
+                MedSev = countif(Severity == "Medium"),
+                LowSev = countif(Severity == "Low"),
+                BlockActions = countif(Action == "Block"),
+                WarnActions = countif(Action == "Warn" or Action == "NotifyUser"),
+                AuditActions = countif(Action == "Audit" or Action == "AuditOnly"),
+                FirstMatch = min(Timestamp),
+                LastMatch = max(Timestamp)
+              by PolicyName;
+            let overrides = CloudAppEvents
+            | where Timestamp >= ago(totimespan(strcat(tostring(lookback), "d")))
+            | where ActionType has "DlpRuleUndo"
+            | extend PolicyName = tostring(parse_json(tostring(RawEventData.PolicyDetails))[0].PolicyName)
+            | summarize OverrideCount = count() by PolicyName;
+            matches
+            | join kind=leftouter overrides on PolicyName
+            | extend OverrideCount = coalesce(OverrideCount, 0)
+            | extend OverrideRate = round(todouble(OverrideCount) / todouble(TotalMatches) * 100, 2)
+            | extend BlockRate = round(todouble(BlockActions) / todouble(TotalMatches) * 100, 2)
+            | extend HealthStatus = case(
+                OverrideRate >= 60, "Unhealthy - High Override Rate",
+                OverrideRate >= 30, "Needs Attention - Moderate Overrides",
+                TotalMatches <= 5, "Low Activity - Verify Coverage",
+                "Healthy")
+            | project PolicyName, HealthStatus, TotalMatches, OverrideCount, OverrideRate, BlockRate, UniqueUsers, WorkloadCount, Workloads, HighSev, MedSev, LowSev, FirstMatch, LastMatch
+            | sort by TotalMatches desc

@@ -36,4 +36,24 @@ Documentation for Microsoft Purview and Copilot for Secuity can be found here : 
 - What Suspicious Actions Have Been Performed On This Files?
 - Tell me more about Sensitivity label X
 
+## Cross-Workload DLP Correlation
+- Correlate all DLP alerts for user `<UPN>` across Exchange, Teams, SharePoint, OneDrive, and Endpoints in the last 14 days
+- Show me users who have triggered DLP alerts across 2 or more workloads in the last 14 days
+- Which users have the highest cross-workload DLP risk score?
+
+## DLP False Positive Analysis
+- Analyze DLP false positive rates for policy `<PolicyName>` in the last 30 days
+- Which DLP policies have the highest override rates and are likely false positives?
+- Show me the override patterns for DLP policy `<PolicyName>` — is it working effectively?
+
+## DLP Policy Health and Coverage
+- Run a DLP policy health check — show me match rates, override rates, and effectiveness for all policies
+- Identify DLP policy coverage gaps across all workloads — which workloads have no DLP protection?
+- Show me DLP alert trends over the last 30 days — are there any spikes or anomalies?
+
+## Sensitivity Label Compliance
+- Show me sensitivity label downgrade and removal events for user `<UPN>` in the last 14 days
+- Which users have removed sensitivity labels from documents recently?
+- Are there any unauthorized label downgrade events that need investigation?
+
 Disclaimer: Please know these are sample prompts and are subject to Change
