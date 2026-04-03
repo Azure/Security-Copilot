@@ -2,19 +2,61 @@
 
 # DLP Incident Investigation and Response Promptbook
 
+## Overview
+
 In today's data-driven enterprise environment, Data Loss Prevention (DLP) incidents represent one of the most critical threats to organizational security. When a DLP alert fires, security analysts must rapidly determine the scope of sensitive data exposure, assess the risk posture of the involved user, correlate activity across multiple workloads (Exchange, Teams, SharePoint, Endpoints), and decide on appropriate remediation actions.
 
 This promptbook provides a structured, multi-step investigation workflow that guides Security Analysts through a complete DLP incident lifecycle — from initial alert triage through user risk assessment, data exposure analysis, cross-workload correlation, and actionable remediation recommendations.
 
+## Intended Audience
+
+- **Security Operations Center (SOC) Analysts** investigating DLP incidents
+- **Data Security Administrators** performing DLP alert triage and response
+- **Compliance Officers** assessing data exposure and regulatory risk
+- **Incident Responders** correlating user activity across Microsoft 365 workloads
+
+## Intended Uses
+
+- Investigate and triage DLP alerts from Microsoft Purview across Exchange, Teams, SharePoint, OneDrive, and Endpoints
+- Assess user risk by correlating DLP violations with insider risk signals and sign-in anomalies
+- Identify data exfiltration patterns including email forwarding, file sharing, USB copies, and cloud uploads
+- Generate executive-ready investigation reports with remediation recommendations
+
+## Supported Microsoft Products
+
+- [Microsoft Security Copilot](https://learn.microsoft.com/en-us/security-copilot/)
+- [Microsoft Purview Data Loss Prevention](https://learn.microsoft.com/en-us/purview/dlp-learn-about-dlp)
+- [Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/)
+- [Microsoft Entra ID Protection](https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection)
+
+## Prerequisites
+
+- [Security Copilot Enabled](https://learn.microsoft.com/en-us/security-copilot/get-started-security-copilot#onboarding-to-microsoft-security-copilot)
+- Microsoft Purview plugin enabled in Security Copilot
+- Microsoft Defender XDR plugin enabled in Security Copilot
+- Microsoft Entra plugin enabled in Security Copilot
+- DLP policies configured and active in Microsoft Purview
+- User must have appropriate [Security Copilot permissions](https://learn.microsoft.com/en-us/security-copilot/authentication)
+
+## Limitations
+
+- Prompts rely on data available in the Microsoft Purview and Defender XDR backends; results are limited to the data retention period configured in your tenant
+- Cross-workload correlation depends on DLP policies being enabled across the relevant workloads (Exchange, Teams, SharePoint, Endpoints)
+- The promptbook does not modify, remediate, or block any user activity — it provides investigation insights and recommendations only
+- Prompt results are AI-generated summaries and should be validated by the analyst before taking action
+- Performance may vary with large data volumes; consider adjusting the LookbackDays parameter for environments with high alert volumes
+
 Disclaimer: Please know these are sample prompts and are subject to Change
+
+---
 
 **Required plugins** : Microsoft Purview, Microsoft Defender XDR, Microsoft Entra
 
-**Required Input**:<UserUPN>
+**Required Input**:`<UserUPN>` — The User Principal Name of the user under investigation
 
-**Required Input**:<AlertId>
+**Required Input**:`<AlertId>` — The Purview DLP alert ID to investigate
 
-**Required Input**:<LookbackDays>
+**Required Input**:`<LookbackDays>` — Number of days to look back for historical activity (e.g., 7, 14, 30)
 
 **Description**: Security Operations teams face significant challenges when investigating DLP incidents:
 
