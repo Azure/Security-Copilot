@@ -1,0 +1,238 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "Security Analyst Agent - OuterLoop Automation (Email + Data Lake)",
+        "description": "Logic App that invokes the SecurityAnalysisAgentOuterLoop skill in Security Copilot using a Sentinel Data Lake workspace on a recurring schedule, generates an executive HTML dashboard, and emails the results.",
+        "prerequisites": "1. Security Copilot license enabled on the tenant. 2. A Microsoft Sentinel Data Lake workspace. 3. Contributor role on the target resource group.",
+        "postDeployment": [
+            "1. Authorize the Security Copilot and Office 365 API connections.",
+            "2. Adjust the recurrence schedule as needed.",
+            "3. Run the Logic App and verify the email output."
+        ],
+        "lastUpdateTime": "2026-02-25",
+        "tags": [
+            "Security Copilot",
+            "Security Analyst Agent",
+            "Sentinel",
+            "OuterLoop",
+            "Email",
+            "Data Lake"
+        ],
+        "support": {
+            "tier": "community"
+        }
+    },
+    "parameters": {
+        "PlaybookName": {
+            "defaultValue": "SecurityAnalysisAgent-OuterLoop-Email-DataLake",
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Logic App to deploy."
+            }
+        },
+        "UserRequest": {
+            "type": "string",
+            "defaultValue": "Identify suspicious sign-in patterns involving failed login attempts across multiple user accounts.",
+            "metadata": {
+                "description": "The security analysis prompt to send to the SecurityAnalysisAgentOuterLoop skill. The template automatically appends 'This is the final intent, do not ask clarification questions.' to your prompt."
+            }
+        },
+        "email": {
+            "type": "string",
+            "metadata": {
+                "description": "Recipient email address for the report."
+            }
+        },
+        "SentinelDataLakeWorkspaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Microsoft Sentinel Data Lake workspace."
+            }
+        },
+        "RecurrenceIntervalInDays": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "How often (in days) the Logic App should run."
+            }
+        },
+        "RecurrenceTimeZone": {
+            "type": "string",
+            "defaultValue": "India Standard Time",
+            "metadata": {
+                "description": "Time zone for the recurrence schedule (e.g. 'India Standard Time', 'UTC', 'Pacific Standard Time')."
+            }
+        }
+    },
+    "variables": {
+        "SecurityCopilotConnectionName": "[concat('SecurityCopilot-', parameters('PlaybookName'))]",
+        "Office365ConnectionName": "[concat('Office365-', parameters('PlaybookName'))]",
+        "FinalUserRequest": "[concat(parameters('UserRequest'), ' This is the final intent, do not ask clarification questions.')]",
+        "SkillInputsJson": "[concat('{\"UserRequest\":\"', variables('FinalUserRequest'), '\",\"DataSource\":\"SentinelDataLake\",\"SentinelDataLakeWorkspaceName\":\"', parameters('SentinelDataLakeWorkspaceName'), '\"}')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('PlaybookName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "hidden-SentinelTemplateName": "SecurityAnalysisAgent-OuterLoop-Email-DataLake",
+                "hidden-SentinelTemplateVersion": "1.0"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/connections', variables('SecurityCopilotConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+            ],
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "Recurrence": {
+                            "recurrence": {
+                                "interval": "[parameters('RecurrenceIntervalInDays')]",
+                                "frequency": "Day",
+                                "timeZone": "[parameters('RecurrenceTimeZone')]"
+                            },
+                            "evaluatedRecurrence": {
+                                "interval": "[parameters('RecurrenceIntervalInDays')]",
+                                "frequency": "Day",
+                                "timeZone": "[parameters('RecurrenceTimeZone')]"
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "Submit_a_Security_Copilot_prompt": {
+                            "runAfter": {},
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "[variables('FinalUserRequest')]",
+                                    "Skillsets": [
+                                        "Microsoft.Security.AdvancedAnalystAgent"
+                                    ],
+                                    "SkillName": "SecurityAnalysisAgentOuterLoop",
+                                    "SkillInputs": "[concat('@json(''', variables('SkillInputsJson'), ''')')]"
+                                },
+                                "path": "/process-prompt"
+                            }
+                        },
+                        "Submit_a_Security_Copilot_prompt_1": {
+                            "runAfter": {
+                                "Submit_a_Security_Copilot_prompt": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['securitycopilot-1']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "PromptContent": "/AskGpt Task: Produce a self-contained, executive-quality HTML dashboard from the input text.\\nOutput rules (critical):\\n\\nReturn ONLY the final HTML document as plain text. No explanations, no markdown fences.\\nThe output must be a complete HTML page (doctype + html/head/body) with inline CSS only.\\n\\nMandatory global tags (non-negotiable):\\n\\nThe dashboard MUST include two visible tags/badges, labeled exactly:\\n\\nSecurity Analyst Agent\\nSecurity Copilot\\n\\nBoth tags must always be rendered.\\nPlacement: Near the main title or in the header area (top-right or top-left).\\nStyling: Dashboard-style badges/pills (rounded corners, subtle background). Visually consistent with each other. Informational, not decorative.\\n\\nPrimary objective:\\nTransform the input into a clean, modern, dashboard-style layout that is easy to scan, visually structured, and suitable for leadership or review contexts.\\n\\nLayout & structure guidelines:\\nInfer the best structure from the content:\\n- Metrics / numbers: KPI cards or stat tiles\\n- Status / comparisons: compact tables with badges\\n- Progress / trends: horizontal indicators (CSS only)\\n- Events: timeline layout\\n- Risks / notes / callouts: clearly separated panels\\n\\nGroup related information into cards or sections using a grid layout.\\nEstablish strong visual hierarchy: headline insights first, supporting detail second.\\n\\nVisual & aesthetic requirements:\\n- Neutral background, elevated cards, soft borders or shadows\\n- Consistent spacing and alignment\\n- Subtle accent color used consistently across badges and highlights\\n- Professional typography with clear hierarchy\\n- Responsive and readable on smaller screens\\n- No JavaScript, no external libraries\\n\\nContent rules:\\n- Preserve facts and meaning exactly\\n- Rewrite only to improve clarity, scannability, and layout fit\\n- Do not introduce new data or interpretation\\n\\nEmpty or invalid input:\\nOutput a simple HTML page stating: \\\"No data returned\\\".\\n\\nInput:\\n@{body('Submit_a_Security_Copilot_prompt')?['EvaluationResultContent']}",
+                                    "SessionId": "@body('Submit_a_Security_Copilot_prompt')?['sessionId']"
+                                },
+                                "path": "/process-prompt"
+                            }
+                        },
+                        "Send_an_email_(V2)": {
+                            "runAfter": {
+                                "Submit_a_Security_Copilot_prompt_1": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['office365']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "To": "[parameters('email')]",
+                                    "Subject": "Security Analyst Agent - Executive Report",
+                                    "Body": "<p>@{body('Submit_a_Security_Copilot_prompt_1')?['EvaluationResultContent']}</p>",
+                                    "Importance": "Normal"
+                                },
+                                "path": "/v2/Mail"
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "securitycopilot": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecurityCopilotConnectionName'))]",
+                                "connectionName": "[variables('SecurityCopilotConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            },
+                            "securitycopilot-1": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('SecurityCopilotConnectionName'))]",
+                                "connectionName": "[variables('SecurityCopilotConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                            },
+                            "office365": {
+                                "connectionId": "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName": "[variables('Office365ConnectionName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[variables('SecurityCopilotConnectionName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "V1",
+            "properties": {
+                "displayName": "[variables('SecurityCopilotConnectionName')]",
+                "customParameterValues": {},
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Securitycopilot')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[variables('Office365ConnectionName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "V1",
+            "properties": {
+                "displayName": "[variables('Office365ConnectionName')]",
+                "customParameterValues": {},
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]"
+                }
+            }
+        }
+    ]
+}
