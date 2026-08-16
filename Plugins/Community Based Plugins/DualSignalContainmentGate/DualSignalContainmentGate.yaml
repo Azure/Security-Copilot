@@ -1,0 +1,172 @@
+# Dual-signal Gate/Prove plugin for Microsoft Security Copilot.
+# Hard rule: ML confidence is not a classic signature true positive.
+# Plugin updated 2026-08-16
+#
+# Spacing matters. Use spaces, not tabs.
+
+Descriptor:
+  Name: DualSignalContainmentGate
+  DisplayName: Dual-signal containment gate
+  Description: >
+    Classifies Cisco Firepower / Snort-family incidents as ML-only, classic signature,
+    dual-signal corroborated, or unknown. Forbids recommend-contain on ML-only and unknown.
+    Optional Sentinel KQL lists GID 411 ML-only events vs high-priority signature events.
+
+  Settings:
+    - Name: TenantId
+      Label: TenantId
+      Description: Azure tenant ID where Sentinel exists.
+      HintText: Azure tenant ID where Sentinel exists.
+      SettingType: String
+      Required: true
+
+    - Name: SubscriptionId
+      Label: SubscriptionId
+      Description: Azure subscription ID where Sentinel exists.
+      HintText: Azure subscription ID where Sentinel exists.
+      SettingType: String
+      Required: true
+
+    - Name: WorkspaceName
+      Label: WorkspaceName
+      Description: Log Analytics workspace name for Sentinel.
+      HintText: Log Analytics workspace name for Sentinel.
+      SettingType: String
+      Required: true
+
+    - Name: ResourceGroupName
+      Label: ResourceGroupName
+      Description: Resource group where Sentinel workspace exists.
+      HintText: Resource group where Sentinel workspace exists.
+      SettingType: String
+      Required: true
+
+  SupportedAuthTypes:
+    - None
+
+SkillGroups:
+  - Format: GPT
+    Skills:
+      - Name: ClassifyDualSignalContainment
+        DisplayName: Classify dual-signal disposition
+        Description: >
+          Classify an incident or notable as ml_only, signature, corroborated, or unknown
+          and decide whether Copilot may recommend containment.
+        DescriptionForModel: >
+          You are a detection and remediation gate. Machine-learning confidence is NEVER
+          equivalent to a classic IDS signature true positive. SnortML GID 411, is_ml_only,
+          dual-signal:ml-only, and EVE threat confidence >= 80 without a classic signature
+          are ML-only. Classic Snort GID (not 411) or high-priority classifications are
+          signature. Signature plus ML/EVE or is_corroborated is corroborated. Empty or
+          unclear context is unknown and must fail closed. You MUST NOT recommend block IP,
+          isolate host, quarantine, or any auto-contain when disposition is ml_only or unknown.
+          Those cases escalate for corroboration and HITL. Signature and corroborated may
+          recommend gated containment with analyst confirmation, never ungated automation.
+        ExamplePrompts:
+          - Should I contain this Firepower incident
+          - Classify this SnortML alert for containment
+          - Is this GID 411 event a signature true positive
+          - Dual-signal gate this intrusion notable before block IP
+        Inputs:
+          - Name: incidentText
+            Description: Incident title, description, notable name, and any GID, classification, SnortML, or EVE text.
+            Required: true
+        Settings:
+          ModelName: gpt-4o
+          Template: |-
+            Classify the following security incident for containment. Follow the dual-signal Gate/Prove rules exactly.
+
+            Hard rule: ML confidence is NOT a classic signature true positive. Never equate SnortML / GID 411 / EVE-high to GID 1 signature TP.
+
+            Markers:
+            - ML-only: gid 411, gid:411, generator id 411, SnortML, is_ml_only, ml-only, dual-signal:ml-only, EVE threat confidence >= 80 without a classic signature.
+            - Classic signature: generator id not 411, gid 1, high-priority classifications such as attempted-admin, attempted-user, successful-admin, trojan-activity, web-application-attack, A Network Trojan was Detected, Attempted Administrator Privilege Gain.
+            - Corroborated: is_corroborated, dual-signal:corroborated, signature and ml, classic signature AND (SnortML or EVE-high).
+            - GID 411 plus a leftover classification string is still ML-only unless an explicit classic GID or corroboration marker is present.
+
+            Return exactly this structure:
+            DISPOSITION: ml_only | signature | corroborated | unknown
+            ALLOW_AUTO_CONTAIN: true | false
+            REQUIRE_HITL: true | false
+            COPILOT_MAY_RECOMMEND_CONTAIN: true | false
+            NEXT_ACTION: escalate | gated_contain_with_hitl | fail_closed
+            REASON: one short paragraph
+            NEVER_EQUATE_ML_TO_SIGNATURE: true
+
+            Rules for fields:
+            - ml_only: ALLOW_AUTO_CONTAIN=false, REQUIRE_HITL=true, COPILOT_MAY_RECOMMEND_CONTAIN=false, NEXT_ACTION=escalate
+            - unknown: ALLOW_AUTO_CONTAIN=false, REQUIRE_HITL=true, COPILOT_MAY_RECOMMEND_CONTAIN=false, NEXT_ACTION=fail_closed
+            - signature or corroborated: ALLOW_AUTO_CONTAIN=true, REQUIRE_HITL=false (HITL still preferred), COPILOT_MAY_RECOMMEND_CONTAIN=true only as gated HITL, NEXT_ACTION=gated_contain_with_hitl
+            Never suggest ungated BlockIP, Logic App auto-contain, or SOAR block ip on ml_only or unknown.
+
+            Incident text:
+            {{incidentText}}
+
+  - Format: KQL
+    Skills:
+      - Name: ListSnortMlOnlyFirepowerEvents
+        DisplayName: List SnortML ML-only events
+        Description: >
+          Lists Cisco Firepower / Secure Firewall CommonSecurityLog events that match
+          SnortML GID 411 or is_ml_only. These are escalate/corroborate, not auto-contain.
+        ExamplePrompts:
+          - Show SnortML ML-only Firepower events
+          - List GID 411 Firepower alerts from Sentinel
+          - Get recent SnortML events that must not auto-contain
+        Inputs:
+          - Name: lookback
+            PlaceholderValue: 24h
+            Description: Lookback window such as 1h, 24h, or 7d.
+            DefaultValue: 24h
+            Required: false
+        Settings:
+          Target: Sentinel
+          TenantId: "{{TenantId}}"
+          SubscriptionId: "{{SubscriptionId}}"
+          ResourceGroupName: "{{ResourceGroupName}}"
+          WorkspaceName: "{{WorkspaceName}}"
+          Template: |-
+            CommonSecurityLog
+            | where TimeGenerated > ago({{lookback}})
+            | where DeviceVendor =~ "Cisco"
+            | where DeviceProduct has_any ("Firepower", "Secure Firewall", "FTD", "NGFW")
+            | extend Combined = strcat(tostring(Message), " ", tostring(AdditionalExtensions), " ", tostring(Activity), " ", tostring(DeviceEventClassID), " ", tostring(column_ifexists("FlexString1", "")), " ", tostring(column_ifexists("DeviceCustomString1", "")))
+            | where Combined matches regex @"(?i)(?:gid|generator[\s_-]?id)[\s:=]*411" or Combined has_any ("SnortML", "snortml", "is_ml_only")
+            | project TimeGenerated, DeviceName, SourceIP, DestinationIP, DestinationPort, Activity, DeviceAction, DeviceEventClassID, Message
+            | order by TimeGenerated desc
+            | take 50
+
+      - Name: ListFirepowerSignatureHighEvents
+        DisplayName: List signature-high events
+        Description: >
+          Lists Cisco Firepower classic signature high-priority events that are not SnortML GID 411.
+          Stronger TP candidates than ML-only; still prefer HITL before contain.
+        ExamplePrompts:
+          - Show Firepower high priority signature events
+          - List classic IDS signature alerts that are not SnortML
+          - Get signature-high Firepower events for gated contain
+        Inputs:
+          - Name: lookback
+            PlaceholderValue: 24h
+            Description: Lookback window such as 1h, 24h, or 7d.
+            DefaultValue: 24h
+            Required: false
+        Settings:
+          Target: Sentinel
+          TenantId: "{{TenantId}}"
+          SubscriptionId: "{{SubscriptionId}}"
+          ResourceGroupName: "{{ResourceGroupName}}"
+          WorkspaceName: "{{WorkspaceName}}"
+          Template: |-
+            let HighPriorityClassifications = dynamic(["A Network Trojan was Detected","A Network Trojan was detected","Successful Administrator Privilege Gain","Successful User Privilege Gain","Attempted Administrator Privilege Gain","Attempted User Privilege Gain","Known malware command and control traffic","Malware Command and Control Activity Detected","Known malicious file or file based exploit","Known client side exploit attempt","Large Scale Information Leak","attempted-admin","attempted-user","trojan-activity"]);
+            CommonSecurityLog
+            | where TimeGenerated > ago({{lookback}})
+            | where DeviceVendor =~ "Cisco"
+            | where DeviceProduct has_any ("Firepower", "Secure Firewall", "FTD", "NGFW")
+            | extend Combined = strcat(tostring(Message), " ", tostring(AdditionalExtensions), " ", tostring(Activity), " ", tostring(DeviceEventClassID), " ", tostring(column_ifexists("FlexString1", "")), " ", tostring(column_ifexists("DeviceCustomString1", "")), " ", tostring(DeviceAction))
+            | where not(Combined matches regex @"(?i)(?:gid|generator[\s_-]?id)[\s:=]*411")
+            | where not(Combined has_any ("SnortML", "snortml", "is_ml_only=true"))
+            | where Combined has_any (HighPriorityClassifications) or Activity has_any (HighPriorityClassifications)
+            | project TimeGenerated, DeviceName, SourceIP, DestinationIP, DestinationPort, Activity, DeviceAction, DeviceEventClassID, Message
+            | order by TimeGenerated desc
+            | take 50
