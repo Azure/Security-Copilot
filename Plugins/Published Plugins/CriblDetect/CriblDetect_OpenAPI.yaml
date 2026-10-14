@@ -1,0 +1,677 @@
+openapi: 3.0.1
+info:
+  title: Cribl Detect API (Security Copilot plugin surface)
+  description: >-
+    Read-only slice of the Cribl Detect REST API exposed to Microsoft Security
+    Copilot. Covers detection rules, alerts/findings, notable events, ingest
+    data sources, and routing pipelines. All operations require a Bearer token
+    with read scope on the corresponding Cribl resources. The server URL is
+    supplied by the plugin setting "CriblBaseUrl" via the manifest field
+    EndpointUrlSettingName.
+  version: 1.0.0
+  contact:
+    name: Cribl Support
+    url: https://docs.cribl.io
+servers:
+  - url: https://default.main.example-org.cribl.cloud
+    description: >-
+      Placeholder base URL. The actual base URL is injected by Microsoft
+      Security Copilot from the "CriblBaseUrl" plugin setting at install time.
+security:
+  - BearerAuth: []
+tags:
+  - name: Detections
+    description: Detection rule inventory
+  - name: Alerts
+    description: Findings produced by detection rules
+  - name: Notables
+    description: Correlated incidents / notable events
+  - name: DataSources
+    description: Ingest sources and routing pipelines
+
+paths:
+  /api/v1/m/{workerGroup}/detect/detections:
+    get:
+      tags: [Detections]
+      operationId: listDetections
+      summary: List detection rules
+      description: >-
+        List detection rules configured in Cribl Detect for a worker group.
+        Filter by severity, enabled state, MITRE ATT&CK technique, data source,
+        or free-text match on name and description. Returns rule id, name,
+        severity, MITRE mapping, data sources, and lastUpdated.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: severity
+          in: query
+          description: Filter by one or more severities.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [informational, low, medium, high, critical]
+          style: form
+          explode: true
+        - name: enabled
+          in: query
+          description: If true, return only enabled rules.
+          required: false
+          schema:
+            type: boolean
+        - name: mitreTechnique
+          in: query
+          description: MITRE ATT&CK technique id (e.g. T1059.001).
+          required: false
+          schema:
+            type: string
+            pattern: '^T\d{4}(\.\d{3})?$'
+        - name: dataSource
+          in: query
+          description: Filter rules that reference the given data source id.
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Free-text match on rule name or description.
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Detection rule page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectionPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/m/{workerGroup}/detect/detections/{detectionId}:
+    get:
+      tags: [Detections]
+      operationId: getDetection
+      summary: Get a detection rule
+      description: >-
+        Return the full definition of a single Cribl detection rule by id,
+        including the detection logic (Cribl Search / KQL / SPL), schedule,
+        suppression settings, enrichment lookups, and version history.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: detectionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Detection rule id (ULID).
+      responses:
+        '200':
+          description: Full detection rule definition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detection'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/m/{workerGroup}/detect/alerts:
+    get:
+      tags: [Alerts]
+      operationId: listAlerts
+      summary: Query alerts and findings
+      description: >-
+        Return alerts produced by Cribl Detect rules. Supports filtering by
+        time window (start/end ISO-8601), severity, status
+        (new / acknowledged / in_progress / closed / suppressed), assignee,
+        source rule id, and entity (host, user, ip, hash). Defaults to the
+        last 24 hours if no time window is supplied. Prefer small page sizes
+        for interactive triage.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: startTime
+          in: query
+          description: Inclusive lower bound (ISO-8601 UTC).
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          description: Exclusive upper bound (ISO-8601 UTC).
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [informational, low, medium, high, critical]
+          style: form
+          explode: true
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [new, acknowledged, in_progress, closed, suppressed]
+          style: form
+          explode: true
+        - name: assignee
+          in: query
+          description: UPN or email of alert owner.
+          required: false
+          schema:
+            type: string
+        - name: ruleId
+          in: query
+          description: Return only alerts raised by the given detection rule.
+          required: false
+          schema:
+            type: string
+        - name: entity
+          in: query
+          description: >-
+            Filter by any observed entity. Pass as `type:value`, for example
+            `user:alice@contoso.com` or `ip:10.1.2.3`.
+          required: false
+          schema:
+            type: string
+            pattern: '^(host|user|ip|hash|url|domain|file):.+$'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Alert page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/m/{workerGroup}/detect/alerts/{alertId}:
+    get:
+      tags: [Alerts]
+      operationId: getAlert
+      summary: Get one alert
+      description: >-
+        Retrieve a single alert by id including the full matched event sample,
+        enrichment fields, risk score, MITRE mapping, and links back to the
+        originating detection rule and notable event (if correlated).
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full alert record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/m/{workerGroup}/detect/notables:
+    get:
+      tags: [Notables]
+      operationId: listNotables
+      summary: List notable events
+      description: >-
+        List notable events (correlated incidents) from Cribl Detect. Filter by
+        time window, severity, status, assignee, risk score threshold, or
+        entity. Each notable may link to multiple underlying alerts.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: startTime
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: endTime
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [informational, low, medium, high, critical]
+          style: form
+          explode: true
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [new, acknowledged, in_progress, closed]
+          style: form
+          explode: true
+        - name: assignee
+          in: query
+          required: false
+          schema: { type: string }
+        - name: minRiskScore
+          in: query
+          description: Return only notables with risk score >= this value (0-100).
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+        - name: entity
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^(host|user|ip|hash|url|domain|file):.+$'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Notable event page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotablePage'
+
+  /api/v1/m/{workerGroup}/detect/notables/{notableId}:
+    get:
+      tags: [Notables]
+      operationId: getNotable
+      summary: Get one notable event
+      description: >-
+        Retrieve a single notable event by id with its contributing alert ids,
+        risk timeline, affected entities, and investigation notes.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: notableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Notable detail with contributing alerts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notable'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/m/{workerGroup}/system/sources:
+    get:
+      tags: [DataSources]
+      operationId: listDataSources
+      summary: List ingest data sources
+      description: >-
+        Enumerate ingest data sources known to Cribl (Stream Sources and Edge
+        collectors feeding Cribl Detect). Returns name, type (syslog, http,
+        kafka, s3, azure_blob, splunk_hec, ...), worker group, pipeline,
+        status, and recent EPS / throughput metrics. Use this to confirm
+        coverage before trusting a "no results" answer from an alert query.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: type
+          in: query
+          required: false
+          description: Filter by source type (syslog, http, kafka, s3, azure_blob, splunk_hec, ...)
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [healthy, degraded, down, disabled]
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Data source page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSourcePage'
+
+  /api/v1/m/{workerGroup}/system/sources/{sourceId}:
+    get:
+      tags: [DataSources]
+      operationId: getDataSource
+      summary: Get one data source
+      description: >-
+        Return configuration and recent health metrics for a single Cribl data
+        source by id, including last-ingested timestamp, dropped events, and
+        backpressure state.
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - name: sourceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Data source config and recent health.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/m/{workerGroup}/pipelines:
+    get:
+      tags: [DataSources]
+      operationId: listPipelines
+      summary: List routing pipelines
+      description: >-
+        List Cribl routing pipelines for a worker group. Returns pipeline id,
+        description, number of functions, and the detection rules and
+        destinations that depend on it. Useful for coverage questions ("does
+        this detection see firewall data?").
+      parameters:
+        - $ref: '#/components/parameters/WorkerGroup'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Pipeline page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelinePage'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    WorkerGroup:
+      name: workerGroup
+      in: path
+      required: true
+      description: >-
+        Cribl worker group (e.g. "default_search"). The model should pass the
+        value configured in the "CriblWorkerGroup" plugin setting when no
+        explicit group is requested by the user.
+      schema:
+        type: string
+        default: default_search
+    Limit:
+      name: limit
+      in: query
+      description: Max number of items to return (1-100).
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+    Offset:
+      name: offset
+      in: query
+      description: Zero-based pagination offset.
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Token lacks required scope.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Too many requests; retry after the duration in Retry-After.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        timestamp: { type: integer, format: int64 }
+        errorMessage: { type: string }
+        correlationId: { type: string }
+
+    MitreMapping:
+      type: object
+      properties:
+        tactics:
+          type: array
+          items: { type: string }
+        techniques:
+          type: array
+          items: { type: string }
+
+    Detection:
+      type: object
+      required: [id, name, severity, enabled]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        severity:
+          type: string
+          enum: [informational, low, medium, high, critical]
+        enabled: { type: boolean }
+        schedule:
+          type: object
+          properties:
+            type: { type: string, enum: [realtime, cron, interval] }
+            cron: { type: string }
+            intervalSeconds: { type: integer }
+        search:
+          type: object
+          description: Detection logic
+          properties:
+            language: { type: string, enum: [cribl_search, kql, spl] }
+            query: { type: string }
+        mitre: { $ref: '#/components/schemas/MitreMapping' }
+        dataSources:
+          type: array
+          items: { type: string }
+        suppression:
+          type: object
+          properties:
+            windowSeconds: { type: integer }
+            keyFields:
+              type: array
+              items: { type: string }
+        lastUpdated: { type: string, format: date-time }
+        createdBy: { type: string }
+        version: { type: integer }
+        consoleUrl: { type: string, format: uri }
+
+    DetectionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Detection' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    Alert:
+      type: object
+      required: [id, title, severity, status, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        severity:
+          type: string
+          enum: [informational, low, medium, high, critical]
+        status:
+          type: string
+          enum: [new, acknowledged, in_progress, closed, suppressed]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        assignee: { type: string }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        ruleId: { type: string }
+        ruleName: { type: string }
+        notableId:
+          type: string
+          nullable: true
+          description: Correlated notable event id (if any).
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [host, user, ip, hash, url, domain, file] }
+              value: { type: string }
+        matchedEvent:
+          type: object
+          additionalProperties: true
+          description: Representative raw event fields that triggered the rule.
+        mitre: { $ref: '#/components/schemas/MitreMapping' }
+        consoleUrl: { type: string, format: uri }
+
+    AlertPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Alert' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    Notable:
+      type: object
+      required: [id, title, severity, status, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        severity:
+          type: string
+          enum: [informational, low, medium, high, critical]
+        status:
+          type: string
+          enum: [new, acknowledged, in_progress, closed]
+        createdAt: { type: string, format: date-time }
+        assignee: { type: string }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        contributingAlertIds:
+          type: array
+          items: { type: string }
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string }
+              value: { type: string }
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              at: { type: string, format: date-time }
+              event: { type: string }
+              detail: { type: string }
+        consoleUrl: { type: string, format: uri }
+
+    NotablePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Notable' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    DataSource:
+      type: object
+      required: [id, name, type, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string, description: "e.g. syslog, http, kafka, s3, azure_blob, splunk_hec" }
+        status: { type: string, enum: [healthy, degraded, down, disabled] }
+        group: { type: string }
+        pipeline: { type: string }
+        lastEventAt: { type: string, format: date-time }
+        metrics:
+          type: object
+          properties:
+            eventsPerSecond: { type: number }
+            bytesPerSecond: { type: number }
+            droppedLastHour: { type: integer }
+            backpressure: { type: boolean }
+        consoleUrl: { type: string, format: uri }
+
+    DataSourcePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DataSource' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    Pipeline:
+      type: object
+      properties:
+        id: { type: string }
+        description: { type: string }
+        functionCount: { type: integer }
+        inputSources:
+          type: array
+          items: { type: string }
+        outputDestinations:
+          type: array
+          items: { type: string }
+        linkedDetections:
+          type: array
+          items: { type: string }
+        consoleUrl: { type: string, format: uri }
+
+    PipelinePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Pipeline' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
