@@ -1,0 +1,59 @@
+Descriptor:
+  Name: Cribl Detect
+  DisplayName: Cribl Detect
+  DescriptionDisplay: >-
+    Query Cribl Detect for detection rules, alerts, notable events, and ingest
+    health from inside Microsoft Security Copilot.
+  Description: |-
+    Use this plugin to interact with the Cribl Detect platform. The plugin is
+    read-only and lets Microsoft Security Copilot:
+
+    - List and look up detection rules by id, severity, status, data source, or
+      MITRE ATT&CK technique.
+    - Query alerts and findings with filters for time window, severity, status,
+      assignee, source rule, and entity (host / user / ip / hash).
+    - Retrieve notable events (correlated incidents) with ownership, risk
+      score, and contributing alert ids.
+    - Inspect ingest data sources, worker groups, and routing pipelines to
+      confirm detection coverage and spot broken telemetry.
+
+    Prefer narrow time windows (last 24 hours by default) and small page sizes
+    unless the user asks for more. Identifiers returned by one skill
+    (ruleId, alertId, notableId, sourceId) can be passed to any other skill in
+    this plugin.
+
+    Published by Microsoft and Cribl.
+  Category: Other
+  Icon: https://cdn.cribl.io/dl/logos/cribl-logo-128.png
+  Settings:
+    - Name: CriblBaseUrl
+      Label: Cribl Base URL
+      Description: >-
+        Base URL of your Cribl deployment, without a trailing slash and without
+        /api/v1. For Cribl.Cloud this is
+        https://<workspace>.main.<org>.cribl.cloud; for self-hosted Cribl use
+        the leader address, for example https://cribl.example.corp:9000.
+      HintText: https://default.main.example-org.cribl.cloud
+      SettingType: String
+      Required: true
+    - Name: CriblWorkerGroup
+      Label: Worker Group
+      Description: >-
+        Default Cribl worker group to query (e.g. "default" or
+        "default_search"). Used when a skill does not receive an explicit
+        workerGroup argument from the model.
+      HintText: default_search
+      SettingType: String
+      Required: false
+  SupportedAuthTypes:
+    - APIKey
+  Authorization:
+    Type: APIKey
+    Key: Authorization
+    Location: Header
+    AuthScheme: Bearer
+SkillGroups:
+  - Format: API
+    Settings:
+      OpenApiSpecURL: https://raw.githubusercontent.com/Azure/Security-Copilot/main/Plugins/Published%20Plugins/CriblDetect/CriblDetect_OpenAPI.yaml
+      EndpointUrlSettingName: CriblBaseUrl
